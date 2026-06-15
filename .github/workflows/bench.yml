@@ -1,0 +1,103 @@
+# Nightly performance gate (T055 §3d, dev/04 §6, dev/05 §3.1).
+#
+# Two jobs:
+#   * nightly-full  — the real M1–M8 run on the self-hosted Apple Silicon
+#     runner (Tier A gate machine), 100k corpus, gated against
+#     bench-baseline.json. Red metrics fail the workflow.
+#   * pr-smoke      — toolchain sanity on hosted macos-14: small corpus +
+#     --smoke harnesses. Verifies the tooling, not the thresholds.
+name: Bench
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *" # nightly, 02:00 UTC
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  nightly-full:
+    name: Nightly M1–M8 (Tier A)
+    runs-on: [self-hosted, macos, apple-silicon]
+    timeout-minutes: 720 # M6/M7 full windows are hours long
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust stable (honours rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install stable
+
+      - name: Seed 100k corpus (deterministic, checksum-asserted)
+        run: cargo xtask bench-seed --count 100000
+
+      - name: Run benchmark harness + gate
+        run: cargo xtask bench --out bench-report.json --baseline bench-baseline.json
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-report
+          path: bench-report.json
+          retention-days: 90
+
+  pr-smoke:
+    name: Harness smoke (hosted)
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust stable (honours rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install stable
+
+      - name: xtask unit tests
+        run: cargo test --manifest-path xtask/Cargo.toml
+
+      - name: Seed 1k smoke corpus
+        run: cargo xtask bench-seed --count 1000
+
+      - name: Run smoke harness (tooling check, not a perf gate)
+        run: cargo xtask bench --smoke --out bench-report-smoke.json
+
+      - name: Upload smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-report-smoke
+          path: bench-report-smoke.json
+          retention-days: 14
+
+  # ── M11 Windows Tier C harness check (T116 §3f) ──────────────────────────────
+  # GitHub-hosted Windows runners are not perf-stable, so the real M11 threshold
+  # (keyword P95 < 300 ms) is validated on a physical Tier C box by the Release
+  # Engineer. This manual job only proves the bench harness RUNS on Windows.
+  windows-bench:
+    name: M11 harness check (Windows, manual)
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust MSVC toolchain
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-msvc
+          rustup default stable-x86_64-pc-windows-msvc
+      - name: Seed 1k smoke corpus
+        run: cargo xtask bench-seed --count 1000
+      - name: Run smoke harness on Windows (tooling check, not a perf gate)
+        run: cargo xtask bench --smoke --out bench-report-windows.json
+      - name: Upload Windows bench report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-report-windows
+          path: bench-report-windows.json
+          retention-days: 14

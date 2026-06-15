@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "Dashboard",
+  "title": "GTE Knowledge Index",
+  "sub": "1,842 messages indexed · last sync 2 min ago",
+  "status_engine": "Engine Active",
+  "status_index": "Index {version}",
+  "status_syncing": "{count, plural, one {# account syncing} other {# accounts syncing}}",
+  "total_vectors": "Total vectors: {n}",
+  "search_ph": "Semantic search across all indexed emails…",
+  "card_accounts": "Account Breakdown",
+  "card_topics": "Top Topics",
+  "view": "View →",
+  "results_recent": "Recent Knowledge Entries",
+  "results_query": "Search results for \"{query}\"",
+  "searching": "Searching…",
+  "rel_high": "High match",
+  "rel_mid": "Medium match",
+  "rel_low": "Low match",
+  "no_results": "No results for \"{query}\""
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Dashboard",
+  "stat_pending_lbl": "Pending",
+  "stat_pending_sub": "needs decision",
+  "stat_unread_lbl": "Unread",
+  "stat_unread_sub": "{count, plural, =0 {all caught up} one {across # account} other {across # accounts}}",
+  "stat_total_lbl": "Total",
+  "stat_total_sub": "{count, plural, one {across # account} other {across # accounts}}",
+  "stat_processed_lbl": "Processed today",
+  "stat_processed_sub": "by AI employees",
+  "stat_view_all": "View all →",
+  "stat_view_log": "View log →",
+  "cold_title": "Getting started",
+  "cold_dismiss": "Dismiss",
+  "cold_note": "Your AI is still learning your style — over the first two weeks you'll watch it take over step by step. Finishing these speeds it up.",
+  "cold_task_connect": "Connect your first account",
+  "cold_task_drafts": "Review 5 AI drafts to calibrate your writing style",
+  "cold_task_contacts": "Reply to 3 frequent contacts to seed your trusted-sender list",
+  "cold_task_search": "Try one semantic search across your mail",
+  "cold_progress": "Trust ramp — full automation unlocks as you review more drafts",
+  "report_link": "View daily report →",
+  "hint": "Click any card above to explore"
+}

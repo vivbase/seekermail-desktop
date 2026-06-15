@@ -1,0 +1,24 @@
+# Pre-commit guard (T011, 08 §6): format + lint staged files so CI rarely fails on
+# style. Installed by the `prepare` script (`lefthook install`) on `pnpm install`.
+pre-commit:
+  parallel: true
+  commands:
+    prettier:
+      glob: "*.{ts,tsx,js,jsx,json,css,md,yml,yaml}"
+      exclude: "packages/shared/src/bindings.ts"
+      run: pnpm exec prettier --write {staged_files}
+      stage_fixed: true
+    eslint:
+      glob: "*.{ts,tsx}"
+      run: pnpm exec eslint --fix {staged_files}
+      stage_fixed: true
+    rustfmt:
+      glob: "*.rs"
+      run: rustfmt --edition 2021 {staged_files}
+      stage_fixed: true
+
+# Enforce Conventional Commits (08 §5).
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm exec commitlint --edit {1}

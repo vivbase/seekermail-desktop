@@ -1,0 +1,42 @@
+name: Compliance
+
+# BYO-AI compliance gate (T103, ADR-0004 + dev/09 §5): no-proxy egress + log
+# safety. Runs on every push/PR that touches the backend so a regression that
+# routes AI traffic through a SeekerMail domain — or leaks a secret into the
+# logs — fails the merge gate. Offline: no network, no API keys.
+
+on:
+  push:
+    paths:
+      - "src-tauri/**"
+      - ".github/workflows/compliance.yml"
+  pull_request:
+    paths:
+      - "src-tauri/**"
+      - ".github/workflows/compliance.yml"
+  workflow_dispatch: {}
+
+jobs:
+  compliance:
+    name: No-proxy egress · Log safety
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust stable (honours rust-toolchain.toml)
+        run: |
+          rustup show
+          rustup component add clippy rustfmt
+
+      - name: Cache cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: cargo-compliance-${{ runner.os }}-${{ hashFiles('src-tauri/Cargo.toml') }}
+          restore-keys: cargo-compliance-${{ runner.os }}-
+
+      - name: Run compliance tests (no network)
+        run: cargo test --manifest-path src-tauri/Cargo.toml --test compliance -- --nocapture

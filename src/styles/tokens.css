@@ -1,0 +1,86 @@
+/* Seeker v2.0 "Warm Analog / Editorial" design tokens (T007, 07 §7).
+ *
+ * This is the SINGLE place design-system variables enter the app. Component code
+ * reads these via Tailwind utilities (tailwind.config.js maps theme keys onto
+ * them) — never raw hex, never magic px. Canonical names follow the root
+ * CLAUDE.md design-system section so prototype ports are 1:1.
+ *
+ * Fonts are referenced by family with system fallbacks; real font files ship
+ * bundled (no external CDN — local-first, 10 §8). */
+
+:root {
+  /* Parchment scale — surface neutrals */
+  --p1: #fafaf7; /* reading pane / lightest surface */
+  --p2: #f5f0e8;
+  --p3: #ede8df; /* main background (parchment) */
+  --p4: #e4dfda;
+  --p5: #d4ccc0; /* dividers, borders */
+  --p6: #c8c2ba;
+  --p7: #9c9488; /* secondary text */
+  --p8: #7a7268; /* tertiary text */
+  --p9: #4a453f; /* primary interactive / dark label */
+  --p10: #231f1a; /* near-black, headings */
+
+  /* Card accent colors */
+  --terra: #c05a38; /* legal / high-risk */
+  --slate: #7a8898; /* work */
+  --sage: #b8c2b0; /* personal */
+  --amber: #dfa020; /* warnings / backup */
+  --red: #c0392b; /* destructive / critical */
+  --green: #4a7c59; /* success / resolved */
+
+  /* Typography */
+  --fd: "Playfair Display", Georgia, "Times New Roman", serif; /* display / serif headers */
+  --fb: "Lora", Georgia, serif; /* body, email content */
+  --fu: "DM Sans", system-ui, sans-serif; /* uppercase UI labels, nav */
+  --fm: "DM Mono", "Courier New", monospace; /* numbers, timestamps */
+
+  /* Shape */
+  --radius-card: 10px;
+  --radius-chip: 6px;
+  --radius-avatar: 9999px;
+
+  /* Elevation */
+  --shadow-card: 0 1px 3px rgba(35, 31, 26, 0.08), 0 4px 16px rgba(35, 31, 26, 0.06);
+}
+
+/* Dark theme overrides (T050). The mechanism is final; the exact values are
+ * approximations of the warm-analog palette inverted for dark surfaces.
+ * design-review: awaiting dark palette sign-off. */
+html.dark {
+  /* Parchment scale inverted — darkest surface to lightest text */
+  --p1: #1a1815; /* reading pane / darkest surface */
+  --p2: #1e1b17;
+  --p3: #221e1a; /* main background */
+  --p4: #2c2722;
+  --p5: #3a3530; /* dividers, borders */
+  --p6: #4c463f;
+  --p7: #8c8680; /* secondary text */
+  --p8: #b0aaa2; /* tertiary text */
+  --p9: #d4cec8; /* primary interactive / light label */
+  --p10: #f0ede8; /* near-white, headings */
+
+  /* Accents: nudged brighter for contrast on dark surfaces.
+   * design-review: awaiting dark palette sign-off. */
+  --terra: #d4724e;
+  --slate: #8e9cac;
+  --sage: #a6b09e;
+  --amber: #e8b04a;
+  --red: #d4584a;
+  --green: #6a9c79;
+
+  /* Elevation reads darker on dark surfaces */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Agent presence "processing" spinner (T102). Defined globally here, not inlined
+ * in the component, so the keyframe is shared by every presence dot. */
+@keyframes agent-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.agent-status-dot--spinning {
+  animation: agent-spin 1s linear infinite;
+}

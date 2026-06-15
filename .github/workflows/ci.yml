@@ -1,0 +1,138 @@
+name: CI
+
+# Merge gate: format, lint, types, front/back tests, and the specta bindings drift
+# check (08 §3/§6). Runs on macOS-14 — the primary dev/release platform and the
+# only host that can sign/notarize later (dev plan §1.1).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-test:
+    name: Lint · Type · Test · Drift
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Toolchains ──────────────────────────────────────────────────────────
+      - name: Enable corepack (pinned pnpm)
+        run: corepack enable
+
+      - name: Setup Node 20 (+ pnpm cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Setup Rust stable (honours rust-toolchain.toml)
+        run: |
+          rustup show active-toolchain || rustup toolchain install stable
+          rustup component add clippy rustfmt
+
+      - name: Cache cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('src-tauri/Cargo.toml') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Fast checks first (08 §6 order: fmt → clippy → check → tests → drift) ─
+      - name: Rust format check
+        working-directory: src-tauri
+        run: cargo fmt --all --check
+
+      - name: Rust clippy (warnings = errors)
+        working-directory: src-tauri
+        run: cargo clippy --all-targets -- -D warnings
+
+      # Cross-compile check for the Windows target (T116) — catches cfg-branch
+      # compile errors from macOS without a Windows runner. Best-effort: the
+      # authoritative Windows build is the windows-build-test job below.
+      - name: Cross-compile check (x86_64-pc-windows-msvc)
+        working-directory: src-tauri
+        continue-on-error: true
+        run: |
+          rustup target add x86_64-pc-windows-msvc
+          cargo check --target x86_64-pc-windows-msvc
+
+      - name: Frontend check (tsc + eslint + prettier)
+        run: pnpm check
+
+      - name: Boundary greps (no bare hex / tauri api only in src/ipc)
+        run: bash scripts/check-boundaries.sh
+
+      - name: Frontend tests (Vitest)
+        run: pnpm test
+
+      - name: Rust tests
+        working-directory: src-tauri
+        run: cargo test
+
+      # ── specta bindings drift gate (08 §6) ──────────────────────────────────
+      - name: Regenerate bindings
+        run: pnpm gen:types
+
+      - name: Fail if bindings drifted (forgot gen:types)
+        run: git diff --exit-code packages/shared/src/bindings.ts
+
+  # ── Windows matrix leg (T116, dev/05 §5) ─────────────────────────────────────
+  windows-build-test:
+    name: Windows · Lint · Type · Test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable corepack (pinned pnpm)
+        run: corepack enable
+      - name: Setup Node 20 (+ pnpm cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Setup Rust MSVC toolchain
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-msvc
+          rustup default stable-x86_64-pc-windows-msvc
+          rustup component add clippy rustfmt
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+      - name: cargo fmt --check
+        working-directory: src-tauri
+        run: cargo fmt --all --check
+      - name: cargo clippy (warnings = errors)
+        working-directory: src-tauri
+        run: cargo clippy --all-targets -- -D warnings
+      # The Windows Credential Manager round-trip tests (T114) need a real user
+      # keychain; they are #[ignore]d so the sandboxed runner stays green. Run
+      # them on a self-hosted Windows runner with `-- --ignored` for full parity.
+      - name: cargo test
+        working-directory: src-tauri
+        run: cargo test --all
+      - name: Frontend check + tests
+        shell: bash
+        run: |
+          pnpm check
+          pnpm test
+
+  e2e:
+    name: E2E (Playwright) — placeholder
+    runs-on: macos-14
+    # Enabled once the critical-path pages exist (T009 out-of-scope note). Manual
+    # trigger only for now so it never blocks the merge gate.
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Playwright e2e wired when critical paths land (v0.4)."

@@ -1,0 +1,54 @@
+# Weekly feature-build guard.
+#
+# The heavy real runtimes live behind OFF-by-default Cargo features
+# (live-net / local-embed / local-llm), so the merge-gate CI (ci.yml) never
+# compiles them. That blind spot let the local-embed ONNX path bit-rot against a
+# drifted `ort` prerelease — three compile errors that only surfaced on the first
+# `--features local-embed` build (fixed in CHANGELOG 1.0.1). This workflow compiles
+# every feature combination weekly (and on demand) so such rot is caught early,
+# not at release time.
+name: Feature Build
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1" # weekly, Monday 05:00 UTC
+
+permissions:
+  contents: read
+
+concurrency:
+  group: feature-build-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  feature-build:
+    name: Compile OFF-by-default feature paths
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust stable (honours rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install stable
+
+      # ── live-net: real IMAP/SMTP/OAuth transports ───────────────────────────
+      - name: Build --features live-net
+        run: cargo build --manifest-path src-tauri/Cargo.toml --features live-net --locked
+
+      # ── local-embed: real bge-m3 ONNX runtime (no model needed to COMPILE) ───
+      - name: Build --features live-net,local-embed
+        run: cargo build --manifest-path src-tauri/Cargo.toml --features live-net,local-embed --locked
+
+      - name: Compile feature-path tests (no run — Keychain prompts block headless)
+        run: cargo test --manifest-path src-tauri/Cargo.toml --features live-net,local-embed --locked --no-run
+
+      # ── local-llm: in-process GGUF runtime (llama-cpp-2 needs cmake to build) ─
+      - name: Install cmake (llama-cpp-2 build dependency)
+        run: brew install cmake || true
+
+      - name: Build --features live-net,local-embed,local-llm
+        run: cargo build --manifest-path src-tauri/Cargo.toml --features live-net,local-embed,local-llm --locked

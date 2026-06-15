@@ -1,0 +1,50 @@
+name: AI Safety
+
+# E2/E3 AI-safety harness (T104, AI_MODES_DESIGN §11). Seeds the labelled fixture
+# set, runs the safety rules, and gates on the misfire (< 5%) and sensitive-
+# downgrade (10–30%) metrics. Mock-only — no network, no API spend. Manual +
+# weekly so the gate stays green as E3/E4 rules evolve; the report feeds T107.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 3 * * 0" # Sundays 03:00 UTC
+
+jobs:
+  safety:
+    name: Misfire + sensitive-downgrade gate
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust stable
+        run: rustup show
+
+      - name: Cache cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            xtask/target
+          key: cargo-safety-${{ runner.os }}-${{ hashFiles('xtask/Cargo.toml') }}
+          restore-keys: cargo-safety-${{ runner.os }}-
+
+      - name: xtask unit tests (gate + runner + seed)
+        run: cargo test --manifest-path xtask/Cargo.toml safety
+
+      - name: Seed fixtures
+        run: cargo xtask safety-seed
+
+      - name: Run safety harness
+        run: cargo xtask safety-run --out safety-report.json
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: safety-report
+          path: safety-report.json
+
+      - name: Gate (misfire < 5%, downgrade 10–30%)
+        run: cargo xtask safety-gate --report safety-report.json

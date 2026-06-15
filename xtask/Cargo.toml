@@ -1,0 +1,23 @@
+# Bench/automation tooling (T055). Deliberately NOT a workspace member of the
+# app crate: it never ships, and keeping it standalone means its dependencies
+# (e.g. bundled SQLite) cannot disturb the product dependency graph or the
+# supply-chain gate scope (dev/05 §4 audits the shipping crate).
+[package]
+name = "xtask"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+publish = false
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+rand = "0.8"
+rusqlite = { version = "0.31", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sysinfo = "0.30"
+
+[profile.release]
+debug = true # keep symbols: bench numbers are profiled, not shipped

@@ -1,0 +1,8 @@
+{
+  "repo": "BAAI/bge-m3",
+  "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+  "asset": "onnx/model.onnx",
+  "sha256": "f84251230831afb359ab26d9fd37d5936d4d9bb5d1d5410e66442f630f24435b",
+  "bytes": 724923,
+  "pinnedAt": "2026-06-14T04:21:16.971Z"
+}

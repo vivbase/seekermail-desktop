@@ -1,0 +1,29 @@
+# Cross-platform line-ending normalization (T116). Checked-out text files use LF
+# so cargo fmt / clippy / prettier behave identically on macOS, Linux and Windows
+# and never trip CRLF-vs-LF diffs in CI.
+* text=auto eol=lf
+
+*.rs   text eol=lf
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.js   text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.sql  text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+
+# Binary assets — never normalize.
+*.png  binary
+*.jpg  binary
+*.ico  binary
+*.icns binary
+*.bmp  binary
+*.onnx binary
+*.gguf binary
+*.dmg  binary
+*.exe  binary

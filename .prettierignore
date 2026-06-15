@@ -1,0 +1,14 @@
+dist
+coverage
+node_modules
+pnpm-lock.yaml
+src-tauri/target
+src-tauri/icons
+src-tauri/gen
+# Generated bindings — do not reformat (T003)
+packages/shared/src/bindings.ts
+# Rust is formatted by `cargo fmt`, not Prettier
+src-tauri/**/*.rs
+# Human-authored project context — keep as written
+CLAUDE.md
+README.md

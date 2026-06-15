@@ -1,0 +1,5 @@
+# Repo-level cargo aliases (T055). `cargo xtask <subcommand>` runs the bench
+# tooling crate from anywhere in the repo without joining it to the app's
+# dependency graph (xtask/ is an independent crate, not a workspace member).
+[alias]
+xtask = "run --quiet --manifest-path xtask/Cargo.toml --"

@@ -1,0 +1,6 @@
+# Pin the Rust toolchain so local builds and CI (macOS-14) stay in lockstep.
+# clippy must match this channel exactly (08 §8 — "clippy parity").
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

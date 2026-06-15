@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "We couldn't sign in with those details.",
+  "err_auth_oauth_failed": "Authorization didn't complete.",
+  "err_auth_keychain_denied": "Access to your system Keychain was denied.",
+  "err_imap_connection_failed": "Can't reach the mail server right now.",
+  "err_imap_uid_validity_changed": "This mailbox needs a full resync.",
+  "err_smtp_send_failed": "The message couldn't be sent.",
+  "err_smtp_rate_limited": "Sending too fast — we'll slow down.",
+  "err_db_constraint": "That conflicts with existing data.",
+  "err_db_migration_failed": "We couldn't update the local database.",
+  "err_ai_provider_unreachable": "Your AI provider isn't responding.",
+  "err_ai_rate_limited": "Your AI provider is rate-limiting.",
+  "err_ai_context_too_long": "There's too much context for this model.",
+  "err_gte_index_corrupt": "The search index needs rebuilding.",
+  "err_gte_reindex_in_progress": "A rebuild is already running.",
+  "err_fs_permission_denied": "We don't have permission to that location.",
+  "err_fs_disk_full": "Your disk is full.",
+  "err_validation": "Please check the highlighted field.",
+  "err_not_found": "That item no longer exists.",
+  "err_forbidden": "That action isn't allowed.",
+  "err_internal": "Something went wrong on our side."
+}

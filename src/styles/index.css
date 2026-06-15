@@ -1,0 +1,34 @@
+/* Tailwind entry + design-system base. Imported once from main.tsx. */
+@import "./tokens.css";
+@import "./scripts.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--p3);
+    color: var(--p10);
+    font-family: var(--fb);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Section label style (root CLAUDE.md). */
+  .section-label {
+    font-family: var(--fu);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--p8);
+  }
+}

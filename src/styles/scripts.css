@@ -1,0 +1,47 @@
+/* Script-specific font stacks + RTL layout overrides (T008, 10 §8, root CLAUDE.md).
+ *
+ * The `script-*` class on <html> (set by applyLocale) selects a fallback family so
+ * non-Latin glyphs never tofu. The editorial Playfair/Lora faces cover Latin; other
+ * scripts fall back to the bundled Noto families. Setting html[dir="rtl"] mirrors
+ * the shell. Components use logical CSS properties so most mirroring is automatic;
+ * these rules cover the few directional structural cases. */
+
+html.script-cjk body {
+  font-family: "Noto Sans SC", "Noto Sans JP", "Noto Sans KR", var(--fb), sans-serif;
+}
+html.script-arabic body {
+  font-family: "Noto Naskh Arabic", system-ui, sans-serif;
+}
+html.script-hebrew body {
+  font-family: "Noto Sans Hebrew", system-ui, sans-serif;
+}
+html.script-devanagari body {
+  font-family: "Noto Sans Devanagari", system-ui, sans-serif;
+}
+html.script-bengali body {
+  font-family: "Noto Sans Bengali", system-ui, sans-serif;
+}
+html.script-cyrillic body {
+  font-family: "Noto Sans", var(--fb), sans-serif;
+}
+
+/* ── RTL structural overrides (ar / he / ur) ── */
+html[dir="rtl"] .app {
+  flex-direction: row-reverse;
+}
+html[dir="rtl"] .sidebar {
+  border-right: none;
+  border-left: 1px solid var(--p5);
+}
+html[dir="rtl"] .nav-item {
+  flex-direction: row-reverse;
+}
+html[dir="rtl"] .thread-meta {
+  flex-direction: row-reverse;
+}
+html[dir="rtl"] .compose-topbar {
+  flex-direction: row-reverse;
+}
+html[dir="rtl"] .panel-actions {
+  flex-direction: row-reverse;
+}
