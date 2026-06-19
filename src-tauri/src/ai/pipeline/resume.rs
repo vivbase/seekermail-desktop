@@ -8,8 +8,9 @@
 //!
 //! Re-queue note: rather than a parallel `ResumeContext` mpsc, we reuse the
 //! existing pipeline queue — simpler and it already carries restart recovery. The
-//! stored `pending_queries.answer` is the durable record; threading the answer
-//! into the generation prompt is a later refinement.
+//! stored `pending_queries.answer` is the durable record, and on resume the
+//! E2/E3 pipelines fold it back into the generation prompt via
+//! [`answer_instruction_for_mail`].
 
 use serde_json::json;
 
@@ -17,7 +18,7 @@ use super::worker::E2PipelineJob;
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
 use crate::storage::{map_sqlx_err, query_repo};
-use crate::util::{new_uuid, now_unix};
+use crate::util::{new_uuid, now_unix, truncate_chars};
 
 /// Apply a human answer to a pending query and resume processing (T096).
 pub async fn answer_query(state: &AppState, query_id: &str, answer: &str) -> AppResult<()> {
@@ -214,6 +215,33 @@ pub(crate) async fn write_fallback_draft(
     Ok(())
 }
 
+/// Upper bound on the operator's answer folded into the prompt. The task block
+/// is token-capped downstream (T079) too; this just keeps a runaway answer from
+/// crowding out the base instruction.
+const ANSWER_INSTRUCTION_MAX_CHARS: usize = 280;
+
+/// Build the optional draft-generation instruction that folds the operator's
+/// answer to an I3 proactive query back into the prompt (T096 resume
+/// threading). Returns `None` when the mail has no answered query, so the
+/// generation path for every other mail is unchanged.
+pub(super) async fn answer_instruction_for_mail(state: &AppState, mail_id: &str) -> Option<String> {
+    let answer = query_repo::answered_answer_for_mail(state.storage.db(), mail_id)
+        .await
+        .ok()
+        .flatten()?;
+    Some(format_answer_instruction(&answer))
+}
+
+/// Frame the human answer as a concise generation instruction. Pure, so it is
+/// unit-testable without a database.
+fn format_answer_instruction(answer: &str) -> String {
+    format!(
+        "Before this reply was drafted, the user answered a clarifying question with the \
+         following guidance: \"{}\". Honour it in the reply.",
+        truncate_chars(answer.trim(), ANSWER_INSTRUCTION_MAX_CHARS)
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -334,6 +362,39 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(drafts, 1);
+    }
+
+    #[tokio::test]
+    async fn answered_query_is_threaded_into_the_resumed_prompt() {
+        let (state, _rx) = AppState::test_state().await;
+        let id = setup(&state, "T1").await;
+        // Nothing to thread before the user answers.
+        assert!(answer_instruction_for_mail(&state, "m1").await.is_none());
+
+        answer_query(&state, &id, "Yes — a known vendor; confirm the renewal.")
+            .await
+            .unwrap();
+
+        let threaded = answer_instruction_for_mail(&state, "m1")
+            .await
+            .expect("the answer should thread into the prompt");
+        assert!(threaded.contains("Yes — a known vendor; confirm the renewal."));
+        assert!(threaded.contains("clarifying question"));
+    }
+
+    #[test]
+    fn answer_instruction_includes_and_caps_the_answer() {
+        let s = format_answer_instruction("Yes, a known vendor.");
+        assert!(s.contains("Yes, a known vendor."));
+        assert!(s.contains("clarifying question"));
+
+        // A runaway answer is capped to ANSWER_INSTRUCTION_MAX_CHARS chars.
+        let long = "x".repeat(1_000);
+        let capped = format_answer_instruction(&long);
+        assert_eq!(
+            capped.chars().filter(|&c| c == 'x').count(),
+            ANSWER_INSTRUCTION_MAX_CHARS
+        );
     }
 
     #[tokio::test]

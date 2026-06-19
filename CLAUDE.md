@@ -15,7 +15,7 @@ This is the **code repository** for SeekerMail. It is public and pushed to GitHu
 
 ## What This Project Is
 
-A **local-first desktop email client** built on **Tauri 2.x + Rust + React 18 (TypeScript)**, with a local semantic vector index (**GTE**, on LanceDB). Each email account is an autonomous **AI agent ("digital employee")** with a role and an authorization level (`Full Auto` / `Semi-Auto` / `Manual Only`). Treat every output as production-quality — no placeholder, "test", "demo", "TODO", or lorem ipsum copy.
+A **local-first desktop email client** built on **Tauri 2.x + Rust + React 18 (TypeScript)**, with a local semantic vector index (**GTE** — today a brute-force cosine over a JSON snapshot in `src-tauri/src/vector/`; a LanceDB-class ANN store is the scaling target, not the current implementation). Each email account is an autonomous **AI agent ("digital employee")** with a role and an authorization level (`Full Auto` / `Semi-Auto` / `Manual Only`). Treat every output as production-quality — no placeholder, "test", "demo", "TODO", or lorem ipsum copy.
 
 ## Stack & Where Code Goes
 

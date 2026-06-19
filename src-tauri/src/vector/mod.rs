@@ -376,4 +376,119 @@ mod tests {
             AppError::Validation(_)
         ));
     }
+
+    fn row_dated(id: &str, acc: &str, date_sent: i64) -> VectorRow {
+        let mut r = row(id, acc, 1.0);
+        r.date_sent = date_sent;
+        r
+    }
+
+    #[test]
+    fn ann_respects_account_and_date_filters() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = VectorStore::open(dir.path()).unwrap();
+        store
+            .upsert(&[
+                row_dated("m1", "acc-a", 1_000),
+                row_dated("m2", "acc-b", 2_000),
+                row_dated("m3", "acc-a", 3_000),
+            ])
+            .unwrap();
+        let q = vec![1.0f32; VECTOR_DIM];
+
+        // Account filter keeps only acc-a's two chunks.
+        let hits = store
+            .ann(
+                &q,
+                10,
+                AnnFilter {
+                    account_id: Some("acc-a".into()),
+                    ..AnnFilter::default()
+                },
+            )
+            .unwrap();
+        assert_eq!(hits.len(), 2);
+        assert!(hits.iter().all(|h| h.mail_id == "m1" || h.mail_id == "m3"));
+
+        // Inclusive date window [2_000, 3_000] keeps m2 and m3.
+        let hits = store
+            .ann(
+                &q,
+                10,
+                AnnFilter {
+                    date_from: Some(2_000),
+                    date_to: Some(3_000),
+                    ..AnnFilter::default()
+                },
+            )
+            .unwrap();
+        let ids: std::collections::HashSet<&str> =
+            hits.iter().map(|h| h.mail_id.as_str()).collect();
+        assert_eq!(ids, ["m2", "m3"].into_iter().collect());
+    }
+
+    fn attachment_row(attachment_id: &str, mail_id: &str, idx: i32) -> VectorRow {
+        VectorRow {
+            chunk_id: format!("{attachment_id}:{idx}"),
+            mail_id: mail_id.into(),
+            chunk_index: idx,
+            account_id: "acc".into(),
+            from_email: "a@x.com".into(),
+            date_sent: 1000,
+            subject: "s".into(),
+            snippet: "sn".into(),
+            embedding_model: "bge-m3".into(),
+            vector: vec![1.0; VECTOR_DIM],
+        }
+    }
+
+    #[test]
+    fn attachment_chunks_are_independent_of_body_chunks() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = VectorStore::open(dir.path()).unwrap();
+        // A mail body chunk + two attachment chunks sharing the mail_id.
+        store.upsert(&[row("m1", "acc", 1.0)]).unwrap();
+        store
+            .upsert_attachment_chunks(
+                "att1",
+                &[
+                    attachment_row("att1", "m1", 0),
+                    attachment_row("att1", "m1", 1),
+                ],
+            )
+            .unwrap();
+        assert_eq!(store.stats().unwrap().total_vectors, 3);
+
+        // Re-embedding the mail body must not wipe the attachment's chunks.
+        store.upsert(&[row("m1", "acc", 0.5)]).unwrap();
+        assert_eq!(
+            store.stats().unwrap().total_vectors,
+            3,
+            "body re-upsert keeps attachment chunks"
+        );
+
+        // Deleting the attachment removes only its chunks; the body survives.
+        store.delete_attachment_chunks("att1").unwrap();
+        assert_eq!(store.stats().unwrap().total_vectors, 1);
+        assert!(store.contains_mail("m1"));
+    }
+
+    #[test]
+    fn rebuild_replaces_all_rows_and_stamps_time() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = VectorStore::open(dir.path()).unwrap();
+        // A freshly opened store has never been rebuilt.
+        assert!(store.stats().unwrap().last_rebuild_at.is_none());
+        store.upsert(&[row("m1", "acc", 1.0)]).unwrap();
+
+        let stats = store
+            .rebuild([row("m2", "acc", 1.0), row("m3", "acc", 1.0)].into_iter())
+            .unwrap();
+        assert_eq!(stats.total_vectors, 2);
+        assert!(stats.last_rebuild_at.is_some());
+        // The rebuild stream is authoritative: the old row is gone.
+        assert!(!store.contains_mail("m1"));
+        assert!(store.contains_mail("m2"));
+        assert!(store.contains_mail("m3"));
+    }
 }

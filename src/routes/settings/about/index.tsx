@@ -23,7 +23,7 @@ export default function AboutSettings() {
       <dl className="divide-y divide-divider rounded-card border border-divider bg-surface px-4">
         <MetaRow term={t("about_version")} value={APP_VERSION} mono />
         <MetaRow term="Platform" value="Tauri + Rust + React 18" />
-        <MetaRow term="Storage" value="Local (LanceDB + SQLite)" />
+        <MetaRow term="Storage" value="Local (SQLite + vector index)" />
       </dl>
 
       {/* Statements */}

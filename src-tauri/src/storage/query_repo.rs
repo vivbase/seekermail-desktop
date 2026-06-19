@@ -188,6 +188,27 @@ pub async fn mail_has_active_query(db: &Db, mail_id: &str) -> AppResult<bool> {
     Ok(n > 0)
 }
 
+/// The human answer to the most recently answered proactive query for a mail,
+/// when one exists and is non-empty (T096 resume threading). The E2/E3
+/// pipelines fold this back into the regenerated draft prompt so the operator's
+/// clarifying answer actually shapes the reply.
+pub async fn answered_answer_for_mail(db: &Db, mail_id: &str) -> AppResult<Option<String>> {
+    let row = sqlx::query(
+        "SELECT answer FROM pending_queries \
+         WHERE mail_id = ? AND status = 'answered' AND answer IS NOT NULL \
+         ORDER BY answered_at DESC, created_at DESC LIMIT 1",
+    )
+    .bind(mail_id)
+    .fetch_optional(db.pool())
+    .await
+    .map_err(map_sqlx_err)?;
+    Ok(row.and_then(|r| {
+        let answer: String = r.get("answer");
+        let trimmed = answer.trim();
+        (!trimmed.is_empty()).then(|| trimmed.to_string())
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -268,5 +289,50 @@ mod tests {
         assert!(!sender_has_recent_query(&db, "a", "carol@x.com", "T1")
             .await
             .unwrap());
+    }
+
+    #[tokio::test]
+    async fn answered_answer_for_mail_picks_latest_nonempty() {
+        let db = db_with_account().await;
+        let now = now_unix();
+        sqlx::query(
+            "INSERT INTO mails (id, account_id, message_id, from_email, to_addrs, date_sent, \
+                 date_received, created_at, updated_at) \
+             VALUES ('m1','a','<m1>','bob@x.com','[]', ?, ?, ?, ?)",
+        )
+        .bind(now)
+        .bind(now)
+        .bind(now)
+        .bind(now)
+        .execute(db.pool())
+        .await
+        .unwrap();
+
+        // No answered query yet → None.
+        assert!(answered_answer_for_mail(&db, "m1").await.unwrap().is_none());
+
+        let q = insert_query(&db, &new_q("T1", Some("m1"), 3))
+            .await
+            .unwrap();
+        // Still pending → None.
+        assert!(answered_answer_for_mail(&db, "m1").await.unwrap().is_none());
+
+        // Once answered, the stored answer is returned.
+        sqlx::query(
+            "UPDATE pending_queries SET status='answered', answer=?, answered_at=? WHERE id=?",
+        )
+        .bind("Yes, a known vendor — confirm the renewal.")
+        .bind(now + 10)
+        .bind(&q.id)
+        .execute(db.pool())
+        .await
+        .unwrap();
+        assert_eq!(
+            answered_answer_for_mail(&db, "m1")
+                .await
+                .unwrap()
+                .as_deref(),
+            Some("Yes, a known vendor — confirm the renewal.")
+        );
     }
 }

@@ -25,6 +25,8 @@ pub mod decision_type {
     pub const GENERATION_FAILED: &str = "generation_failed";
     pub const NEEDS_REPLY_CHECK: &str = "needs_reply_check";
     pub const STYLE_UPDATED: &str = "style_updated";
+    /// An agent answered a message in the shared TEAM channel (F_I5).
+    pub const TEAM_REPLY: &str = "team_reply";
 }
 
 /// One `ai_decisions` row as the UI consumes it (F_E7 §4.4): the full audit

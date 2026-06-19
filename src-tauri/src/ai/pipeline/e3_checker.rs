@@ -5,8 +5,9 @@
 //! 2. **Recipients** — no CC added when the original had none.
 //! 3. **Content** — no monetary figures the original mail never mentioned
 //!    (shares the E4 amount regex).
-//! 4. **Style** — `check_style_drift` (T076 stub: always within bounds; the
-//!    real scorer activates automatically when T076 lands).
+//! 4. **Style** — `check_style_drift` (T076): a deterministic comparison
+//!    against the account's learned style profile (greeting / sign-off habit,
+//!    all-caps shouting). Only runs when a profile exists.
 //! 5. **Blocked terms** — built-in absolutes (`guarantee`/`absolutely` plus
 //!    the spec's CJK equivalents via `\u{..}` escapes) + user terms from
 //!    `app_settings['ai.e3_blocked_terms']`.
@@ -115,7 +116,8 @@ pub fn check_draft(
         violations.push(CheckViolation::UnpromptedFigures);
     }
 
-    // 4) Style drift (T076 stub today — wired so the real scorer activates).
+    // 4) Style drift (T076): deterministic comparison against the learned
+    // profile, only when one exists for the account.
     if let Some(profile) = style {
         if !check_style_drift(draft_body, profile).within_bounds {
             violations.push(CheckViolation::StyleDrift);
@@ -239,6 +241,37 @@ we will follow up with the next steps this week.\n\nBest,\nMaya";
         assert!(check_draft(&echo, 0, &mail, None, &[]).contains(&CheckViolation::SelfReference));
         assert!(
             !check_draft(GOOD_DRAFT, 0, &mail, None, &[]).contains(&CheckViolation::SelfReference)
+        );
+    }
+
+    #[test]
+    fn style_drift_against_profile_is_a_violation() {
+        use crate::ai::style::{StyleProfileJson, StyleSummary};
+        let profile = StyleProfileJson {
+            version: 1,
+            account_id: "acc".into(),
+            generated_at: 0,
+            summary: StyleSummary {
+                overall_tone: "Courteous.".into(),
+                opening_patterns: vec!["Hi {name},".into()],
+                closing_patterns: vec!["Best regards,".into()],
+                sentence_length: "short".into(),
+                vocabulary: "plain".into(),
+                format_habit: "short paragraphs".into(),
+            },
+            sample_snippets: Vec::new(),
+            pinned: false,
+        };
+        let mail = orig("Could you confirm the renewal terms?");
+
+        // On-style draft (greeting + sign-off) passes.
+        assert!(!check_draft(GOOD_DRAFT, 0, &mail, Some(&profile), &[])
+            .contains(&CheckViolation::StyleDrift));
+
+        // A bare draft with no greeting/sign-off drifts from the learned style.
+        let bare = "The renewal terms are confirmed and we will proceed with the updated plan.";
+        assert!(
+            check_draft(bare, 0, &mail, Some(&profile), &[]).contains(&CheckViolation::StyleDrift)
         );
     }
 

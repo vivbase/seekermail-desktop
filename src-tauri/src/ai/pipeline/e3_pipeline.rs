@@ -148,9 +148,14 @@ async fn demote_before_generation(
         );
         return Ok(E3Outcome::Demoted { draft_id: None });
     }
-    let draft =
-        crate::ai::draft::engine::generate_and_store(state, &mail.id, TriggerMode::E2Semi, None)
-            .await?;
+    let instruction = super::resume::answer_instruction_for_mail(state, &mail.id).await;
+    let draft = crate::ai::draft::engine::generate_and_store(
+        state,
+        &mail.id,
+        TriggerMode::E2Semi,
+        instruction.as_deref(),
+    )
+    .await?;
     // generate_and_store already emitted draft:ready; record the downgrade
     // without a second event.
     state
@@ -299,10 +304,16 @@ pub async fn run_e3_for_mail(
         return Ok(E3Outcome::Skipped);
     }
 
-    // 10) Generate through the shared path (E3_auto mode).
-    let draft =
-        crate::ai::draft::engine::generate_and_store(state, mail_id, TriggerMode::E3Auto, None)
-            .await?;
+    // 10) Generate through the shared path (E3_auto mode). On a resumed mail,
+    // fold the operator's answer to the proactive query back in (T096).
+    let instruction = super::resume::answer_instruction_for_mail(state, mail_id).await;
+    let draft = crate::ai::draft::engine::generate_and_store(
+        state,
+        mail_id,
+        TriggerMode::E3Auto,
+        instruction.as_deref(),
+    )
+    .await?;
 
     // 11) Six-point self-check (pure).
     let blocked_terms: Vec<String> = SettingRepo::new(db)

@@ -127,10 +127,17 @@ pub async fn run_e2_for_mail(
         return Ok(None);
     }
 
-    // 7) Generate through the shared path (insert + audit + draft:ready).
-    let draft =
-        crate::ai::draft::engine::generate_and_store(state, mail_id, TriggerMode::E2Semi, None)
-            .await?;
+    // 7) Generate through the shared path (insert + audit + draft:ready). On a
+    // resumed mail, fold the operator's answer to the proactive query back in
+    // (T096); a non-resumed mail has no answered query, so this is `None`.
+    let instruction = super::resume::answer_instruction_for_mail(state, mail_id).await;
+    let draft = crate::ai::draft::engine::generate_and_store(
+        state,
+        mail_id,
+        TriggerMode::E2Semi,
+        instruction.as_deref(),
+    )
+    .await?;
     Ok(Some(draft))
 }
 
