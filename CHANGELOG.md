@@ -8,12 +8,110 @@ uses [Conventional Commits](https://www.conventionalcommits.org/).
 
 Wires the previously-stubbed mail pipeline end-to-end: the app now **fetches real
 IMAP mail and renders it**. Before this, the default build shipped offline transports
-*and* the `live-net` build's IMAP session was a stub *and* the mail-list read commands
+_and_ the `live-net` build's IMAP session was a stub _and_ the mail-list read commands
 were never implemented — so the inbox was always empty (`sync_state.last_sync_result =
 network_error`, 0 mails) even with a configured account.
 
+### Fixed
+
+- **fix(attachment): address attachment bytes by a real MIME part index (not the row UUID).**
+  The deferred download passed the attachment's database UUID as the IMAP part specifier
+  (`FETCH BODY.PEEK[<uuid>]`), which is never valid — so attachment download could not locate
+  the bytes against a real server. The parser now records each attachment's 0-based index within
+  the message's `attachments()` iterator (new column `attachments.part_index`, migration `016`),
+  and the live IMAP session fetches the full message and slices out that part by index — correct
+  for any MIME nesting, without re-deriving fragile `BODYSTRUCTURE` part numbers. The parser also
+  now stores the **real `content_type`** (e.g. `application/pdf`) instead of hardcoding
+  `application/octet-stream`, so extraction routing no longer depends on the filename extension
+  alone. New tests in `imap/parser.rs` lock in the content-type/part-index extraction and the
+  exact byte-slicing the download relies on. (Knowledge base `docs/analysis/30_*` G2.)
+
+- **fix(send): the offline build refuses to send instead of silently succeeding.**
+  With `live-net` off, `transport_send` logged "message accepted by offline transport" and returned
+  `Ok(())` — so a feature-less `cargo build` produced a client that _appeared_ to send while nothing
+  left the machine. A real feature-less binary now returns `SMTP_SEND_FAILED` ("nothing was
+  transmitted; rebuild with --features live-net"); the in-crate test stub still accepts (no network)
+  so the cancel window, SENT persistence, and `mail:new` event stay exercisable in unit tests. The
+  shipped product is unaffected (it is always built with `--features live-net`). (Knowledge base
+  `docs/analysis/30_*` G1.)
+
+### Docs
+
+- **docs(readme): backfill the code-repo `README.md` to match reality.** The status line no longer
+  claims "product code has not started yet" (90k+ lines exist; version `0.1.0`); the tech-stack
+  table describes the GTE index accurately (local cosine snapshot today; LanceDB-class ANN as the
+  scaling target) instead of asserting LanceDB; the Build & Run section lists the real `pnpm`/`cargo`
+  workflow and the `--features live-net` requirement. A "NOT RELEASED — forward-looking draft" banner
+  was added to `docs/releases/v1.0.0_ga_release_notes.md` (and its stale "Deals" section, dropped by
+  migration `014`, is flagged). The stale `net/live.rs` "remaining binding point" header was corrected.
+
+### Changed
+
+- **change(account): Gmail mailbox import moves to IMAP + App Password; mailbox OAuth is now
+  Microsoft/Outlook only** (knowledge base `../seekermail-desktop-2026/docs/analysis/29_*`). Google's
+  `https://mail.google.com/` is a _restricted_ OAuth scope (annual paid CASA security assessment to
+  ship publicly), so Gmail no longer uses OAuth here — users add Gmail via **IMAP / SMTP + a Google
+  App Password** (autodiscover fills `imap.gmail.com` / `smtp.gmail.com`). `Provider::is_oauth()` is
+  now `Outlook`-only; `account/oauth.rs` drops the Gmail authorize/token endpoints + client-id; the
+  Add-Account wizard's OAuth protocol option is relabeled **"Microsoft / Outlook"** and the OAuth
+  authorize step shows only for Outlook. "Sign in with Google" remains **identity-only** (SeekerMail
+  ID, scopes `openid email profile`) and is unaffected — so scaling carries no Google restricted-scope
+  assessment. PKCE primitives (`new_pkce`) were extracted to a neutral `account/pkce.rs` shared by the
+  identity, recommended-provider, and Outlook flows. Follow-up (analysis/29 §7): migrate the Outlook
+  redirect from the `seekermail://` custom scheme to a `127.0.0.1` loopback listener (mirroring the
+  identity flow) for robustness + dev-testability.
+
+- **fix(account): mailbox OAuth callback `code` is now percent-decoded (M17)** — `parse_mail_callback`
+  url-decodes both `code` and `state` (matching the identity loopback path). Microsoft authorization
+  codes commonly contain `/` (arriving `%2F`); undecoded, the token endpoint received a
+  double-encoded `%252F` and the exchange failed. (Knowledge base
+  `../seekermail-desktop-2026/docs/analysis/28` M17.)
+
 ### Added
 
+- **feat(identity): decouple SeekerMail ID from mailboxes (A6 rewrite)** — the SeekerMail ID is
+  now an **independent, optional identity** created by signing in with Google, with **no link to
+  imported mailboxes** (the "binding mailbox" model is retired). Signing out of the SeekerMail ID
+  (`sign_out_seekermail`) now **clears only the local identity** — mailboxes and local mail are
+  untouched — and removing a mailbox (`delete_account`) is allowed even for the **last** one (zero
+  mailboxes is a valid state; the old "can't remove your only account" dead-end is gone). Adds
+  migration `015_seekermail_id.sql` (single-row `seekermail_id` table, **no** `is_id_binding` on
+  `accounts`), `storage/identity_repo.rs`, `commands/identity.rs` (`get_seekermail_id`, redefined
+  `sign_out_seekermail`, `set_marketing_consent`, and stubbed `begin/complete_google_signin`
+  pending the cloud backend — T121), and the `SeekerMailId` type. Frontend: rewritten
+  `ipc/queries/identity.ts`, an independent `SeekerMailIdCard` (sign in / sign out + marketing
+  opt-in), and `AccountList`/`AccountRow` with the binding UI removed. A consented, **opt-in
+  marketing-contact email** (default OFF) is captured at the identity layer; mail content,
+  contacts, and other mailbox addresses are never used. Specs:
+  `../seekermail-desktop-2026/docs/function list/F_A6_seekermail_id.md` (rewritten) and
+  `../seekermail-desktop-2026/docs/analysis/26_identity_decoupling_and_email_marketing_foundation.md`.
+  Run `pnpm gen:types` to regenerate `bindings.ts`.
+
+- **feat(settings): adjustable UI text size (Appearance → Text Size)** (analysis 25). A new
+  Appearance control scales the whole interface proportionally through a single `--ui-scale`
+  CSS variable (`#root { zoom: var(--ui-scale) }`) — five steps from Small (90%) to Largest
+  (150%). Because every element scales together, the layout cannot break — important because
+  the codebase is px-heavy, so text-only resizing would have overflowed fixed-height rows. The
+  preference persists to `app_settings.ui.font_scale` and is injected as
+  `window.__INITIAL_FONT_SCALE__` before first paint (FOUC guard), mirroring the dark-theme
+  mechanism. Adds `src/lib/fontScale.ts`, `src/font-scale-boot.ts`, and Rust `initial_font_scale`;
+  wired into the settings query hooks, the Appearance page, and the `en` settings locale.
+  Keyboard shortcuts `Cmd/Ctrl +` / `-` / `0` step and reset the scale app-wide
+  (`useFontScaleShortcuts`, mounted in `AppShell`). A second, independent **Reading text size**
+  layer (`ui.reading_font_scale`, `--reading-scale`) scales only the sanitised email body —
+  adjustable from Appearance and from an inline A−/A+ stepper in the reading view
+  (`ReadingSizeControl`); adds `src/lib/readingScale.ts`.
+- **feat(agent): Team channel AI replies (F_I5)** (`src-tauri/src/ai/team_chat.rs`). Agents
+  now answer in the Agent-IM TEAM channel. When a human posts a text message,
+  `post_im_message` spawns a detached task that picks a responder (`@DisplayName` mention →
+  that agent, else the primary account), runs a local GTE semantic search over the agent's
+  mailbox, packs any relevant hits into the prompt, calls the account's BYO provider
+  (`Capability::Summarize` routing), and posts the reply back to the channel. With no
+  relevant mail it answers as a general assistant; with no provider configured it posts a
+  helpful "connect an AI model" note instead of staying silent. The composer gains a
+  "replying…" indicator and faster polling while awaiting the answer (`TeamChannel.tsx`,
+  `ChannelInput.tsx`, `team.json`). Before this, a Team message got **no response** —
+  `post_im_message` only stored it and nothing triggered an agent reply.
 - **feat(net): real `LiveImapFactory` streaming session** (`src-tauri/src/net/live.rs`).
   Implements `ImapSession` over `async-imap` 0.9 — TLS connect + `LOGIN`, `SELECT INBOX`,
   `UID SEARCH` (incremental `UID n:*` and `SINCE`), and `UID FETCH BODY.PEEK[]` —
@@ -30,9 +128,88 @@ network_error`, 0 mails) even with a configured account.
 - **chore(scripts): `pnpm tauri:dev` / `pnpm tauri:build`** pass `--features live-net`, so
   shipped builds include the network transports. The Cargo default stays offline to keep
   unit tests fast and preserve the egress-compliance contract.
+- **feat(ai): cloud-provider model picker + `list_cloud_models` command.** The Add Cloud
+  Provider sheet's free-text **Model** field is now a dropdown: a curated per-vendor
+  shortlist, a **Load models** button that pulls the live catalog from the provider
+  (`GET /v1/models` via the new `list_cloud_models` Tauri command, backed by
+  `openai::list_models` / `AnthropicClient::list_models`), and a **Custom** option for any
+  model id. Picking a real model — rather than mistyping one (e.g. `GPT5.5` instead of the
+  real id `gpt-5.5`) — is what unblocks the connection test and lets a key be saved. New
+  `ListCloudModelsParams` DTO and `useListCloudModels` hook; the step-4 model field is now
+  a read-only confirmation of the tested model.
+- **feat(ai): one-click presets for the top global model providers.** The cloud-provider
+  picker now offers OpenAI, Anthropic, Google Gemini, xAI Grok, DeepSeek, Alibaba Qwen,
+  Mistral, Moonshot Kimi, Zhipu GLM and Meta Llama (plus Azure OpenAI and a generic
+  OpenAI-compatible option). Choosing a preset prefills the vendor's API base URL and a
+  curated current-model shortlist; everything else (live `Load models`, the connection
+  test, and reply generation) flows through the existing OpenAI/Anthropic adapters. Defined
+  by `CLOUD_PRESETS` in `AddCloudProviderSheet.tsx`.
+- **fix(ai): version-tolerant endpoint URLs for OpenAI-compatible vendors.** The OpenAI
+  adapter built `{base}/v1/chat/completions` and `{base}/v1/models` unconditionally, which
+  doubled the version for vendors whose base URL already carries one — Gemini
+  (`/v1beta/openai`), Qwen (`/compatible-mode/v1`), Zhipu (`/api/paas/v4`), xAI (`/v1`).
+  `openai_endpoint` now appends the resource directly when the base path already has a
+  `/v<digit>` segment and inserts `/v1` only for plain hosts (`https://api.openai.com`), so
+  every preset's documented base URL resolves correctly.
+
+### Changed
+
+- **refactor(i18n): rename the "Authorization Level" / "Global Mode" UI label to "AI Reply Mode".**
+  The per-account reply-mode control (Manual Only / Semi-Auto / Full Auto) already lives where the
+  spec puts it — the `AuthLevelSection` under **Settings → AI**, mirrored by the Agents-page roster
+  and `RoleEditor` — but it surfaced as "Authorization Level(s)" / "Global Mode", which didn't read
+  as the semi-/full-auto _reply_ feature users were looking for. Renamed user-facing strings only
+  (`en/agents.json` `agents_global_mode`, `agents_auth_level_label`, `agents_page_subtitle`;
+  `en/aiDrafts.json` `auth_level_section_title`, `auth_level_section_desc`; `en/common.json`
+  `agents_desc`). Code identifiers (`authLevel`, `AuthLevelSection`), IPC, and the Rust backend are
+  unchanged, and the tier values (Manual / Semi-Auto / Full Auto) are unchanged. Brings the app in
+  line with the prototype/spec reconciliation recorded in
+  `../seekermail-desktop-2026/docs/analysis/23`.
 
 ### Fixed
 
+- **fix(account): OAuth mailboxes can finish authorizing and import mail** (`account/oauth.rs`,
+  `commands/accounts.rs`, `lib.rs`, `routes/settings/accounts/AddAccountWizard.tsx`). The
+  Gmail/Outlook grant had no completion path: nothing caught the `seekermail://oauth/callback`
+  redirect and the Add-Account wizard advanced without ever calling `complete_oauth_flow`, so the
+  token never reached the Keychain and the account sat at `RE-AUTHORIZE` / 0 MB — and a
+  credential-less account could be "created" from just an email. Added a `tauri-plugin-deep-link`
+  handler (routes `/oauth/callback` → `oauth:mail_callback`, `/oauth/recommended` →
+  `oauth:callback`); `begin_oauth_flow` now returns the CSRF `state`; the wizard gained an
+  authorize step (deep-link auto-complete + manual code-paste fallback) that blocks until the grant
+  completes; and `complete_oauth_flow` clears the auth-error and re-arms the account's poll so mail
+  imports immediately. Half-authorized accounts are cleaned up on cancel. NOTE: the deep-link
+  auto-callback needs a packaged build + a real `SEEKERMAIL_GOOGLE_CLIENT_ID`/
+  `SEEKERMAIL_MICROSOFT_CLIENT_ID` to verify end-to-end.
+- **fix(account): "Sign out of SeekerMail" now actually signs out** (`src-tauri/src/account/mod.rs`,
+  `src-tauri/src/commands/accounts.rs`, `src/ipc/queries/identity.ts`,
+  `src/components/account/SeekerMailIdCard.tsx`). The full sign-out looped `delete_account` over
+  every mailbox, but that command refuses to remove the **last** account — so the binding mailbox
+  never deleted, the app never reached zero accounts, and the user was stuck signed in. Added a
+  dedicated `sign_out_seekermail` command + `AccountService::sign_out` that disconnects every
+  mailbox (ordinary first, binding last), bypassing the last-account guard that still protects the
+  per-mailbox delete. The confirm dialog now closes once the call settles (not before) and surfaces
+  an error if it fails, instead of closing instantly over a silent failure.
+- **fix(ai): connection test now verifies current reasoning models (e.g. `gpt-5.5`).**
+  `verify_ai_provider`'s OpenAI/Anthropic probe issued a one-token chat completion carrying
+  `max_tokens` + `temperature`, which current reasoning models reject (they require
+  `max_completion_tokens` and the default temperature) — so even a correct model id failed
+  the test with a 4xx. The probe now verifies by reading the model catalog
+  (`GET /v1/models`) and confirming the chosen id is present: no chat-only parameters, no
+  token spend. Minimal OpenAI-compatible gateways without a `/v1/models` route fall back to
+  the original chat probe, so they still verify; `Auth` / `RateLimited` / `Unreachable`
+  stay conclusive.
+- **fix(ai): reply generation works with reasoning models on every endpoint.** The OpenAI
+  chat path (`chat` / `chat_stream`, which also serves Azure / Gemini / OpenAI-compatible
+  gateways) sent `max_tokens` + `temperature` unconditionally — rejected by current
+  reasoning models (`gpt-5.x`, the o-series), which require `max_completion_tokens` and the
+  default temperature. The request shape is now chosen per model and **adapts on a 400**:
+  when the endpoint reports an incompatible parameter, it renames `max_tokens` ↔
+  `max_completion_tokens` and/or drops `temperature`, then retries (bounded by
+  `MAX_PARAM_RETRIES`). So a reasoning model on real OpenAI and a legacy gateway that only
+  accepts `max_tokens` both succeed from one code path. The 400 body is inspected solely to
+  choose the adjustment and never enters an error payload or a log line (09 §5). Anthropic
+  (Messages API) and local Ollama already used their correct parameters and are unchanged.
 - **fix(mail): HTML email no longer renders as a grid of empty boxes.** `SanitizedMail`
   forced a `1px` border on every `<td>`/`<th>`, so marketing mail — which nests tables
   purely for layout — drew a box around every spacer / image cell (and blocked remote
@@ -84,7 +261,7 @@ release binary.
   enumerates every `[[bin]]` and tried to copy the gated helper into the `.app`
   (it isn't built without `specta-export`), failing the bundle; the bundler ignores
   examples. `pnpm gen:types` now runs `cargo run --features specta-export --example
-  gen_bindings` — bindings output is byte-identical (drift check passes). Refs updated
+gen_bindings` — bindings output is byte-identical (drift check passes). Refs updated
   in `package.json`, `Cargo.toml`, `CONTRIBUTING.md`. With this,
   `tauri build --bundles app` produces `SeekerMail.app` (ad-hoc/unsigned, runs locally).
   `package.default-run` + `tauri.conf.json > mainBinaryName = "seekermail"` are also set
@@ -103,7 +280,7 @@ release binary.
   signature + notarization — no signing identity on the build host, so this needs the
   Apple Developer credentials. The updater-tarball signing key (`TAURI_SIGNING_PRIVATE_KEY`,
   separate from Apple signing) is also unset, so `--bundles app` exits non-zero at the
-  updater step *after* the `.app` is already written.
+  updater step _after_ the `.app` is already written.
 - **Model assets absent** — real `local-embed` needs the bge-m3 ONNX model; `local-llm`
   needs a `.gguf` model **and** `cmake`. Both run as deterministic offline fakes until
   the assets are placed.
