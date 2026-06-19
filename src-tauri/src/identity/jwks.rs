@@ -256,7 +256,13 @@ lQIDAQAB
 
     #[test]
     fn rejects_expired_token() {
-        let token = make_token("client-123", "https://accounts.google.com", now() - 10, "n");
+        // Expired well beyond the validator's default 60 s clock-skew leeway.
+        let token = make_token(
+            "client-123",
+            "https://accounts.google.com",
+            now() - 7200,
+            "n",
+        );
         assert!(verify_id_token_with_key(&token, &pub_key(), "client-123", Some("n")).is_err());
     }
 

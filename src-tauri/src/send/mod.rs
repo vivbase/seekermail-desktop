@@ -398,6 +398,10 @@ mod tests {
         assert!(res.message_id.contains("@x.com"));
         assert!(!res.message_id.contains("seekermail.local"));
 
+        // Let the spawned task reach its cancel-window timer (real time) before we
+        // fast-forward it; otherwise `advance` fires nothing, the task then sleeps
+        // the full real window, and it outlasts the poll loop below.
+        tokio::time::sleep(Duration::from_millis(150)).await;
         tokio::time::pause();
         tokio::time::advance(Duration::from_secs(SEND_CANCEL_WINDOW_SECS + 1)).await;
         tokio::time::resume();

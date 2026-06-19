@@ -178,7 +178,11 @@ mod tests {
     #[tokio::test]
     async fn get_set_roundtrip_for_allowed_key() {
         let (state, _rx) = AppState::test_state().await;
-        assert_eq!(do_get_setting(&state, "ui.theme").await.unwrap(), None);
+        // `ui.theme` ships seeded to the default by migration 001_init.
+        assert_eq!(
+            do_get_setting(&state, "ui.theme").await.unwrap().as_deref(),
+            Some("\"system\"")
+        );
         do_set_setting(&state, "ui.theme", "\"dark\"")
             .await
             .unwrap();

@@ -267,9 +267,10 @@ mod tests {
         let pool = state.storage.db().pool();
         sqlx::query(
             "INSERT INTO accounts (id, email, display_name, provider, color_token, badge_label, created_at, updated_at) \
-             VALUES (?, 'w@example.com', 'W', 'imap', 'slate', 'W', 0, 0)",
+             VALUES (?, ?, 'W', 'imap', 'slate', 'W', 0, 0)",
         )
         .bind(account_id)
+        .bind(format!("{account_id}@example.com"))
         .execute(pool)
         .await
         .unwrap();

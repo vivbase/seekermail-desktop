@@ -100,6 +100,9 @@ mod tests {
         let (state, _rx) = AppState::test_state().await;
         let id = "11111111-1111-1111-1111-111111111111";
         let uuid = parse_uuid(id).unwrap();
+        // The macOS Keychain persists across runs; clear any residue so the
+        // "no expiry stored" precondition holds deterministically.
+        let _ = state.keychain.delete_all(&uuid);
         // No expiry stored → IMAP-style account, never needs refresh.
         assert!(!needs_refresh(&state, id).await.unwrap());
 
@@ -111,6 +114,8 @@ mod tests {
             CredKind::OAuthExpiry,
             &Secret::new((now_unix() + 100).to_string()),
         );
+        // Leave the Keychain clean so reruns and the sibling test stay isolated.
+        let _ = state.keychain.delete_all(&uuid);
         let _ = AtomicUsize::new(0);
         let _ = Arc::new(()); // keep imports used on stub platforms
     }
@@ -125,6 +130,11 @@ mod tests {
             .create(&oauth_account())
             .await
             .unwrap();
+        // Clear any OAuth-expiry residue a prior run left in the real Keychain
+        // for this fixed account id, so `needs_refresh` is false as intended.
+        let _ = state
+            .keychain
+            .delete_all(&parse_uuid("11111111-1111-1111-1111-111111111111").unwrap());
         // No expiry → needs_refresh false → early Ok (nothing to do).
         refresh_oauth(&state, "11111111-1111-1111-1111-111111111111")
             .await
