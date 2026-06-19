@@ -1,4 +1,4 @@
-// Dashboard (主界面) — 1:1 port of the prototype `page-dash` markup. Uses the
+// Dashboard — 1:1 port of the prototype `page-dash` markup. Uses the
 // ported prototype CSS classes (dash-body / stat-card / cold-card / lang picker)
 // so it renders identically to UI/seekermail-unified.html. Numbers are live; the
 // language picker switches the app locale.
