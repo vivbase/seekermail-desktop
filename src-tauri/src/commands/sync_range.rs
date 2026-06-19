@@ -12,7 +12,7 @@ use tauri::State;
 use crate::error::{AppError, AppResult, IpcError};
 use crate::imap::SyncScheduler;
 use crate::state::AppState;
-use crate::storage::map_sqlx_err;
+use crate::storage::{map_sqlx_err, SyncStateRepo};
 use crate::types::SyncRangePreview;
 use crate::util::now_unix;
 
@@ -89,11 +89,11 @@ async fn do_update(
 
     let mut deleted: u64 = 0;
     if grows {
-        sqlx::query("UPDATE sync_state SET full_sync_required = 1 WHERE account_id = ?")
-            .bind(account_id)
-            .execute(pool)
-            .await
-            .map_err(map_sqlx_err)?;
+        // Route through the single `sync_state` writer (T021 §6) rather than an
+        // ad-hoc UPDATE here.
+        SyncStateRepo::new(state.storage.db())
+            .set_full_sync_required(account_id)
+            .await?;
         if let Some(sched) = scheduler {
             sched.trigger_now(account_id);
         }
@@ -174,11 +174,11 @@ mod tests {
         .execute(pool)
         .await
         .unwrap();
-        sqlx::query("INSERT INTO sync_state (account_id, updated_at) VALUES (?, 0)")
-            .bind(account_id)
-            .execute(pool)
-            .await
-            .ok();
+        // Seed the sync_state row through its repo, then clear the fresh-account
+        // full-sync flag so the `grow` path exercises a real 0 → 1 transition.
+        let ss = SyncStateRepo::new(state.storage.db());
+        ss.ensure(account_id).await.unwrap();
+        ss.clear_full_sync_required(account_id).await.unwrap();
         // One recent mail + one ancient mail.
         for (id, ts) in [
             ("new", now_unix() - 1000),

@@ -8,7 +8,7 @@
 
 use sqlx::Row;
 
-use super::{map_sqlx_err, Db};
+use super::{map_sqlx_err, Db, SyncStateRepo};
 use crate::error::{AppError, AppResult};
 use crate::types::{Account, AgentStatus, UpdateAccountParams};
 use crate::util::now_unix;
@@ -424,34 +424,18 @@ impl<'a> AccountRepo<'a> {
         self.get(id).await
     }
 
-    /// Mark an account auth-failed (T018): write `sync_state.last_sync_result =
-    /// 'auth_error'`. `is_active` is deliberately left unchanged — the account
-    /// stays visible (with a red badge), it just stops polling.
+    /// Mark an account auth-failed (T018). Delegates to [`SyncStateRepo`], the
+    /// single writer of `sync_state` — `is_active` (owned by `accounts`) is
+    /// deliberately left unchanged, so the account stays visible (red badge) but
+    /// stops polling.
     pub async fn set_auth_failed(&self, id: &str) -> AppResult<()> {
-        sqlx::query(
-            "UPDATE sync_state SET last_sync_result = 'auth_error', updated_at = ? \
-             WHERE account_id = ?",
-        )
-        .bind(now_unix())
-        .bind(id)
-        .execute(self.db.pool())
-        .await
-        .map_err(map_sqlx_err)?;
-        Ok(())
+        SyncStateRepo::new(self.db).mark_auth_failed(id).await
     }
 
     /// Clear the auth-error flag so the scheduler can resume polling (T018 reauth).
+    /// Delegates to [`SyncStateRepo`], the single writer of `sync_state`.
     pub async fn clear_auth_error(&self, id: &str) -> AppResult<()> {
-        sqlx::query(
-            "UPDATE sync_state SET last_sync_result = NULL, consecutive_errors = 0, \
-                 backoff_until = NULL, updated_at = ? WHERE account_id = ?",
-        )
-        .bind(now_unix())
-        .bind(id)
-        .execute(self.db.pool())
-        .await
-        .map_err(map_sqlx_err)?;
-        Ok(())
+        SyncStateRepo::new(self.db).clear_auth_error(id).await
     }
 
     /// Read the current `last_sync_result` ('auth_error' etc.), if any.

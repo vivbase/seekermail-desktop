@@ -1,7 +1,11 @@
-//! `SyncStateRepo` — the SINGLE writer for `sync_state` (T021 §6).
+//! `SyncStateRepo` — the single writer for every `sync_state` *mutation* (T021 §6).
 //!
-//! Every per-account sync bookmark / health mutation goes through here; writing
-//! `sync_state` directly from anywhere else is an architecture violation.
+//! Routing all cursor / health / backoff updates through one repo keeps each
+//! field's write path single and auditable. The one write that does not go through
+//! here is the initial row *seed* in [`AccountRepo::create`](super::AccountRepo),
+//! which must share that account-creation transaction for atomicity (the row is
+//! only ever removed again by `ON DELETE CASCADE`). Issuing ad-hoc
+//! `UPDATE sync_state` SQL from anywhere else is an architecture violation.
 
 use super::{map_sqlx_err, Db};
 use crate::error::{AppError, AppResult};
@@ -176,6 +180,51 @@ impl<'a> SyncStateRepo<'a> {
         .map_err(map_sqlx_err)?;
         Ok(())
     }
+
+    /// Flag that the next scheduler pass must backfill older history (T053 "grow",
+    /// F_A1 §4.5.4) — the inverse of [`Self::clear_full_sync_required`].
+    pub async fn set_full_sync_required(&self, account_id: &str) -> AppResult<()> {
+        sqlx::query(
+            "UPDATE sync_state SET full_sync_required = 1, updated_at = ? WHERE account_id = ?",
+        )
+        .bind(now_unix())
+        .bind(account_id)
+        .execute(self.db.pool())
+        .await
+        .map_err(map_sqlx_err)?;
+        Ok(())
+    }
+
+    /// Record an authentication failure (T018): the account stops polling until
+    /// re-auth. `accounts.is_active` is a separate concern and is left untouched —
+    /// the mailbox stays visible (with a red badge), it just goes quiet.
+    pub async fn mark_auth_failed(&self, account_id: &str) -> AppResult<()> {
+        sqlx::query(
+            "UPDATE sync_state SET last_sync_result = 'auth_error', updated_at = ? \
+             WHERE account_id = ?",
+        )
+        .bind(now_unix())
+        .bind(account_id)
+        .execute(self.db.pool())
+        .await
+        .map_err(map_sqlx_err)?;
+        Ok(())
+    }
+
+    /// Clear an auth-error (and any lingering backoff) so the scheduler resumes
+    /// polling (T018 re-auth).
+    pub async fn clear_auth_error(&self, account_id: &str) -> AppResult<()> {
+        sqlx::query(
+            "UPDATE sync_state SET last_sync_result = NULL, consecutive_errors = 0, \
+                 backoff_until = NULL, updated_at = ? WHERE account_id = ?",
+        )
+        .bind(now_unix())
+        .bind(account_id)
+        .execute(self.db.pool())
+        .await
+        .map_err(map_sqlx_err)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -234,5 +283,28 @@ mod tests {
 
         repo.clear_backoff("a1").await.unwrap();
         assert_eq!(repo.get("a1").await.unwrap().consecutive_errors, 0);
+    }
+
+    #[tokio::test]
+    async fn full_sync_flag_and_auth_error_round_trip() {
+        let db = db_with_account().await;
+        let repo = SyncStateRepo::new(&db);
+
+        // full_sync_required toggles both ways.
+        repo.set_full_sync_required("a1").await.unwrap();
+        assert!(repo.get("a1").await.unwrap().full_sync_required);
+        repo.clear_full_sync_required("a1").await.unwrap();
+        assert!(!repo.get("a1").await.unwrap().full_sync_required);
+
+        // auth-error is set, then cleared along with errors/backoff.
+        repo.update_backoff("a1", 3, 5_000).await.unwrap();
+        repo.mark_auth_failed("a1").await.unwrap();
+        let s = repo.get("a1").await.unwrap();
+        assert_eq!(s.last_sync_result.as_deref(), Some("auth_error"));
+        repo.clear_auth_error("a1").await.unwrap();
+        let s = repo.get("a1").await.unwrap();
+        assert_eq!(s.last_sync_result, None);
+        assert_eq!(s.consecutive_errors, 0);
+        assert_eq!(s.backoff_until, None);
     }
 }

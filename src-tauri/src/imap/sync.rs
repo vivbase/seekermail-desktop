@@ -48,8 +48,20 @@ pub async fn poll_once(state: &AppState, account_id: &str) -> AppResult<u32> {
         }
     }
 
-    // 5. SEARCH new UIDs.
-    let uids = session.search_uids_from(uid_next).await?;
+    // 5. SEARCH new UIDs, then drop any already on disk. An IMAP `UID n:*` range
+    //    always echoes the mailbox's highest UID even when nothing is newer than
+    //    the cursor (RFC 3501 §6.4.8), so the result can contain UIDs we already
+    //    hold. Keep the server's true high-water mark for the cursor (step 7), but
+    //    fetch bodies only for UIDs not yet persisted (T022 §3, F_A4 §4.6) — so a
+    //    poll with no new mail re-downloads nothing.
+    let found = session.search_uids_from(uid_next).await?;
+    let server_max_uid = found.iter().copied().max();
+    let mut uids = Vec::with_capacity(found.len());
+    for uid in found {
+        if !super::dedup::is_duplicate(state.storage.db(), account_id, "INBOX", uid).await? {
+            uids.push(uid);
+        }
+    }
     state.events.sync_started(account_id);
     let total = uids.len() as u32;
 
@@ -80,14 +92,14 @@ pub async fn poll_once(state: &AppState, account_id: &str) -> AppResult<u32> {
             .sync_progress(account_id, sent, Some(total), false);
     }
 
-    // 7. Advance the cursor.
-    let max_uid = uids.iter().copied().max();
+    // 7. Advance the cursor to the server's high-water mark — computed from the
+    //    raw SEARCH result, so de-duplication can never make the cursor regress.
     ss_repo
         .update_after_poll(
             account_id,
             SyncOutcome {
                 inbox_uid_validity: Some(status.uid_validity),
-                inbox_uid_next: max_uid.map(|m| m + 1).or(Some(uid_next)),
+                inbox_uid_next: server_max_uid.map(|m| m + 1).or(Some(uid_next)),
                 new_mails: sent,
             },
         )
@@ -141,5 +153,86 @@ mod tests {
         assert!(is_auth_error(&AppError::AuthOAuthFailed("x".into())));
         assert!(!is_auth_error(&AppError::ImapConnection("net".into())));
         assert!(!is_auth_error(&AppError::FsDiskFull));
+    }
+
+    /// A poll must skip UIDs already on disk (the dedup seam, T022 §3): because an
+    /// IMAP `UID n:*` SEARCH echoes the highest UID even when nothing is new, the
+    /// boundary message would otherwise be re-fetched on every poll. The cursor
+    /// must still advance to the server's high-water mark, not the filtered max.
+    #[tokio::test]
+    async fn poll_skips_uids_already_on_disk() {
+        use crate::net::fakes::{net_with_imap, FakeImapFactory, FakeMailbox};
+        use crate::storage::MailRepo;
+        use crate::types::ParsedMail;
+
+        let account_id = "5f2d6a1e-0000-4000-8000-0000000000aa";
+        // Mailbox holds UID 5 (already synced locally) and UID 6 (genuinely new).
+        let mailbox = FakeMailbox::new()
+            .with_inbox(1, 7, 2)
+            .with_uids([5, 6])
+            .with_body(5, b"raw-5".to_vec())
+            .with_body(6, b"raw-6".to_vec());
+        let (state, _rx) =
+            AppState::test_state_with_net(net_with_imap(FakeImapFactory::new(mailbox))).await;
+
+        sqlx::query(
+            "INSERT INTO accounts (id, email, display_name, provider, imap_host, color_token, \
+                 badge_label, created_at, updated_at) \
+             VALUES (?, 'a@x.com', 'A', 'imap', 'imap.example.com', 'slate', 'A', 0, 0)",
+        )
+        .bind(account_id)
+        .execute(state.storage.db().pool())
+        .await
+        .unwrap();
+
+        // Cursor sits at UID 5, so the SEARCH echoes the already-synced boundary.
+        let ss = SyncStateRepo::new(state.storage.db());
+        ss.ensure(account_id).await.unwrap();
+        ss.update_after_poll(
+            account_id,
+            SyncOutcome {
+                inbox_uid_validity: Some(1),
+                inbox_uid_next: Some(5),
+                new_mails: 0,
+            },
+        )
+        .await
+        .unwrap();
+
+        // UID 5 is already persisted.
+        MailRepo::new(state.storage.db())
+            .upsert_batch(&[ParsedMail {
+                account_id: account_id.into(),
+                folder: "INBOX".into(),
+                imap_uid: Some(5),
+                message_id: "<5@x>".into(),
+                in_reply_to: None,
+                references: None,
+                subject: "S".into(),
+                from_name: None,
+                from_email: "a@x.com".into(),
+                to_addrs: "[]".into(),
+                cc_addrs: "[]".into(),
+                bcc_addrs: "[]".into(),
+                reply_to: None,
+                date_sent: 1,
+                date_received: 1,
+                body_text: Some("b".into()),
+                body_html: None,
+                snippet: Some("b".into()),
+                has_attachments: false,
+                tracker_count: 0,
+                attachments: vec![],
+            }])
+            .await
+            .unwrap();
+
+        // Only UID 6 should be queued — UID 5 is filtered out (would be 2 without dedup).
+        let queued = poll_once(&state, account_id).await.unwrap();
+        assert_eq!(queued, 1, "already-synced UID 5 must be skipped");
+
+        // Cursor advances to the server high-water mark (max(5,6) + 1), not the
+        // filtered max — proving dedup cannot make the cursor regress.
+        assert_eq!(ss.get(account_id).await.unwrap().inbox_uid_next, Some(7));
     }
 }
