@@ -117,7 +117,8 @@ export function ComposeFooter({
     setDiscardDialogOpen(false);
     if (draftId) deleteDraft(draftId);
     reset();
-    void navigate(-1);
+    // Fixed parent: compose returns to Inbox (root CLAUDE.md back-button rule).
+    void navigate("/all-mail");
   }
 
   // ── Manual save now ────────────────────────────────────────────────────

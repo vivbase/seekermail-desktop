@@ -14,6 +14,7 @@ import { useDraftAutosave } from "@/hooks/useDraftAutosave";
 import { useDeleteDraft, type AiComposeSeed } from "@/ipc/queries/drafts";
 import { parseRecipients, validateCompose } from "@/lib/composeValidation";
 import { buildReplySeed, buildReplyAllSeed, buildForwardSeed } from "@/lib/quoteBuilder";
+import { isHtmlBlank, plainTextToHtml } from "@/lib/richText";
 
 import { ComposeToolbar, type ComposeMode } from "@/components/compose/ComposeToolbar";
 import { RecipientInput } from "@/components/compose/RecipientInput";
@@ -39,6 +40,7 @@ interface ComposeSeedState {
 
 export default function Compose() {
   const { t } = useTranslation("compose");
+  const { t: tNav } = useTranslation("nav");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -52,6 +54,7 @@ export default function Compose() {
   const bcc = useCompose((s) => s.bcc);
   const subject = useCompose((s) => s.subject);
   const body = useCompose((s) => s.body);
+  const bodyHtml = useCompose((s) => s.bodyHtml);
   const inReplyTo = useCompose((s) => s.inReplyTo);
   const draftId = useCompose((s) => s.draftId);
   const ccVisible = useCompose((s) => s.ccVisible);
@@ -74,6 +77,7 @@ export default function Compose() {
         to: state.aiSeed.to,
         subject: state.aiSeed.subject,
         body: state.aiSeed.body,
+        bodyHtml: plainTextToHtml(state.aiSeed.body),
         inReplyTo: state.aiSeed.inReplyTo,
         aiDraftId: state.aiSeed.aiDraftId,
       });
@@ -92,10 +96,14 @@ export default function Compose() {
         return;
       }
       open({
+        // From-account defaults to the account that received the original mail
+        // so the From selector is pre-filled for reply / reply-all / forward.
+        accountId: state.mail.accountId,
         to: seed.to,
         cc: seed.cc,
         subject: seed.subject,
         body: seed.body,
+        bodyHtml: plainTextToHtml(seed.body),
         inReplyTo: seed.inReplyTo,
       });
     } else {
@@ -148,7 +156,7 @@ export default function Compose() {
       bcc: parseRecipients(bcc),
       subject,
       bodyText: body,
-      bodyHtml: null,
+      bodyHtml: isHtmlBlank(bodyHtml) ? null : bodyHtml,
       inReplyTo: inReplyTo,
       references: null,
       draftId: draftId,
@@ -183,9 +191,10 @@ export default function Compose() {
   function handleClose() {
     const hasContent = to.trim() || subject.trim() || body.trim();
     if (!hasContent) {
-      // Nothing to lose: skip the confirmation dialog.
+      // Nothing to lose: skip the confirmation dialog. Fixed parent: compose
+      // returns to Inbox (root CLAUDE.md back-button rule), never browser history.
       reset();
-      void navigate(-1);
+      void navigate("/all-mail");
     } else {
       // Delegate to ComposeFooter's confirmation dialog.
       setDiscardRequested(true);
@@ -209,6 +218,18 @@ export default function Compose() {
     <section className="flex h-full flex-col bg-surface">
       {/* Page header */}
       <div className="border-b border-divider px-5 py-4">
+        <button type="button" className="pg-back" onClick={handleClose}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path
+              d="M9 2L4 7l5 5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {tNav("back_to_inbox")}
+        </button>
         <p className="section-label mb-1">Compose</p>
         <h1 className="font-display text-2xl italic text-p10">{t(titleKey)}</h1>
       </div>

@@ -1,11 +1,16 @@
-// Plain-text body editor for v0.x (T044, F_G4 §4.4). Tiptap rich text is planned
-// for v0.5+ once the dependency is locked; for now this is a large comfortable
-// textarea with autosize via a hidden mirror element. Keyboard shortcut
-// Ctrl/Cmd+Enter triggers send via the onSend callback.
+// Rich-text body editor for compose (T044, F_G4 §4.4). A contentEditable surface
+// paired with ComposeFormatBar provides the Gmail-equivalent formatting baseline
+// (bold/italic/underline, font size, colour, lists, links, …). The editor keeps
+// two representations in the compose store in lock-step: `bodyHtml` (the rendered
+// HTML, sent as the text/html MIME part) and `body` (a plain-text mirror derived
+// from innerText, used for validation, autosave's bodyText, and quote seeds).
+// Ctrl/Cmd+Enter triggers send via onSend.
 
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useCompose } from "@/stores/compose";
+import { htmlToPlainText, isHtmlBlank } from "@/lib/richText";
+import { ComposeFormatBar } from "./ComposeFormatBar";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -16,11 +21,13 @@ interface ComposeEditorProps {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Resize the textarea to fit its content using a hidden-mirror approach. */
-function autosizeTextarea(textarea: HTMLTextAreaElement, mirror: HTMLDivElement) {
-  // Sync mirror content and measure.
-  mirror.textContent = textarea.value + "\n";
-  textarea.style.height = `${mirror.scrollHeight}px`;
+/**
+ * Derive the plain-text mirror. The rendered webview exposes `innerText`
+ * (layout-aware, preserves line breaks); the htmlToPlainText fallback covers
+ * environments where it is absent (e.g. jsdom under test).
+ */
+function getPlainText(el: HTMLDivElement): string {
+  return el.innerText ?? htmlToPlainText(el.innerHTML);
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -28,53 +35,73 @@ function autosizeTextarea(textarea: HTMLTextAreaElement, mirror: HTMLDivElement)
 export function ComposeEditor({ onSend }: ComposeEditorProps) {
   const { t } = useTranslation("compose");
 
-  const body = useCompose((s) => s.body);
+  const bodyHtml = useCompose((s) => s.bodyHtml);
   const update = useCompose((s) => s.update);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const mirrorRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  /** Last HTML this editor emitted, so external store updates (seed / AI
+   *  regenerate / reset) re-render the DOM while typing never clobbers the caret. */
+  const lastHtmlRef = useRef<string>("");
 
-  // Autosize whenever content changes.
+  // Sync store → DOM only when the change originated outside the editor.
   useEffect(() => {
-    if (textareaRef.current && mirrorRef.current) {
-      autosizeTextarea(textareaRef.current, mirrorRef.current);
+    const el = editorRef.current;
+    if (!el) return;
+    if (bodyHtml !== lastHtmlRef.current && bodyHtml !== el.innerHTML) {
+      el.innerHTML = bodyHtml;
+      lastHtmlRef.current = bodyHtml;
     }
-  }, [body]);
+  }, [bodyHtml]);
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    // Ctrl+Enter or Cmd+Enter → trigger send.
+  function handleInput() {
+    const el = editorRef.current;
+    if (!el) return;
+    const html = el.innerHTML;
+    lastHtmlRef.current = html;
+    update({ bodyHtml: html, body: getPlainText(el) });
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       onSend();
     }
   }
 
-  return (
-    <div className="relative flex-1 px-5 py-4">
-      {/* Hidden mirror for autosize measurement */}
-      <div
-        ref={mirrorRef}
-        aria-hidden="true"
-        className="invisible absolute inset-x-5 top-4 whitespace-pre-wrap break-words font-body text-sm"
-        style={{ pointerEvents: "none" }}
-      />
+  const showPlaceholder = isHtmlBlank(bodyHtml);
 
-      <textarea
-        ref={textareaRef}
-        id="compose-body"
-        aria-label="Message body"
-        value={body}
-        onChange={(e) => update({ body: e.target.value })}
-        onKeyDown={handleKeyDown}
-        placeholder={t("body_placeholder")}
-        spellCheck
-        rows={10}
-        className={[
-          "w-full resize-none overflow-hidden bg-transparent",
-          "font-body text-sm leading-relaxed text-p10",
-          "placeholder:text-p7 focus:outline-none",
-        ].join(" ")}
-      />
+  return (
+    <div className="flex flex-1 flex-col">
+      <ComposeFormatBar editorRef={editorRef} />
+
+      <div className="relative flex-1 px-5 py-4">
+        {showPlaceholder && (
+          <p
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-5 top-4 font-body text-sm text-p7"
+          >
+            {t("body_placeholder")}
+          </p>
+        )}
+
+        <div
+          ref={editorRef}
+          id="compose-body"
+          role="textbox"
+          aria-multiline="true"
+          aria-label="Message body"
+          contentEditable
+          suppressContentEditableWarning
+          spellCheck
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          className={[
+            "compose-editor min-h-[12rem] w-full bg-transparent",
+            "font-body text-sm leading-relaxed text-p10",
+            "focus:outline-none",
+          ].join(" ")}
+        />
+      </div>
     </div>
   );
 }

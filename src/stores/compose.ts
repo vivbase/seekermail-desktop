@@ -8,7 +8,18 @@ export interface ComposeBuffer {
   cc: string;
   bcc: string;
   subject: string;
+  /**
+   * Plain-text mirror of the editor content. Source of truth for validation,
+   * autosave's `bodyText`, word counts, and the attachment-hint scan. Always
+   * kept in sync with `bodyHtml` by the editor (T044, F_G4 §4.4).
+   */
   body: string;
+  /**
+   * Rich-text (HTML) editor content. Becomes the `text/html` MIME part on send
+   * and the persisted `body_html` on draft save. Empty string when the message
+   * carries no formatting yet.
+   */
+  bodyHtml: string;
   /** Message-ID being replied to (drives threading on send). */
   inReplyTo: string | null;
   /** The persisted draft id once autosave has run (T045). */
@@ -37,6 +48,7 @@ const EMPTY: ComposeBuffer = {
   bcc: "",
   subject: "",
   body: "",
+  bodyHtml: "",
   inReplyTo: null,
   draftId: null,
   aiDraftId: null,

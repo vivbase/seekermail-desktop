@@ -8,6 +8,7 @@ import { useCompose } from "@/stores/compose";
 import { useSaveDraft } from "@/ipc/queries/drafts";
 import type { SaveDraftParams } from "@shared/bindings";
 import { parseRecipients } from "@/lib/composeValidation";
+import { isHtmlBlank } from "@/lib/richText";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ export function useDraftAutosave(): UseDraftAutosaveReturn {
   const cc = useCompose((s) => s.cc);
   const subject = useCompose((s) => s.subject);
   const body = useCompose((s) => s.body);
+  const bodyHtml = useCompose((s) => s.bodyHtml);
   const inReplyTo = useCompose((s) => s.inReplyTo);
   const draftId = useCompose((s) => s.draftId);
   const update = useCompose((s) => s.update);
@@ -69,7 +71,7 @@ export function useDraftAutosave(): UseDraftAutosaveReturn {
       cc: parseRecipients(cc),
       subject,
       bodyText: body,
-      bodyHtml: null,
+      bodyHtml: isHtmlBlank(bodyHtml) ? null : bodyHtml,
       inReplyTo,
     };
   }
@@ -91,7 +93,7 @@ export function useDraftAutosave(): UseDraftAutosaveReturn {
       if (isMountedRef.current) setAutosaveStatus("error");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountId, to, cc, subject, body, inReplyTo, draftId, saveDraft, update]);
+  }, [accountId, to, cc, subject, body, bodyHtml, inReplyTo, draftId, saveDraft, update]);
 
   // Debounce: schedule a save 1.5 s after any content change.
   useEffect(() => {
@@ -110,7 +112,7 @@ export function useDraftAutosave(): UseDraftAutosaveReturn {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [to, subject, body, cc, accountId]);
+  }, [to, subject, body, bodyHtml, cc, accountId]);
 
   return {
     status: autosaveStatus,

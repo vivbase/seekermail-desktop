@@ -32,5 +32,9 @@
   "warning_no_subject": "Your message has no subject.",
   "warning_forgot_attachment": "Your message mentions an attachment, but none are staged.",
   "warning_many_recipients": "You're sending to {count} recipients.",
-  "send_anyway": "Send Anyway"
+  "send_anyway": "Send Anyway",
+  "link_placeholder": "https://example.com",
+  "link_apply": "Apply",
+  "link_remove": "Remove",
+  "color_custom": "Custom"
 }

@@ -10,6 +10,7 @@ import { useAccounts } from "@/ipc/queries/accounts";
 import { useRegenerateDraft } from "@/ipc/queries/drafts";
 import { useCompose } from "@/stores/compose";
 import { markdownToPlainText } from "@/lib/markdown";
+import { plainTextToHtml } from "@/lib/richText";
 import { cn } from "@/lib/cn";
 
 /** After this many regenerations, suggest writing manually (F_E1 §4.6). */
@@ -74,7 +75,8 @@ export function ComposeToolbar({ mode, onClose }: ComposeToolbarProps) {
       { id: aiDraftId },
       {
         onSuccess: (draft) => {
-          update({ body: markdownToPlainText(draft.bodyCurrent), aiDraftId: draft.id });
+          const text = markdownToPlainText(draft.bodyCurrent);
+          update({ body: text, bodyHtml: plainTextToHtml(text), aiDraftId: draft.id });
           regenCountRef.current += 1;
           if (regenCountRef.current >= REGEN_HINT_THRESHOLD) setShowRegenHint(true);
         },
