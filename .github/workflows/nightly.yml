@@ -1,0 +1,78 @@
+name: Nightly
+
+# Nightly heavy suites that are too slow / too environment-dependent for the PR
+# merge gate (TEST_PLAN.md §1, §5): real Tauri-shell E2E and an opt-in
+# real-mailbox contract run. Performance (the 8 P0 metrics vs baseline) is owned
+# by bench.yml — do not duplicate it here.
+#
+# Jobs are `continue-on-error: true` while the suites are still being stood up so
+# the nightly does not produce false reds. Remove `continue-on-error` per job as
+# each suite is verified green on a developer Mac (Phase 2 of the rollout).
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # 09:00 UTC daily
+  workflow_dispatch: {}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  e2e:
+    name: E2E (real Tauri shell)
+    runs-on: macos-14
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable corepack (pinned pnpm)
+        run: corepack enable
+      - name: Setup Node 20 (+ pnpm cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Setup Rust stable
+        run: rustup show active-toolchain || rustup toolchain install stable
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      # Drives the add-account -> sync -> search -> compose -> send-to-sink flow.
+      - name: Run E2E
+        run: pnpm test:e2e
+
+  # NOTE: performance (8 P0 metrics @100k vs bench-baseline.json) is owned by
+  # bench.yml: `cargo xtask bench-seed --count 100000` then
+  # `cargo xtask bench --out bench-report.json --baseline bench-baseline.json`.
+  # Not duplicated here.
+
+  real-mailbox:
+    name: Real-mailbox contract (opt-in)
+    runs-on: macos-14
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      # Only runs when disposable test-account secrets are configured (never personal
+      # accounts). Configure SEEKERMAIL_TEST_IMAP / _SMTP / _USER / _PASS in repo secrets.
+      - name: Guard on test-account secrets
+        id: guard
+        run: |
+          if [ -z "${{ secrets.SEEKERMAIL_TEST_IMAP }}" ]; then
+            echo "No test-account secrets set — skipping real-mailbox contract."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Setup Rust stable
+        if: steps.guard.outputs.run == 'true'
+        run: rustup show active-toolchain || rustup toolchain install stable
+      # Live IMAP/SMTP interop against disposable accounts (TEST_PLAN.md §3).
+      - name: Live interop (live-net)
+        if: steps.guard.outputs.run == 'true'
+        working-directory: src-tauri
+        env:
+          SEEKERMAIL_TEST_IMAP: ${{ secrets.SEEKERMAIL_TEST_IMAP }}
+          SEEKERMAIL_TEST_SMTP: ${{ secrets.SEEKERMAIL_TEST_SMTP }}
+          SEEKERMAIL_TEST_USER: ${{ secrets.SEEKERMAIL_TEST_USER }}
+          SEEKERMAIL_TEST_PASS: ${{ secrets.SEEKERMAIL_TEST_PASS }}
+        run: cargo test --features live-net --test '*' -- --ignored --nocapture

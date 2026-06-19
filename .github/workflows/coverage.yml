@@ -1,0 +1,77 @@
+name: Coverage
+
+# Coverage gate (TEST_PLAN.md §2): backend >= 75% line, safety-critical modules
+# >= 90%; frontend tracked for trend. Runs on macOS-14 to mirror the primary CI host.
+#
+# NOTE: the threshold steps are intentionally `continue-on-error: true` until the
+# real baseline is confirmed green on a developer Mac. Once confirmed, delete the
+# `continue-on-error` lines to turn coverage into a hard merge gate.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  backend-coverage:
+    name: Rust coverage (offline default features)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust stable + llvm-tools
+        run: |
+          rustup show active-toolchain || rustup toolchain install stable
+          rustup component add llvm-tools-preview
+
+      - name: Cache cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: cargo-cov-${{ runner.os }}-${{ hashFiles('src-tauri/Cargo.toml') }}
+          restore-keys: cargo-cov-${{ runner.os }}-
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      # Backend line coverage with the 75% floor from TEST_PLAN.md §2.
+      # TODO(coverage-gate): remove `continue-on-error` once the baseline is >= 75% locally.
+      - name: Backend coverage (>= 75% lines)
+        working-directory: src-tauri
+        continue-on-error: true
+        run: cargo llvm-cov --summary-only --fail-under-lines 75
+
+  frontend-coverage:
+    name: Frontend coverage (Vitest)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable corepack (pinned pnpm)
+        run: corepack enable
+
+      - name: Setup Node 20 (+ pnpm cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Requires a coverage provider (e.g. @vitest/coverage-v8) in devDependencies.
+      # TODO(coverage-gate): add the provider, then remove `continue-on-error`.
+      - name: Vitest coverage
+        continue-on-error: true
+        run: pnpm test -- --coverage
