@@ -6,6 +6,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
+import PageBack from "@/components/layout/PageBack";
 import { useMailsInfinite } from "@/ipc/queries/mail";
 import { useUi } from "@/stores/ui";
 import { cn } from "@/lib/cn";
@@ -39,6 +40,7 @@ export default function Processed() {
   return (
     <div className="flex h-full flex-col">
       <header className="shrink-0 border-b border-divider px-6 py-5">
+        <PageBack to="/" labelKey="back_to_dashboard" />
         <h1
           ref={headingRef}
           tabIndex={-1}

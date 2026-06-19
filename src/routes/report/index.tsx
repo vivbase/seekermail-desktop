@@ -3,6 +3,7 @@
 // lives in the ui store so switching tabs only re-renders the panel area.
 import { useTranslation } from "react-i18next";
 
+import PageBack from "@/components/layout/PageBack";
 import { AuditTab } from "@/components/audit/AuditTab";
 import { useUi, type ReportTab } from "@/stores/ui";
 import { cn } from "@/lib/cn";
@@ -21,6 +22,7 @@ export default function Report() {
 
   return (
     <section className="mx-auto w-full max-w-3xl px-8 py-10">
+      <PageBack to="/" labelKey="back_to_dashboard" />
       <p className="section-label mb-2">{t("nav:nav_section_intelligence")}</p>
       <h1 className="font-display text-4xl italic text-p10">{t("nav:nav_report")}</h1>
       <p className="mt-3 font-body text-p8">{t("common:report_desc")}</p>

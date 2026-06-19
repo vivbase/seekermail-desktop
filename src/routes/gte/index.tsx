@@ -12,6 +12,7 @@ import { useAccounts } from "@/ipc/queries/accounts";
 import { useGteStats, useKnowledgeEntries, useTopicBreakdown } from "@/ipc/queries/gte";
 import { useMailCount } from "@/ipc/queries/mail";
 import { MIN_SEARCH_LEN, useSemanticSearch } from "@/ipc/queries/search";
+import PageBack from "@/components/layout/PageBack";
 
 interface GteEntry {
   subject: string;
@@ -75,7 +76,13 @@ export default function Gte() {
     subject: r.subject,
     date: fmtDate(r.dateSent),
     excerpt: r.snippet,
-    tags: [r.scoreLabel === "high" ? t("rel_high") : r.scoreLabel === "mid" ? t("rel_mid") : t("rel_low")],
+    tags: [
+      r.scoreLabel === "high"
+        ? t("rel_high")
+        : r.scoreLabel === "mid"
+          ? t("rel_mid")
+          : t("rel_low"),
+    ],
   }));
 
   const entries = live ? liveEntries : browseFiltered;
@@ -84,12 +91,7 @@ export default function Gte() {
   return (
     <div className="page active" style={{ height: "100%" }}>
       <div className="pg-header">
-        <button className="pg-back" onClick={() => navigate("/")}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {t("back_dashboard")}
-        </button>
+        <PageBack to="/" labelKey="back_to_dashboard" />
         <div className="pg-title">{t("title")}</div>
         <div className="pg-sub">{t("sub")}</div>
         <div className="pg-divider"></div>
@@ -109,7 +111,14 @@ export default function Gte() {
             <span className="gte-pip" style={{ background: "var(--amber)" }}></span>
             {t("status_syncing", { count: s?.accountsSyncing ?? 0 })}
           </div>
-          <div style={{ marginLeft: "auto", fontFamily: "var(--fm)", fontSize: 10, color: "var(--p7)" }}>
+          <div
+            style={{
+              marginLeft: "auto",
+              fontFamily: "var(--fm)",
+              fontSize: 10,
+              color: "var(--p7)",
+            }}
+          >
             {t("total_vectors", { n: (s?.vectorCount ?? 0).toLocaleString() })}
           </div>
         </div>
@@ -132,7 +141,12 @@ export default function Gte() {
             <div className="gte-card-title">{t("card_accounts")}</div>
             <div className="gte-acct-list">
               {(accounts.data ?? []).map((a) => (
-                <GteAcctRow key={a.id} account={a} onView={() => navigate(`/accounts/${a.id}/mail`)} viewLabel={t("view")} />
+                <GteAcctRow
+                  key={a.id}
+                  account={a}
+                  onView={() => navigate(`/accounts/${a.id}/mail`)}
+                  viewLabel={t("view")}
+                />
               ))}
             </div>
           </div>
@@ -146,7 +160,10 @@ export default function Gte() {
                   <div className="gte-bar-track">
                     <div
                       className="gte-bar-fill"
-                      style={{ width: `${Math.round((tp.count / topicMax) * 100)}%`, background: `var(--${tp.color})` }}
+                      style={{
+                        width: `${Math.round((tp.count / topicMax) * 100)}%`,
+                        background: `var(--${tp.color})`,
+                      }}
                     ></div>
                   </div>
                   <span className="gte-bar-num">{tp.count}</span>
@@ -156,16 +173,44 @@ export default function Gte() {
           </div>
         </div>
 
-        <div className="gte-topic-title">{q ? t("results_query", { query: q }) : t("results_recent")}</div>
+        <div className="gte-topic-title">
+          {q ? t("results_query", { query: q }) : t("results_recent")}
+        </div>
 
         <div>
           {loading ? (
             <div aria-live="polite">
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="gte-entry" style={{ opacity: 0.5 }} aria-hidden={i > 0 ? true : undefined}>
-                  <div className="skel" style={{ height: 13, width: "46%", borderRadius: 4, background: "var(--p4)" }}></div>
-                  <div className="skel" style={{ height: 11, width: "92%", borderRadius: 4, background: "var(--p4)", marginTop: 10 }}></div>
-                  <div className="skel" style={{ height: 11, width: "70%", borderRadius: 4, background: "var(--p4)", marginTop: 6 }}></div>
+                <div
+                  key={i}
+                  className="gte-entry"
+                  style={{ opacity: 0.5 }}
+                  aria-hidden={i > 0 ? true : undefined}
+                >
+                  <div
+                    className="skel"
+                    style={{ height: 13, width: "46%", borderRadius: 4, background: "var(--p4)" }}
+                  ></div>
+                  <div
+                    className="skel"
+                    style={{
+                      height: 11,
+                      width: "92%",
+                      borderRadius: 4,
+                      background: "var(--p4)",
+                      marginTop: 10,
+                    }}
+                  ></div>
+                  <div
+                    className="skel"
+                    style={{
+                      height: 11,
+                      width: "70%",
+                      borderRadius: 4,
+                      background: "var(--p4)",
+                      marginTop: 6,
+                    }}
+                  ></div>
                 </div>
               ))}
             </div>
@@ -187,7 +232,15 @@ export default function Gte() {
               </div>
             ))
           ) : (
-            <div style={{ padding: 32, textAlign: "center", fontFamily: "var(--fb)", fontStyle: "italic", color: "var(--p7)" }}>
+            <div
+              style={{
+                padding: 32,
+                textAlign: "center",
+                fontFamily: "var(--fb)",
+                fontStyle: "italic",
+                color: "var(--p7)",
+              }}
+            >
               {t("no_results", { query: q })}
             </div>
           )}
@@ -198,12 +251,26 @@ export default function Gte() {
 }
 
 /** One account-breakdown row: chip + name/email + live indexed-mail count. */
-function GteAcctRow({ account, onView, viewLabel }: { account: Account; onView: () => void; viewLabel: string }) {
+function GteAcctRow({
+  account,
+  onView,
+  viewLabel,
+}: {
+  account: Account;
+  onView: () => void;
+  viewLabel: string;
+}) {
   const count = useMailCount({ accountId: account.id });
   const darkText = account.colorToken === "sage" || account.colorToken === "amber";
   return (
     <div className="gte-acct-row">
-      <div className="gte-chip" style={{ background: `var(--${account.colorToken})`, ...(darkText ? { color: "var(--p10)" } : {}) }}>
+      <div
+        className="gte-chip"
+        style={{
+          background: `var(--${account.colorToken})`,
+          ...(darkText ? { color: "var(--p10)" } : {}),
+        }}
+      >
         {account.badgeLabel}
       </div>
       <div style={{ flex: 1 }}>

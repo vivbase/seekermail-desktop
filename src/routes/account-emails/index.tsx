@@ -5,10 +5,11 @@
 // and sort run over the loaded page. Browser/dev still renders via the IPC mock layer
 // (src/ipc/client.ts), so the same code path works with and without a real backend.
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MailSummary } from "@shared/bindings";
 
+import PageBack from "@/components/layout/PageBack";
 import { showToast } from "@/components/ui/Toast";
 import { useAccounts } from "@/ipc/queries/accounts";
 import { useMailCount, useMailDetail, useMailsInfinite } from "@/ipc/queries/mail";
@@ -43,7 +44,6 @@ function fmtTime(sec: number): string {
 
 export default function AccountEmails() {
   const { t } = useTranslation("accountEmails");
-  const navigate = useNavigate();
   const { id = "" } = useParams();
 
   const accounts = useAccounts();
@@ -64,7 +64,10 @@ export default function AccountEmails() {
   );
 
   const sot = startOfTodaySecs();
-  const todayCount = useMemo(() => allMails.filter((m) => m.dateSent >= sot).length, [allMails, sot]);
+  const todayCount = useMemo(
+    () => allMails.filter((m) => m.dateSent >= sot).length,
+    [allMails, sot],
+  );
 
   const emails = useMemo(() => {
     let list = allMails.slice();
@@ -81,7 +84,8 @@ export default function AccountEmails() {
       );
     list.sort((a, b) => {
       if (sort === "old") return a.dateSent - b.dateSent;
-      if (sort === "sender") return (a.fromName ?? a.fromEmail).localeCompare(b.fromName ?? b.fromEmail);
+      if (sort === "sender")
+        return (a.fromName ?? a.fromEmail).localeCompare(b.fromName ?? b.fromEmail);
       return b.dateSent - a.dateSent;
     });
     return list;
@@ -91,12 +95,7 @@ export default function AccountEmails() {
     return (
       <div className="page active" style={{ height: "100%" }}>
         <div className="pg-header">
-          <button className="pg-back" onClick={() => navigate("/agents")}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {t("back")}
-          </button>
+          <PageBack to="/agents" labelKey="back_to_agents" />
           <div className="pg-title">{t("not_found")}</div>
           <div className="pg-divider"></div>
         </div>
@@ -114,14 +113,11 @@ export default function AccountEmails() {
   return (
     <div className="page active" style={{ height: "100%" }}>
       <div className="pg-header">
-        <button className="pg-back" onClick={() => navigate("/agents")}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {t("back")}
-        </button>
+        <PageBack to="/agents" labelKey="back_to_agents" />
         <div className="pg-title">{t("title", { name })}</div>
-        <div className="pg-sub">{t("sub", { email, total: (total.data ?? 0).toLocaleString() })}</div>
+        <div className="pg-sub">
+          {t("sub", { email, total: (total.data ?? 0).toLocaleString() })}
+        </div>
         <div className="pg-divider"></div>
       </div>
 
@@ -155,7 +151,11 @@ export default function AccountEmails() {
         <div className="ae-filter-row">
           <span className="ae-filter-lbl">{t("filter")}</span>
           {FILTERS.map((f) => (
-            <button key={f} className={cn("chip", filter === f && "active")} onClick={() => setFilter(f)}>
+            <button
+              key={f}
+              className={cn("chip", filter === f && "active")}
+              onClick={() => setFilter(f)}
+            >
               {t(`chip_${f}`)}
             </button>
           ))}
@@ -186,11 +186,27 @@ export default function AccountEmails() {
 
         <div>
           {mailsQuery.isLoading ? (
-            <div style={{ padding: 40, textAlign: "center", fontFamily: "var(--fb)", fontStyle: "italic", color: "var(--p7)" }}>
+            <div
+              style={{
+                padding: 40,
+                textAlign: "center",
+                fontFamily: "var(--fb)",
+                fontStyle: "italic",
+                color: "var(--p7)",
+              }}
+            >
               {t("loading")}
             </div>
           ) : emails.length === 0 ? (
-            <div style={{ padding: 40, textAlign: "center", fontFamily: "var(--fb)", fontStyle: "italic", color: "var(--p7)" }}>
+            <div
+              style={{
+                padding: 40,
+                textAlign: "center",
+                fontFamily: "var(--fb)",
+                fontStyle: "italic",
+                color: "var(--p7)",
+              }}
+            >
               {t("empty")}
             </div>
           ) : (
@@ -240,7 +256,8 @@ function EmailRow({
 }) {
   // Full body is fetched lazily (get_mail) only while the row is open.
   const detail = useMailDetail(expanded ? mail.id : null);
-  const bodyText = detail.data?.bodyText ?? detail.data?.bodyHtml?.replace(/<[^>]+>/g, " ") ?? mail.snippet ?? "";
+  const bodyText =
+    detail.data?.bodyText ?? detail.data?.bodyHtml?.replace(/<[^>]+>/g, " ") ?? mail.snippet ?? "";
 
   return (
     <div

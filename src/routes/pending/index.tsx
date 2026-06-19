@@ -18,6 +18,7 @@ import { useAccounts } from "@/ipc/queries/accounts";
 import { usePendingQueries } from "@/ipc/queries/queries";
 import { useUi, type PendingFilter } from "@/stores/ui";
 import { showToast } from "@/components/ui/Toast";
+import PageBack from "@/components/layout/PageBack";
 import { DraftCard } from "@/components/pending/DraftCard";
 import { DecisionCard } from "@/components/pending/DecisionCard";
 import { DraftPanel, DRAFT_EDITOR_ID } from "@/components/pending/DraftPanel";
@@ -288,6 +289,7 @@ export default function Pending() {
       {/* List column */}
       <div className="min-w-0 flex-1 overflow-y-auto px-8 py-8">
         <div className="mx-auto w-full max-w-2xl">
+          <PageBack to="/" labelKey="back_to_dashboard" />
           <p className="section-label mb-2">{t("nav:nav_section_overview")}</p>
           <h1 className="font-display text-4xl italic text-p10">{t("nav:nav_pending")}</h1>
           <p className="mt-2 font-body text-sm text-p8">{t("common:pending_desc")}</p>

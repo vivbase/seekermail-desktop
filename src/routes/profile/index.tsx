@@ -11,6 +11,7 @@ import { useAccounts } from "@/ipc/queries/accounts";
 import { useMailCount } from "@/ipc/queries/mail";
 import { accountColorClass, type AccountColorToken } from "@/lib/accountColor";
 import { cn } from "@/lib/cn";
+import PageBack from "@/components/layout/PageBack";
 import AccountsSettings from "@/routes/settings/accounts";
 import AiProvidersPage from "@/routes/settings/ai";
 import PrivacySettings from "@/routes/settings/privacy";
@@ -50,6 +51,7 @@ export default function Profile() {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Hero */}
       <div className="shrink-0 border-b border-divider px-8 pt-7">
+        <PageBack to="/" labelKey="back_to_dashboard" />
         <div className="flex flex-wrap items-center gap-4">
           {primary && (
             <span

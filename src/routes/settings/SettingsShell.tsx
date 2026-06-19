@@ -4,6 +4,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import PageBack from "@/components/layout/PageBack";
 import { SettingsNav } from "./SettingsNav";
 
 export default function SettingsShell() {
@@ -16,8 +17,11 @@ export default function SettingsShell() {
 
       {/* Right content panel */}
       <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-        {/* Settings page header */}
+        {/* Settings page header. The shared back affordance returns to the
+            Dashboard from any settings sub-route (including data/* and ai/*
+            drill-downs); lateral movement stays in the left SettingsNav. */}
         <header className="shrink-0 border-b border-divider px-8 py-5">
+          <PageBack to="/" labelKey="back_to_dashboard" />
           <h1 className="font-display text-3xl italic text-p10">{t("title")}</h1>
         </header>
 
