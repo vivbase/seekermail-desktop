@@ -124,7 +124,10 @@ impl<'a> AccountRepo<'a> {
         row.map(Account::from).ok_or(AppError::NotFound)
     }
 
-    /// Total account count — used by the "can't delete the last account" guard.
+    /// Total account count. Retained for tests/diagnostics; the last-account delete
+    /// guard it once backed was removed in the A6 identity decoupling (analysis/26),
+    /// since removing the last mailbox is now a valid state.
+    #[allow(dead_code)]
     pub async fn count(&self) -> AppResult<i64> {
         let (n,): (i64,) = sqlx::query_as("SELECT count(*) FROM accounts")
             .fetch_one(self.db.pool())

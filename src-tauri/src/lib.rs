@@ -13,6 +13,7 @@ pub mod error;
 pub mod events;
 pub mod exporter;
 pub mod extraction;
+pub mod identity;
 pub mod imap;
 pub mod keychain;
 pub mod logging;
@@ -41,6 +42,10 @@ use config::Paths;
 /// parse worker + sync scheduler, manage both, and register every command via the
 /// native `generate_handler!` (T002). New commands are appended to that list.
 pub fn run() {
+    // Load .env if present (dev convenience; silently ignored in production
+    // when no .env exists). Must run before any std::env::var call.
+    dotenvy::dotenv().ok();
+
     let paths = Paths::resolve().expect("resolve application paths");
     paths.ensure_dirs().expect("create application directories");
 
@@ -53,6 +58,8 @@ pub fn run() {
         // OS notifications for batched E2 drafts (T083). Registered before
         // setup so the NotificationExt API is available to the sender closure.
         .plugin(tauri_plugin_notification::init())
+        // Custom `seekermail://` scheme for OAuth deep-link callbacks (T015/T064).
+        .plugin(tauri_plugin_deep_link::init())
         .setup(move |app| {
             use tauri::Manager;
 
@@ -103,6 +110,34 @@ pub fn run() {
                             tracing::warn!(error = %e, "os notification failed");
                         }
                     }));
+            }
+
+            // Deep-link OAuth callbacks (T015/T064): the OS routes the provider's
+            // `seekermail://oauth/...` redirect here. Route by path — the
+            // account-mail grant (`/oauth/callback`) and the recommended-provider
+            // grant (`/oauth/recommended`) each get their own event; the matching
+            // frontend wizard listens and forwards code+state to its `complete_*`
+            // command (where the CSRF check lives). Registration is best-effort: a
+            // dev build whose scheme isn't installed simply receives no links, and
+            // both wizards also accept a manual code paste as a fallback.
+            {
+                use tauri::Emitter as _;
+                use tauri_plugin_deep_link::DeepLinkExt;
+
+                #[cfg(desktop)]
+                let _ = app.deep_link().register("seekermail");
+
+                let handle = app.handle().clone();
+                app.deep_link().on_open_url(move |event| {
+                    for url in event.urls() {
+                        let raw = url.as_str();
+                        if let Some(cb) = ai::recommended::parse_recommended_callback(raw) {
+                            let _ = handle.emit(ai::recommended::OAUTH_CALLBACK_EVENT, cb);
+                        } else if let Some(cb) = account::oauth::parse_mail_callback(raw) {
+                            let _ = handle.emit(account::oauth::MAIL_OAUTH_CALLBACK_EVENT, cb);
+                        }
+                    }
+                });
             }
 
             // Sync scheduler: one poll task per active account + backfill resume (T021/T022).
@@ -204,13 +239,17 @@ pub fn run() {
             tauri::async_runtime::block_on(account::AccountService::heal_primary(&state))
                 .map_err(|e| Box::<dyn std::error::Error>::from(e.to_string()))?;
 
-            // FOUC guard (T050 §6): hand the persisted theme to the webview as a
-            // global before React mounts. The index.html inline script reads it;
-            // main.tsx re-reads the setting over IPC as the late fallback.
+            // FOUC guard (T050 §6, analysis 25): hand the persisted theme and UI
+            // scale to the webview as globals before React mounts. The boot scripts
+            // read them; main.tsx re-reads the settings over IPC as the late fallback.
             let theme = tauri::async_runtime::block_on(commands::settings::initial_theme(&state));
+            let font_scale =
+                tauri::async_runtime::block_on(commands::settings::initial_font_scale(&state));
             if let Some(win) = app.get_webview_window("main") {
                 // `theme` is constrained to light|dark|system — safe to embed.
                 let _ = win.eval(format!("window.__INITIAL_THEME__ = \"{theme}\";"));
+                // `font_scale` is a clamped f64 — safe to embed as a numeric literal.
+                let _ = win.eval(format!("window.__INITIAL_FONT_SCALE__ = {font_scale};"));
             }
 
             app.manage(state);
@@ -229,6 +268,12 @@ pub fn run() {
             commands::accounts::create_account,
             commands::accounts::update_account,
             commands::accounts::delete_account,
+            // ── SeekerMail ID identity (A6, decoupled from mailboxes) ────────
+            commands::identity::sign_out_seekermail,
+            commands::identity::get_seekermail_id,
+            commands::identity::set_marketing_consent,
+            commands::identity::begin_google_signin,
+            commands::identity::complete_google_signin,
             commands::accounts::update_account_password,
             commands::accounts::enable_account,
             commands::accounts::disable_account,
@@ -339,6 +384,7 @@ pub fn run() {
             // ── Provider config UI surface (T068) ────────────────────────────
             commands::ai::scan_local_providers,
             commands::ai::list_ollama_models,
+            commands::ai::list_cloud_models,
             commands::ai::list_configured_providers,
             // ── Recommended provider (T064, F3) ──────────────────────────────
             commands::ai_recommended::get_recommended_providers,
@@ -361,6 +407,9 @@ pub fn run() {
             commands::queries::list_pending_queries,
             commands::queries::answer_query,
             commands::queries::skip_query,
+            // ── Risk events (T071, Module E) ─────────────────────────────────
+            commands::risk::list_risk_events,
+            commands::risk::resolve_risk_event,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

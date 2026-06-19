@@ -34,11 +34,18 @@ required-features = ["specta-export"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+# ─── Dev convenience: load .env at startup (T015 local config) ───────────────
+dotenvy = "0.15"
+
 # ─── Tauri shell ─────────────────────────────────────────────────────────────
 tauri = { version = "2", features = [] }
 # OS notifications for batched E2 drafts (T083). Backend-only sender in v0.6 —
 # the webview never invokes the plugin directly.
 tauri-plugin-notification = "2"
+# Custom `seekermail://` URL scheme for OAuth deep-link callbacks (T015 mail +
+# T064 recommended-provider grants). Backend-only: the Rust handler routes the
+# redirect to the right flow; the webview listens via generic Tauri events.
+tauri-plugin-deep-link = "2"
 
 # ─── Serialization & shared types (T003) ────────────────────────────────────
 serde = { version = "1", features = ["derive"] }
@@ -86,6 +93,10 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 rand = "0.8"
 sha2 = "0.10"
 base64 = "0.22"
+# SeekerMail ID — verify the Google OIDC `id_token` (JWT/RS256) against Google's
+# JWKS during "Sign in with Google" (T121, A6). JWKS fetch reuses `reqwest`; the
+# verify path is unit-tested with a mock-IdP key, so it stays in the default build.
+jsonwebtoken = "9"
 regex = "1"
 once_cell = "1"
 walkdir = "2"

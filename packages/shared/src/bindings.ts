@@ -677,6 +677,14 @@ export type ListDecisionsParams = { accountId: string | null; sinceUnix: number 
 decisionTypes: string[] | null; impact: string | null; limit: number | null; offset: number | null }
 
 /**
+ * Filter for `list_risk_events` (T071). Every field is optional; `status`
+ * defaults to `open` when omitted, so the banner and report panel see only
+ * live risks (mirrors the off-Tauri mock contract). `mail_id` powers the
+ * per-mail T4 banner.
+ */
+export type ListRiskEventsParams = { accountId?: string | null; mailId?: string | null; status?: string | null; riskLevel?: number | null }
+
+/**
  * One reachable local AI endpoint found by `scan_local_providers` (F_F2 §3).
  */
 export type LocalProviderEndpoint = { 
@@ -742,10 +750,12 @@ export type NextAction = { action: string; timeline: NextActionTimeline }
 export type NextActionTimeline = "immediate" | "24h" | "72h" | "this_week"
 
 /**
- * What `begin_oauth_flow` returns to the UI (T015): just the authorize URL to
- * open. The PKCE verifier stays server-side; tokens never reach the frontend.
+ * What `begin_oauth_flow` returns to the UI (T015): the authorize URL to open
+ * plus the CSRF `state` nonce. The PKCE verifier stays server-side; tokens never
+ * reach the frontend. The wizard passes `state` back to `complete_oauth_flow`
+ * (deep-link callback or manual code paste).
  */
-export type OAuthBeginResult = { authorizeUrl: string }
+export type OAuthBeginResult = { authorizeUrl: string; state: string }
 
 /**
  * One model installed on a local daemon (F_F2 §4.3) — the wire shape of
@@ -928,10 +938,26 @@ id: string; instruction: string | null }
 export type RequestAiReplyParams = { mailId: string; instruction: string | null }
 
 /**
+ * Input to `resolve_risk_event` (T071). `status` is the terminal state to set
+ * (`resolved` or `dismissed`); `dismissed` is rejected for T4 events, which are
+ * non-dismissable until resolved (root CLAUDE.md T4 rule).
+ */
+export type ResolveRiskParams = { id: string; status: string; resolutionNote?: string | null }
+
+/**
  * `risk:alert` payload (T084) — an E4 interception (or any new risk event)
  * the UI should refetch risk queries for. Identifiers only.
  */
 export type RiskAlertPayload = { riskEventId: string; mailId: string; accountId: string }
+
+/**
+ * One `risk_events` row returned to the frontend (T071). `risk_level` is 1–6
+ * (T1–T6); `expires_at` is `null` for T4 — those never expire
+ * (AI_MODES_DESIGN §8.1, root CLAUDE.md T4 rule). `evidence` is the structured
+ * JSON object persisted with the event; it never contains the flagged excerpt
+ * itself, only a hash (T070 §6, dev/09 §5).
+ */
+export type RiskEvent = { id: string; mailId: string; accountId: string; riskLevel: number; riskType: string; evidence: JsonValue; description: string; status: string; expiresAt: number | null; createdAt: number }
 
 /**
  * The D2 sales analysis returned to the frontend (T072 §3). Also the exact
@@ -1009,6 +1035,31 @@ export type SearchWithAttachmentsParams = { query: string; mode: SearchMode; acc
  * Combined result: mail-body hits + attachment-origin hits (T110 §3a).
  */
 export type SearchWithAttachmentsResult = { mailHits: SearchResult[]; attachmentHits: AttachmentHit[] }
+
+/**
+ * The optional, cloud-backed SeekerMail ID (A6, decoupled model). It is
+ * INDEPENDENT of any mailbox — created by signing in with Google, optional and
+ * local-first. This is the local-cache projection returned to the UI; mail
+ * content, contacts, and vectors never appear here. Spec: knowledge base
+ * `docs/function list/F_A6_seekermail_id.md` + `docs/analysis/26_*`.
+ */
+export type SeekerMailId = { 
+/**
+ * Identity provider — `google` at launch; the schema is provider-agnostic.
+ */
+provider: string; 
+/**
+ * The sign-in email (and the marketing-contact email when consented).
+ */
+email: string; displayName: string | null; emailVerified: boolean; 
+/**
+ * Entitlement / subscription tier (transactional; not a marketing field).
+ */
+plan: string | null; 
+/**
+ * Marketing email opt-in. Default OFF; first-party only (see PRIVACY_POLICY).
+ */
+marketingConsent: boolean; marketingConsentSource: string | null; signedInAt: number }
 
 /**
  * Params for `semantic_search` (02 §Module C).

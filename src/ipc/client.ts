@@ -29,6 +29,7 @@ import type {
   MailDetail,
   MailSummary,
   OAuthBeginResult,
+  SeekerMailId,
   PageResult,
   PingReply,
   Provider,
@@ -62,7 +63,9 @@ import type {
 // command surface is exported via `pnpm gen:types`.
 import type {
   AccountAiSettings,
+  AiProvider,
   ConfiguredProviderInfo,
+  ListCloudModelsParams,
   LocalProviderEndpoint,
   OllamaModelEntry,
   UpdateAiSettingsParams,
@@ -128,6 +131,20 @@ export type Commands = {
     output: Account;
   };
   delete_account: { input: { account_id: string }; output: null };
+  // SeekerMail ID identity (A6, decoupled from mailboxes). Sign-out clears only the
+  // identity; mailboxes and local mail are untouched. Google sign-in is stubbed in
+  // the backend until the cloud-identity service ships (T121).
+  sign_out_seekermail: { input: undefined; output: null };
+  get_seekermail_id: { input: undefined; output: SeekerMailId | null };
+  set_marketing_consent: {
+    input: { consent: boolean; source: string | null };
+    output: SeekerMailId | null;
+  };
+  begin_google_signin: { input: undefined; output: OAuthBeginResult };
+  complete_google_signin: {
+    input: { code: string; state_nonce: string };
+    output: SeekerMailId;
+  };
   update_account_password: {
     input: { account_id: string; password: string };
     output: null;
@@ -159,6 +176,10 @@ export type Commands = {
   list_ollama_models: {
     input: { base_url: string | null };
     output: OllamaModelEntry[];
+  };
+  list_cloud_models: {
+    input: { params: ListCloudModelsParams };
+    output: string[];
   };
   list_configured_providers: {
     input: undefined;
@@ -411,9 +432,9 @@ export type Commands = {
     output: LegalAnalysisResult;
   };
 
-  // Risk events (T071, dev/02 §Module E) — PROVISIONAL: served by the mock
-  // layer below until the Module E command surface is registered in Rust; the
-  // hook surface (queries/risk.ts) is already final.
+  // Risk events (T071, dev/02 §Module E). Backed by the real Rust commands
+  // (commands::risk::{list_risk_events,resolve_risk_event}); the mock layer
+  // below is only the off-Tauri dev/test double. Hooks: queries/risk.ts.
   list_risk_events: {
     input: { params: ListRiskEventsParams };
     output: RiskEvent[];
@@ -1205,6 +1226,18 @@ const MOCK_PENDING_QUERIES: PendingQuery[] = [
 ];
 
 /**
+ * Off-Tauri cloud model catalog (T068): mirrors `GET /v1/models` so the
+ * add-cloud-provider "Load models" picker renders in dev and unit tests. The
+ * ids are representative current models per provider family.
+ */
+function mockCloudModels(provider: AiProvider): string[] {
+  if (provider === "anthropic") {
+    return ["claude-haiku-4-5", "claude-opus-4-8", "claude-sonnet-4-6"];
+  }
+  return ["gpt-4o", "gpt-5.4", "gpt-5.4-mini", "gpt-5.5"];
+}
+
+/**
  * Browser/dev + test fixtures (07 §11). When not under Tauri, `ipc()` resolves
  * from here so the UI renders in a plain browser and unit tests need no runtime.
  */
@@ -1217,6 +1250,15 @@ const MOCK_RESPONSES: {
   create_account: () => SAMPLE_ACCOUNT,
   update_account: () => SAMPLE_ACCOUNT,
   delete_account: () => null,
+  sign_out_seekermail: () => null,
+  get_seekermail_id: () => null,
+  set_marketing_consent: () => null,
+  begin_google_signin: () => {
+    throw new Error("SeekerMail ID sign-in is not available in this build");
+  },
+  complete_google_signin: () => {
+    throw new Error("SeekerMail ID sign-in is not available in this build");
+  },
   update_account_password: () => null,
   enable_account: () => ({ ...SAMPLE_ACCOUNT, isActive: true }),
   disable_account: () => ({ ...SAMPLE_ACCOUNT, isActive: false }),
@@ -1262,6 +1304,7 @@ const MOCK_RESPONSES: {
       quantization: "Q4_K_M",
     },
   ],
+  list_cloud_models: (args) => mockCloudModels(args.params.provider),
   list_configured_providers: () =>
     [SAMPLE_ACCOUNT]
       .map((account) => ({ account, ai: mockAiSettingsRow(account.id) }))
@@ -1286,6 +1329,7 @@ const MOCK_RESPONSES: {
   }),
   begin_oauth_flow: () => ({
     authorizeUrl: "https://accounts.example.com/authorize",
+    state: "mock-state-nonce",
   }),
   complete_oauth_flow: () => null,
   reauth_account: () => null,
@@ -1394,13 +1438,14 @@ const MOCK_RESPONSES: {
     accountsSyncing: 3,
     lastSyncAt: NOW - 120,
   }),
+  // Top Topics now groups the AI decision log by its `impact` class
+  // (risk | reply | identity | rule | context) — see commands/gte.rs.
   get_topic_breakdown: () => [
-    { label: "Vendor", color: "slate", count: 105 },
-    { label: "Payment", color: "amber", count: 61 },
-    { label: "Contract", color: "terra", count: 47 },
-    { label: "Schedule", color: "sage", count: 34 },
-    { label: "Compliance", color: "green", count: 23 },
-    { label: "NDA", color: "slate", count: 18 },
+    { label: "Replies", color: "green", count: 84 },
+    { label: "Context", color: "sage", count: 52 },
+    { label: "Risk", color: "terra", count: 31 },
+    { label: "Identity", color: "slate", count: 19 },
+    { label: "Rules", color: "amber", count: 12 },
   ],
   list_knowledge_entries: () => [
     {
@@ -1456,7 +1501,8 @@ const MOCK_RESPONSES: {
       dateSent: NOW - 30 * 86400,
       usedCount: 6,
       impact: "rule",
-      lastUsedFor: "Compared counterparty clause against standard NDA — confirmed clause exceeds scope",
+      lastUsedFor:
+        "Compared counterparty clause against standard NDA — confirmed clause exceeds scope",
       lastUsedTime: NOW - 1800,
       source: "Internal document",
       thread: "Legal Template Library",

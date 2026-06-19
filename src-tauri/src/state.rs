@@ -26,6 +26,7 @@ use crate::embedding::queue::{EmbedJob, EmbedQueue};
 use crate::embedding::Embedder;
 use crate::error::AppResult;
 use crate::events::Emitter;
+use crate::identity::PendingIdentitySignin;
 use crate::keychain::Keychain;
 use crate::net::Net;
 use crate::sanitize::Sanitizer;
@@ -55,6 +56,9 @@ pub struct AppState {
     pub net: Net,
     /// Transient PKCE/state for an in-flight OAuth grant (T015 §6).
     pub oauth: Arc<Mutex<Option<PendingOAuth>>>,
+    /// Transient PKCE/state for an in-flight SeekerMail ID sign-in (loopback OIDC,
+    /// T121/A6). Independent of the mailbox `oauth` grant above.
+    pub identity_oauth: Arc<Mutex<Option<PendingIdentitySignin>>>,
     /// True while any account is backfilling — auto attachment downloads back off
     /// to 1 concurrent while set (T025 §6).
     pub backfill_active: Arc<AtomicBool>,
@@ -135,6 +139,7 @@ impl AppState {
             events,
             net: Net::resolve(),
             oauth: Arc::new(Mutex::new(None)),
+            identity_oauth: Arc::new(Mutex::new(None)),
             backfill_active: Arc::new(AtomicBool::new(false)),
             refresh_guards: Arc::new(Mutex::new(HashMap::new())),
             mail_tx,
@@ -181,6 +186,15 @@ impl AppState {
     /// or drop it.
     #[cfg(test)]
     pub async fn test_state() -> (Self, mpsc::Receiver<RawMail>) {
+        Self::test_state_with_net(Net::resolve()).await
+    }
+
+    /// Like [`Self::test_state`] but with a caller-supplied [`Net`]. Inject
+    /// `crate::net::fakes::fake_net(...)` to exercise the transport **success**
+    /// paths (sync / sampler / connection probe / OAuth refresh) that the
+    /// default offline adapters can only fail.
+    #[cfg(test)]
+    pub async fn test_state_with_net(net: Net) -> (Self, mpsc::Receiver<RawMail>) {
         let storage = StorageFacade::open_in_memory().await.expect("test storage");
         let (mail_tx, mail_rx) = mpsc::channel(INGEST_CHANNEL_CAP);
         let paths = Paths::resolve().expect("paths");
@@ -201,8 +215,9 @@ impl AppState {
             paths,
             sanitizer: Arc::new(Sanitizer::new()),
             events,
-            net: Net::resolve(),
+            net,
             oauth: Arc::new(Mutex::new(None)),
+            identity_oauth: Arc::new(Mutex::new(None)),
             backfill_active: Arc::new(AtomicBool::new(false)),
             refresh_guards: Arc::new(Mutex::new(HashMap::new())),
             mail_tx,

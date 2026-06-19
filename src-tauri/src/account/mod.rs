@@ -6,6 +6,7 @@
 //! purges secrets + blobs + vectors before the cascading row delete.
 
 pub mod oauth;
+pub mod pkce;
 pub mod presets;
 pub mod refresh;
 
@@ -222,34 +223,42 @@ impl AccountService {
         Ok(())
     }
 
-    /// Delete an account. Ordering matters (T026 §6): refuse to remove the last
-    /// account, then purge secrets → blob files → vectors → DB rows (cascade).
+    /// Delete one account / disconnect one mailbox (T026 §6). In the decoupled
+    /// SeekerMail ID model (A6, analysis/26) a mailbox is just a data source, so
+    /// removing the **last** one is allowed — it leaves zero mailboxes, a valid
+    /// state. The independent SeekerMail ID is unaffected; signing out of the ID is
+    /// a separate action (see `commands::identity`). Purges the account's
+    /// secrets/blobs/vectors/rows, heals the single-primary invariant, then
+    /// announces the departure in the TEAM channel.
     pub async fn delete(state: &AppState, id: &str) -> AppResult<()> {
         let repo = AccountRepo::new(state.storage.db());
-        if repo.count().await? <= 1 {
-            return Err(AppError::Forbidden("cannot delete the last account".into()));
-        }
-        // Ensure it exists (clear NOT_FOUND semantics) + capture identity for the
-        // TEAM channel "left" message posted after the row is gone.
-        let account = repo.get(id).await?;
-
-        // 1. Keychain (so no orphan secrets survive).
-        let uuid = parse_uuid(id)?;
-        state.keychain.delete_all(&uuid)?;
-        // 2. Blob files on disk (walks the filesystem, independent of the DB).
-        state.storage.blobs().cleanup_account_dir(id).await?;
-        // 3. Derived vectors.
-        state.storage.vectors().delete_account(id)?;
-        // 4. DB rows (ON DELETE CASCADE clears threads/mails/sync_state/…).
-        repo.delete(id).await?;
-        // 5. T091 invariant backstop: if the deleted account was primary, the db
-        // now has zero primaries — promote the earliest remaining account so the
+        let account = Self::purge_account(state, id).await?;
+        // T091 invariant backstop: if the deleted account was primary, the db now
+        // has zero primaries — promote the earliest remaining account so the
         // single-primary invariant always holds, even if a caller bypasses the
         // frontend "switch primary first" guard (F_I1 §6).
         repo.heal_primary().await?;
-        // 6. T094: announce the departure in the TEAM channel (best-effort).
+        // T094: announce the departure in the TEAM channel (best-effort).
         post_member_change(state, "left", &account.display_name, &account.email).await;
         Ok(())
+    }
+
+    /// Purge one account's secrets, blob files, derived vectors, and DB rows in the
+    /// delete ordering (T026 §6): Keychain first (no orphan secrets survive) → blob
+    /// files on disk → derived vectors → DB rows (ON DELETE CASCADE clears
+    /// threads/mails/sync_state/…). Teardown for [`Self::delete`]; it does **not**
+    /// heal the primary invariant or post a channel message — the caller decides
+    /// those. Returns the account identity (for any post-delete messaging).
+    async fn purge_account(state: &AppState, id: &str) -> AppResult<Account> {
+        let repo = AccountRepo::new(state.storage.db());
+        // Ensure it exists (clear NOT_FOUND semantics) + capture identity.
+        let account = repo.get(id).await?;
+        let uuid = parse_uuid(id)?;
+        state.keychain.delete_all(&uuid)?;
+        state.storage.blobs().cleanup_account_dir(id).await?;
+        state.storage.vectors().delete_account(id)?;
+        repo.delete(id).await?;
+        Ok(account)
     }
 
     /// Set the account's knowledge-depth (T016). `None` = all mail.
@@ -402,33 +411,36 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn cannot_delete_last_account() {
+    async fn delete_last_account_is_allowed() {
+        // A6 decoupling (analysis/26): a mailbox is just a data source, so removing
+        // the last one is a valid state (zero mailboxes). The old "can't remove your
+        // only account" dead-end is gone — identity is independent of mailboxes.
         let (state, _rx) = AppState::test_state().await;
-        AccountService::create(
-            &state,
-            CreateAccountParams {
-                email: "a@x.com".into(),
-                display_name: "A".into(),
-                provider: Provider::Imap,
-                imap_host: Some("imap.x.com".into()),
-                imap_port: Some(993),
-                smtp_host: Some("smtp.x.com".into()),
-                smtp_port: Some(587),
-                color_token: "slate".into(),
-                badge_label: "W".into(),
-                role_type: None,
-                role_description: None,
-                auth_level: None,
-                password: None,
-            },
-        )
-        .await
-        .unwrap();
+        AccountService::create(&state, imap_params("solo@x.com", "S"))
+            .await
+            .unwrap();
         let only = AccountService::list(&state).await.unwrap()[0].id.clone();
-        assert!(matches!(
-            AccountService::delete(&state, &only).await.unwrap_err(),
-            AppError::Forbidden(_)
-        ));
+        AccountService::delete(&state, &only).await.unwrap();
+        assert!(AccountService::list(&state).await.unwrap().is_empty());
+    }
+
+    /// Minimal IMAP account params (no password → no Keychain writes in tests).
+    fn imap_params(email: &str, badge: &str) -> CreateAccountParams {
+        CreateAccountParams {
+            email: email.into(),
+            display_name: email.split('@').next().unwrap_or("Acct").into(),
+            provider: Provider::Imap,
+            imap_host: Some("imap.x.com".into()),
+            imap_port: Some(993),
+            smtp_host: Some("smtp.x.com".into()),
+            smtp_port: Some(587),
+            color_token: "slate".into(),
+            badge_label: badge.into(),
+            role_type: None,
+            role_description: None,
+            auth_level: None,
+            password: None,
+        }
     }
 
     #[tokio::test]
@@ -452,6 +464,34 @@ mod tests {
         .unwrap(); // Ok, not Err — in-band result.
         assert!(!res.imap_ok);
         assert!(res.error_message.is_some());
+    }
+
+    #[tokio::test]
+    async fn verify_connection_reports_success_with_a_reachable_server() {
+        // Inject a fake probe (both endpoints reachable) so the T014 success path
+        // — never reachable through the offline adapter — is actually exercised.
+        let net =
+            crate::net::fakes::fake_net(None, Some(crate::net::fakes::FakeConnProbe::ok()), None);
+        let (state, _rx) = AppState::test_state_with_net(net).await;
+        let res = AccountService::verify_connection(
+            &state,
+            VerifyConnectionParams {
+                email: "a@gmail.com".into(),
+                provider: Provider::Gmail,
+                password: Some("x".into()),
+                imap_host: None,
+                imap_port: None,
+                imap_tls: None,
+                smtp_host: None,
+                smtp_port: None,
+                smtp_tls: None,
+            },
+        )
+        .await
+        .unwrap();
+        assert!(res.imap_ok);
+        assert!(res.smtp_ok);
+        assert!(res.error_message.is_none());
     }
 
     #[tokio::test]

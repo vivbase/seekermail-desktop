@@ -125,10 +125,11 @@ impl Provider {
         }
     }
 
-    /// OAuth providers use a hosted authorization server; IMAP/Exchange use
-    /// password or (future) modern auth.
+    /// Outlook/Microsoft uses a hosted OAuth authorization server. Gmail moved to
+    /// IMAP + App Password (Google's `mail.google.com` is a restricted/paid scope —
+    /// knowledge base `docs/analysis/29_*`); IMAP/Exchange use password auth.
     pub fn is_oauth(self) -> bool {
-        matches!(self, Provider::Gmail | Provider::Outlook)
+        matches!(self, Provider::Outlook)
     }
 }
 
@@ -158,6 +159,28 @@ pub struct Account {
     pub knowledge_depth_months: Option<u32>,
     pub created_at: i64,
     pub updated_at: i64,
+}
+
+/// The optional, cloud-backed SeekerMail ID (A6, decoupled model). It is
+/// INDEPENDENT of any mailbox — created by signing in with Google, optional and
+/// local-first. This is the local-cache projection returned to the UI; mail
+/// content, contacts, and vectors never appear here. Spec: knowledge base
+/// `docs/function list/F_A6_seekermail_id.md` + `docs/analysis/26_*`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SeekerMailId {
+    /// Identity provider — `google` at launch; the schema is provider-agnostic.
+    pub provider: String,
+    /// The sign-in email (and the marketing-contact email when consented).
+    pub email: String,
+    pub display_name: Option<String>,
+    pub email_verified: bool,
+    /// Entitlement / subscription tier (transactional; not a marketing field).
+    pub plan: Option<String>,
+    /// Marketing email opt-in. Default OFF; first-party only (see PRIVACY_POLICY).
+    pub marketing_consent: bool,
+    pub marketing_consent_source: Option<String>,
+    pub signed_in_at: i64,
 }
 
 /// Parameters to create an account (T013). `password` is consumed at the command
@@ -202,12 +225,15 @@ pub struct UpdateAccountParams {
     pub smtp_port: Option<u16>,
 }
 
-/// What `begin_oauth_flow` returns to the UI (T015): just the authorize URL to
-/// open. The PKCE verifier stays server-side; tokens never reach the frontend.
+/// What `begin_oauth_flow` returns to the UI (T015): the authorize URL to open
+/// plus the CSRF `state` nonce. The PKCE verifier stays server-side; tokens never
+/// reach the frontend. The wizard passes `state` back to `complete_oauth_flow`
+/// (deep-link callback or manual code paste).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct OAuthBeginResult {
     pub authorize_url: String,
+    pub state: String,
 }
 
 /// Built-in provider connection hints (T014 autodiscover).
@@ -312,17 +338,17 @@ pub struct GteStats {
     pub last_sync_at: Option<i64>,
 }
 
-/// One topic bucket with its mail count — the real analogue of the prototype
-/// "Top Topics". The deal-tag source was removed with the transaction-view
-/// feature, so this is currently always empty (awaiting a replacement signal).
+/// One topic bucket with its decision count — the real analogue of the prototype
+/// "Top Topics". Sourced from the AI decision log's `impact` classification
+/// (risk / reply / identity / rule / context) since the deal-tag source was removed.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TopicCount {
-    /// Topic label.
+    /// Topic label (human-readable impact class).
     pub label: String,
     /// Design-system colour token for the bar.
     pub color: String,
-    /// Number of mails in this topic.
+    /// Number of AI decisions in this impact class.
     pub count: i64,
 }
 
@@ -957,6 +983,11 @@ pub struct ParsedAttachment {
     pub size_bytes: u64,
     pub content_id: Option<String>,
     pub is_inline: bool,
+    /// 0-based ordinal position within the message's `attachments()` iterator.
+    /// Persisted as `attachments.part_index` (migration 016) and used by the
+    /// deferred byte-download (`ImapSession::fetch_part`) to re-address the exact
+    /// MIME part on the server. Internal only — never crosses the IPC wire.
+    pub part_index: u32,
     pub data: Option<Vec<u8>>,
 }
 
@@ -1300,6 +1331,29 @@ pub struct VerifyAiProviderResult {
     pub error_message: Option<String>,
 }
 
+/// Input to `list_cloud_models` (T068): read a cloud provider's model catalog
+/// (`GET /v1/models`) for the add-cloud-provider model picker, without saving.
+/// The transient key exists only inside the command frame.
+#[derive(Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ListCloudModelsParams {
+    pub provider: AiProvider,
+    pub api_key: Option<String>,
+    pub base_url: Option<String>,
+}
+
+impl std::fmt::Debug for ListCloudModelsParams {
+    /// Hand-written so the transient API key can never reach a log line via a
+    /// derived `Debug` (09 §5) — mirrors [`VerifyAiProviderParams`].
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ListCloudModelsParams")
+            .field("provider", &self.provider)
+            .field("api_key", &self.api_key.as_ref().map(|_| "***"))
+            .field("base_url", &self.base_url)
+            .finish()
+    }
+}
+
 // =============================================================================
 // Module D — AI role analysis (T070 legal / F_D1 §4.4)
 //
@@ -1411,6 +1465,64 @@ pub struct LegalAnalysisResult {
     /// Mail ids of the GTE chunks that grounded the analysis (dev/06 §9).
     pub knowledge_refs: Vec<String>,
     pub created_at: i64,
+}
+
+// =============================================================================
+// Module E — risk events (T071; dev/01 `risk_events`, dev/02 §Module E)
+//
+// Wire DTOs for `list_risk_events` / `resolve_risk_event`. Rows are written by
+// the D1 legal analyzer (`ai::legal`) and the E4 router (`ai::pipeline::e4_router`);
+// these two commands are the read + resolve surface that backs the T4 banner and
+// the Report risk panel. Mirrors `src/ipc/legal.ts` (`RiskEvent`, params).
+// =============================================================================
+
+/// One `risk_events` row returned to the frontend (T071). `risk_level` is 1–6
+/// (T1–T6); `expires_at` is `null` for T4 — those never expire
+/// (AI_MODES_DESIGN §8.1, root CLAUDE.md T4 rule). `evidence` is the structured
+/// JSON object persisted with the event; it never contains the flagged excerpt
+/// itself, only a hash (T070 §6, dev/09 §5).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RiskEvent {
+    pub id: String,
+    pub mail_id: String,
+    pub account_id: String,
+    pub risk_level: i64,
+    pub risk_type: String,
+    pub evidence: serde_json::Value,
+    pub description: String,
+    pub status: String,
+    pub expires_at: Option<i64>,
+    pub created_at: i64,
+}
+
+/// Filter for `list_risk_events` (T071). Every field is optional; `status`
+/// defaults to `open` when omitted, so the banner and report panel see only
+/// live risks (mirrors the off-Tauri mock contract). `mail_id` powers the
+/// per-mail T4 banner.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ListRiskEventsParams {
+    #[serde(default)]
+    pub account_id: Option<String>,
+    #[serde(default)]
+    pub mail_id: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub risk_level: Option<i64>,
+}
+
+/// Input to `resolve_risk_event` (T071). `status` is the terminal state to set
+/// (`resolved` or `dismissed`); `dismissed` is rejected for T4 events, which are
+/// non-dismissable until resolved (root CLAUDE.md T4 rule).
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolveRiskParams {
+    pub id: String,
+    pub status: String,
+    #[serde(default)]
+    pub resolution_note: Option<String>,
 }
 
 // =============================================================================

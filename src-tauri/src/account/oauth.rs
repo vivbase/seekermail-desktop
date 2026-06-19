@@ -1,19 +1,25 @@
-//! OAuth 2.0 (PKCE) initial grant for Google + Microsoft (T015).
+//! OAuth 2.0 (PKCE) initial grant for **Microsoft / Outlook only** (T015).
+//!
+//! Gmail no longer uses OAuth here: Google's `https://mail.google.com/` is a
+//! *restricted* scope (annual paid CASA security assessment to ship publicly), so
+//! Gmail mailbox import moves to IMAP + an App Password. Microsoft, by contrast,
+//! retired App Passwords / basic auth for Outlook.com + Exchange Online, so OAuth
+//! is the only path there — and Microsoft's OAuth verification is free. The split
+//! is recorded in the knowledge base `docs/analysis/29_*`.
 //!
 //! Security rules enforced here:
-//! * `code_verifier` and `state` are 32-byte CSPRNG values (`rand::rngs::OsRng`).
+//! * `code_verifier` and `state` are 32-byte CSPRNG values (see [`crate::account::pkce`]).
 //! * `code_challenge = BASE64URL(SHA256(verifier))`, method `S256`.
 //! * `complete` verifies the returned `state` against the pending nonce (CSRF).
 //! * a pending grant older than [`OAUTH_PENDING_TTL_SECS`] is discarded.
 //! * token strings are zeroized the instant they reach the Keychain — they never
 //!   touch the DB, a log line, or an IPC return value (F_A2 §4).
 
-use base64::Engine;
-use rand::rngs::OsRng;
-use rand::RngCore;
-use sha2::{Digest, Sha256};
 use zeroize::Zeroize;
 
+use serde::{Deserialize, Serialize};
+
+use crate::account::pkce::new_pkce;
 use crate::config::OAUTH_PENDING_TTL_SECS;
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
@@ -21,8 +27,53 @@ use crate::types::Provider;
 use crate::util::{now_unix, parse_uuid};
 
 /// Deep-link redirect the provider sends the code back to (matches the registered
-/// `seekermail://` scheme).
+/// `seekermail://` scheme). Microsoft accepts a registered custom-scheme redirect
+/// for a public/native client (unlike Google's Desktop-app client, which is why the
+/// SeekerMail ID flow uses loopback). A follow-up migrates this to loopback too for
+/// consistency + dev-testability (see `docs/analysis/29_*` §7).
 pub const REDIRECT_URI: &str = "seekermail://oauth/callback";
+
+/// Tauri event the lib.rs deep-link handler emits when it parses an account-mail
+/// OAuth callback. The Add-Account wizard listens and forwards `code` + `state`
+/// to `complete_oauth_flow` (where the CSRF check lives).
+pub const MAIL_OAUTH_CALLBACK_EVENT: &str = "oauth:mail_callback";
+
+/// Payload of [`MAIL_OAUTH_CALLBACK_EVENT`].
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MailOAuthCallback {
+    pub code: String,
+    pub state: String,
+}
+
+/// Parse a `seekermail://oauth/callback?code=…&state=…` deep link. Mirrors
+/// [`parse_recommended_callback`](crate::ai::recommended::parse_recommended_callback):
+/// the lib.rs URL-scheme handler calls this to route a callback to the
+/// account-mail flow (vs. the recommended flow on `/oauth/recommended`). Returns
+/// `None` unless the URL is the mail callback and carries both `code` and `state`.
+///
+/// Both values are percent-decoded (M17): Microsoft authorization codes routinely
+/// contain `/` (arriving as `%2F`); handing the encoded form to the token endpoint
+/// re-encodes it to `%252F` and the exchange fails. The identity loopback path
+/// decodes too — this keeps the two consistent.
+pub fn parse_mail_callback(url: &str) -> Option<MailOAuthCallback> {
+    let rest = url.strip_prefix(REDIRECT_URI)?;
+    let query = rest.strip_prefix('?')?;
+    let mut code = None;
+    let mut state = None;
+    for pair in query.split('&') {
+        let (k, v) = pair.split_once('=')?;
+        match k {
+            "code" => code = Some(url_decode(v)),
+            "state" => state = Some(url_decode(v)),
+            _ => {}
+        }
+    }
+    Some(MailOAuthCallback {
+        code: code?,
+        state: state?,
+    })
+}
 
 /// Transient PKCE state for an in-flight grant, parked in `AppState.oauth`.
 #[derive(Debug, Clone)]
@@ -49,16 +100,12 @@ struct Endpoints {
 
 fn endpoints(provider: Provider) -> AppResult<Endpoints> {
     match provider {
-        Provider::Gmail => Ok(Endpoints {
-            authorize_url: "https://accounts.google.com/o/oauth2/v2/auth",
-            token_url: "https://oauth2.googleapis.com/token",
-            scope: "https://mail.google.com/",
-        }),
         Provider::Outlook => Ok(Endpoints {
             authorize_url: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
             token_url: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
             scope: "https://outlook.office365.com/IMAP.AccessAsUser.All offline_access",
         }),
+        // Gmail uses IMAP + App Password (not OAuth); IMAP/Exchange never reach here.
         _ => Err(AppError::Validation("provider does not use OAuth".into())),
     }
 }
@@ -70,38 +117,10 @@ fn endpoints(provider: Provider) -> AppResult<Endpoints> {
 /// degrade gracefully.
 fn client_id(provider: Provider) -> AppResult<String> {
     let var = match provider {
-        Provider::Gmail => "SEEKERMAIL_GOOGLE_CLIENT_ID",
         Provider::Outlook => "SEEKERMAIL_MICROSOFT_CLIENT_ID",
         _ => return Err(AppError::Validation("provider does not use OAuth".into())),
     };
     std::env::var(var).map_err(|_| AppError::AuthOAuthFailed(format!("{var} is not configured")))
-}
-
-/// One generated PKCE challenge.
-pub struct Pkce {
-    pub verifier: String,
-    pub challenge: String,
-    pub state: String,
-}
-
-/// Generate a fresh verifier + S256 challenge + state nonce.
-pub fn new_pkce() -> Pkce {
-    let verifier = random_b64url(32);
-    let state = random_b64url(32);
-    let mut hasher = Sha256::new();
-    hasher.update(verifier.as_bytes());
-    let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hasher.finalize());
-    Pkce {
-        verifier,
-        challenge,
-        state,
-    }
-}
-
-fn random_b64url(n: usize) -> String {
-    let mut bytes = vec![0u8; n];
-    OsRng.fill_bytes(&mut bytes);
-    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&bytes)
 }
 
 /// Build the provider authorization URL with all PKCE parameters.
@@ -112,7 +131,7 @@ fn build_authorize_url(
     state: &str,
 ) -> AppResult<String> {
     let ep = endpoints(provider)?;
-    let mut url = format!(
+    let url = format!(
         "{}?response_type=code&client_id={}&redirect_uri={}&scope={}&code_challenge={}&code_challenge_method=S256&state={}",
         ep.authorize_url,
         pct(client_id),
@@ -121,19 +140,21 @@ fn build_authorize_url(
         pct(challenge),
         pct(state),
     );
-    // Ask Google for a refresh token explicitly.
-    if matches!(provider, Provider::Gmail) {
-        url.push_str("&access_type=offline&prompt=consent");
-    }
     Ok(url)
 }
 
 /// Begin a grant: park the PKCE state in `AppState` and return the authorize URL
-/// for the caller to open in the system browser.
-pub fn begin(state: &AppState, provider: Provider, account_id: &str) -> AppResult<String> {
+/// for the caller to open in the system browser, plus the CSRF `state` nonce the
+/// UI needs to complete the grant.
+pub fn begin(
+    state: &AppState,
+    provider: Provider,
+    account_id: &str,
+) -> AppResult<(String, String)> {
     let cid = client_id(provider)?;
     let pkce = new_pkce();
     let url = build_authorize_url(provider, &cid, &pkce.challenge, &pkce.state)?;
+    let state_nonce = pkce.state.clone();
     let pending = PendingOAuth {
         verifier: pkce.verifier,
         state: pkce.state,
@@ -142,13 +163,19 @@ pub fn begin(state: &AppState, provider: Provider, account_id: &str) -> AppResul
         created_at: now_unix(),
     };
     *state.oauth.lock().expect("oauth mutex poisoned") = Some(pending);
-    Ok(url)
+    Ok((url, state_nonce))
 }
 
 /// Complete a grant from the deep-link callback: validate the `state` nonce + TTL,
 /// exchange the code for tokens via the transport seam, store them in the
-/// Keychain, and zeroize the plaintext. Returns the access-token expiry (Unix s).
-pub async fn complete(state: &AppState, code: &str, returned_state: &str) -> AppResult<i64> {
+/// Keychain, and zeroize the plaintext. Returns the account id the grant was for
+/// plus the access-token expiry (Unix s) so the caller can re-arm that account's
+/// poll.
+pub async fn complete(
+    state: &AppState,
+    code: &str,
+    returned_state: &str,
+) -> AppResult<(String, i64)> {
     // Take the pending grant out under the lock, then drop the guard before await.
     let pending = {
         let mut guard = state.oauth.lock().expect("oauth mutex poisoned");
@@ -191,7 +218,7 @@ pub async fn complete(state: &AppState, code: &str, returned_state: &str) -> App
     if let Some(rt) = resp.refresh_token.as_mut() {
         rt.zeroize();
     }
-    Ok(expiry)
+    Ok((pending.account_id, expiry))
 }
 
 /// Build a refresh-grant token request for a provider (T018). Shared with
@@ -227,36 +254,84 @@ fn pct(s: &str) -> String {
     out
 }
 
+/// Percent-decode an `application/x-www-form-urlencoded` query value (M17). Mirrors
+/// the identity loopback decoder so both OAuth paths handle `%2F`-bearing codes
+/// identically.
+fn url_decode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'%' if i + 2 < bytes.len() => match (hex_val(bytes[i + 1]), hex_val(bytes[i + 2])) {
+                (Some(h), Some(l)) => {
+                    out.push((h << 4) | l);
+                    i += 3;
+                }
+                _ => {
+                    out.push(bytes[i]);
+                    i += 1;
+                }
+            },
+            b'+' => {
+                out.push(b' ');
+                i += 1;
+            }
+            b => {
+                out.push(b);
+                i += 1;
+            }
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+fn hex_val(b: u8) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        b'A'..=b'F' => Some(b - b'A' + 10),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn pkce_challenge_is_s256_of_verifier() {
-        let p = new_pkce();
-        let mut hasher = Sha256::new();
-        hasher.update(p.verifier.as_bytes());
-        let expected = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hasher.finalize());
-        assert_eq!(p.challenge, expected);
-        // Verifier and state are distinct, URL-safe, no padding.
-        assert_ne!(p.verifier, p.state);
-        assert!(!p.challenge.contains('='));
-        assert!(!p.challenge.contains('+'));
-    }
-
-    #[test]
     fn authorize_url_has_required_params() {
-        let url = build_authorize_url(Provider::Gmail, "cid123", "chal", "nonce").unwrap();
+        let url = build_authorize_url(Provider::Outlook, "cid123", "chal", "nonce").unwrap();
         assert!(url.contains("code_challenge=chal"));
         assert!(url.contains("code_challenge_method=S256"));
         assert!(url.contains("state=nonce"));
         assert!(url.contains("redirect_uri=seekermail%3A%2F%2Foauth%2Fcallback"));
-        assert!(url.contains("access_type=offline")); // google refresh token
+        assert!(url.contains("login.microsoftonline.com"));
+        // offline_access (refresh token) rides in the scope for Microsoft.
+        assert!(url.contains("offline_access"));
     }
 
     #[test]
     fn non_oauth_provider_rejected() {
         assert!(endpoints(Provider::Imap).is_err());
         assert!(client_id(Provider::Imap).is_err());
+        // Gmail no longer uses OAuth — it imports via IMAP + App Password.
+        assert!(endpoints(Provider::Gmail).is_err());
+        assert!(client_id(Provider::Gmail).is_err());
+    }
+
+    #[test]
+    fn mail_callback_parse_decodes_code_and_state() {
+        // Microsoft codes contain `/` → arrive as `%2F`; must be decoded (M17).
+        let cb =
+            parse_mail_callback("seekermail://oauth/callback?code=M%2Fabc-DEF&state=xyz").unwrap();
+        assert_eq!(cb.code, "M/abc-DEF");
+        assert_eq!(cb.state, "xyz");
+        // The recommended-flow path is NOT ours.
+        assert!(parse_mail_callback("seekermail://oauth/recommended?code=a&state=b").is_none());
+        // Missing a field → None.
+        assert!(parse_mail_callback("seekermail://oauth/callback?code=a").is_none());
+        // Not our scheme/path → None.
+        assert!(parse_mail_callback("https://example.com/?code=a&state=b").is_none());
     }
 }
