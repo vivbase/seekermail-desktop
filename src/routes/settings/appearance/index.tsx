@@ -8,6 +8,7 @@ import { useSetTheme, useThemeSetting } from "@/ipc/queries/settings";
 import { useUi, type Density } from "@/stores/ui";
 import { cn } from "@/lib/cn";
 import type { ThemePreference } from "@/lib/theme";
+import { LOCALE_META } from "@/i18n/locales";
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
 
@@ -18,19 +19,10 @@ const THEME_OPTIONS: { value: ThemePreference; labelKey: string }[] = [
 ];
 
 // ── Language ──────────────────────────────────────────────────────────────────
-
-interface LangOption {
-  code: string;
-  /** Native-script label — the sole exception to the "English UI only" rule. */
-  nativeLabel: string;
-}
-
-const LANG_OPTIONS: LangOption[] = [
-  { code: "en", nativeLabel: "English" },
-  { code: "zh-CN", nativeLabel: "简体中文" },
-  { code: "ja", nativeLabel: "日本語" },
-  { code: "es", nativeLabel: "Español" },
-];
+// All supported locales come from the single source of truth in `@/i18n/locales`
+// (LOCALE_META / SUPPORTED_LOCALES) so this picker stays in lockstep with the
+// Dashboard switcher and i18next config. Native-script names are the sole
+// sanctioned exception to the English-only UI rule.
 
 // ── Density ───────────────────────────────────────────────────────────────────
 
@@ -93,9 +85,9 @@ export default function AppearanceSettings() {
           aria-label={t("appearance_language")}
           className="rounded-chip border border-divider bg-surface px-3 py-1.5 font-ui text-sm text-p9 focus:outline focus:outline-2 focus:outline-p9"
         >
-          {LANG_OPTIONS.map((lang) => (
-            <option key={lang.code} value={lang.code}>
-              {lang.nativeLabel}
+          {Object.entries(LOCALE_META).map(([code, meta]) => (
+            <option key={code} value={code}>
+              {meta.name}
             </option>
           ))}
         </select>
