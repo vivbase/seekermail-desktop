@@ -7,8 +7,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MailDetail, Recipient } from "@shared/bindings";
 
-import { accountColorClass, type AccountColorToken } from "@/lib/accountColor";
+import type { AccountColorToken } from "@/lib/accountColor";
 import { cn } from "@/lib/cn";
+import { SenderAvatar } from "./SenderAvatar";
 
 interface MailHeaderProps {
   mail: MailDetail;
@@ -80,24 +81,8 @@ function RecipientList({ label, recipients }: RecipientListProps) {
   );
 }
 
-/** Single uppercase-letter avatar with account colour background. */
-function SenderAvatar({ initial, colorToken }: { initial: string; colorToken: AccountColorToken }) {
-  return (
-    <div
-      aria-hidden="true"
-      className={cn(
-        "flex h-9 w-9 shrink-0 items-center justify-center rounded-avatar font-ui text-sm font-semibold uppercase",
-        accountColorClass(colorToken),
-      )}
-    >
-      {initial}
-    </div>
-  );
-}
-
-export function MailHeader({ mail, colorToken, isStarred, onToggleStar }: MailHeaderProps) {
+export function MailHeader({ mail, isStarred, onToggleStar }: MailHeaderProps) {
   const { t } = useTranslation("reading");
-  const avatarInitial = (mail.fromName ?? mail.fromEmail).charAt(0).toUpperCase();
 
   return (
     <header className="border-b border-divider pb-4">
@@ -106,7 +91,7 @@ export function MailHeader({ mail, colorToken, isStarred, onToggleStar }: MailHe
 
       {/* Sender row */}
       <div className="mt-3 flex items-start gap-3">
-        <SenderAvatar initial={avatarInitial} colorToken={colorToken} />
+        <SenderAvatar email={mail.fromEmail} name={mail.fromName} className="text-sm" />
 
         <div className="min-w-0 flex-1 space-y-1">
           {/* From */}

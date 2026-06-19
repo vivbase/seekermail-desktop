@@ -6,9 +6,9 @@ import { useTranslation } from "react-i18next";
 
 import type { Thread } from "@shared/bindings";
 import { cn } from "@/lib/cn";
-import { accountColorClass, type AccountColorToken } from "@/lib/accountColor";
 import { formatMailDate } from "@/lib/formatDate";
 import { useUi } from "@/stores/ui";
+import { SenderAvatar } from "./SenderAvatar";
 
 function colorStripeClass(token: string): string {
   const map: Record<string, string> = {
@@ -42,8 +42,8 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 
 export interface ThreadGroupCardProps {
   thread: Thread;
+  /** Account colorToken string for the 3 px color stripe (stays account-coded). */
   colorToken: string;
-  badgeLabel: string;
 }
 
 export function ThreadGroupCard({ thread, colorToken }: ThreadGroupCardProps) {
@@ -59,22 +59,12 @@ export function ThreadGroupCard({ thread, colorToken }: ThreadGroupCardProps) {
 
   const unread = thread.unreadCount > 0;
 
-  // Up to 3 participant initials as avatar chips
-  const avatarChips = thread.participants.slice(0, 3).map((p, i) => {
-    const initial = p.trim().charAt(0).toUpperCase();
-    return (
-      <span
-        key={i}
-        aria-hidden="true"
-        className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-avatar text-[10px] font-semibold",
-          accountColorClass((colorToken as AccountColorToken) ?? "team"),
-        )}
-      >
-        {initial}
-      </span>
-    );
-  });
+  // Up to 3 participant avatars — each colored from its own sender, not the account.
+  const avatarChips = thread.participants
+    .slice(0, 3)
+    .map((participant, i) => (
+      <SenderAvatar key={i} email={participant} size={28} className="text-[10px]" />
+    ));
 
   const moreCount = thread.participants.length - 3;
 

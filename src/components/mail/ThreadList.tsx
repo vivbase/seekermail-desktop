@@ -63,16 +63,26 @@ function mailToThread(m: MailSummary): Thread {
 // ── Virtual row item descriptor ───────────────────────────────────────────────
 
 type RowKind =
-  | { kind: "thread"; thread: Thread; colorToken: string; badgeLabel: string }
-  | { kind: "group"; thread: Thread; colorToken: string; badgeLabel: string }
-  | { kind: "expanded"; threadId: string; colorToken: string; badgeLabel: string }
+  | {
+      kind: "thread";
+      thread: Thread;
+      colorToken: string;
+      senderEmail: string;
+      senderName: string | null;
+    }
+  | { kind: "group"; thread: Thread; colorToken: string }
+  | { kind: "expanded"; threadId: string; colorToken: string }
   | { kind: "section"; label: string }
   | { kind: "skeleton" }
   | { kind: "load-more" };
 
 // ── Date-section bucketing (prototype groups rows by Today / Yesterday / date) ──
 
-function dayBucket(unixSecs: number, today: string, yesterday: string): { key: string; label: string } {
+function dayBucket(
+  unixSecs: number,
+  today: string,
+  yesterday: string,
+): { key: string; label: string } {
   const d = new Date(unixSecs * 1000);
   const now = new Date();
   const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
@@ -157,12 +167,12 @@ export const ThreadList = forwardRef<ThreadListHandle, ThreadListProps>(function
         rows.push({ kind: "section", label: b.label });
         lastBucket = b.key;
       }
-      const acct = acctById.get(thread.accountId);
-      const colorToken = acct?.colorToken ?? "team";
-      const badgeLabel = acct?.badgeLabel ?? thread.participants[0]?.charAt(0).toUpperCase() ?? "M";
-      rows.push({ kind: "group", thread, colorToken, badgeLabel });
+      // colorToken stays account-coded (drives the 3 px stripe); the avatar derives
+      // its own per-sender color downstream from each mail's address.
+      const colorToken = acctById.get(thread.accountId)?.colorToken ?? "team";
+      rows.push({ kind: "group", thread, colorToken });
       if (isThreadExpanded(thread.id)) {
-        rows.push({ kind: "expanded", threadId: thread.id, colorToken, badgeLabel });
+        rows.push({ kind: "expanded", threadId: thread.id, colorToken });
       }
     }
   } else {
@@ -175,11 +185,14 @@ export const ThreadList = forwardRef<ThreadListHandle, ThreadListProps>(function
         rows.push({ kind: "section", label: b.label });
         lastBucket = b.key;
       }
-      const acct = acctById.get(mail.accountId);
-      const colorToken = acct?.colorToken ?? "team";
-      const badgeLabel =
-        acct?.badgeLabel ?? (mail.fromName ?? mail.fromEmail ?? "M").charAt(0).toUpperCase();
-      rows.push({ kind: "thread", thread: mailToThread(mail), colorToken, badgeLabel });
+      const colorToken = acctById.get(mail.accountId)?.colorToken ?? "team";
+      rows.push({
+        kind: "thread",
+        thread: mailToThread(mail),
+        colorToken,
+        senderEmail: mail.fromEmail,
+        senderName: mail.fromName,
+      });
     }
   }
 
@@ -292,7 +305,8 @@ export const ThreadList = forwardRef<ThreadListHandle, ThreadListProps>(function
                 <ThreadCard
                   thread={row.thread}
                   colorToken={row.colorToken}
-                  badgeLabel={row.badgeLabel}
+                  senderEmail={row.senderEmail}
+                  senderName={row.senderName}
                   isFocused={row.thread.id === selectedThreadId}
                   onArchived={onArchived}
                   onDeleted={onDeleted}
@@ -300,18 +314,13 @@ export const ThreadList = forwardRef<ThreadListHandle, ThreadListProps>(function
               )}
 
               {row.kind === "group" && (
-                <ThreadGroupCard
-                  thread={row.thread}
-                  colorToken={row.colorToken}
-                  badgeLabel={row.badgeLabel}
-                />
+                <ThreadGroupCard thread={row.thread} colorToken={row.colorToken} />
               )}
 
               {row.kind === "expanded" && (
                 <ThreadExpanded
                   threadId={row.threadId}
                   colorToken={row.colorToken}
-                  badgeLabel={row.badgeLabel}
                   onArchived={onArchived}
                   onDeleted={onDeleted}
                 />

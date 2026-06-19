@@ -7,8 +7,8 @@ import { useTranslation } from "react-i18next";
 
 import type { Thread } from "@shared/bindings";
 import { cn } from "@/lib/cn";
-import { accountColorClass, type AccountColorToken } from "@/lib/accountColor";
 import { formatMailDate } from "@/lib/formatDate";
+import { SenderAvatar } from "./SenderAvatar";
 import { useUi } from "@/stores/ui";
 import { useSelection } from "@/stores/selection";
 import {
@@ -30,12 +30,6 @@ function colorStripeClass(token: string): string {
     team: "bg-p9",
   };
   return map[token] ?? "bg-p7";
-}
-
-function avatarBgClass(token: string): string {
-  // accountColorClass returns "bg-X text-Y"; we only need the bg portion for
-  // the avatar circle since we overlay the initial on top.
-  return accountColorClass((token as AccountColorToken) ?? "team");
 }
 
 // ── Icons (inline SVG, no external CDN) ─────────────────────────────────────
@@ -140,10 +134,14 @@ function MailReadIcon() {
 
 export interface ThreadCardProps {
   thread: Thread;
-  /** Account colorToken string for the color stripe. */
+  /** Account colorToken string for the 3 px color stripe (stays account-coded). */
   colorToken: string;
-  /** Account badgeLabel (1–2 chars) for the avatar. */
-  badgeLabel: string;
+  /** Sender email — drives the avatar initial + its deterministic panel color. */
+  senderEmail: string;
+  /** Sender display name — used for the initial only when the email is blank. */
+  senderName?: string | null;
+  /** Optional fetched avatar image URL (none wired yet — falls back to initial). */
+  avatarUrl?: string | null;
   /** Whether this card is currently keyboard-focused in the list. */
   isFocused?: boolean;
   /** Called when archive completes — parent can show UndoToast. */
@@ -155,7 +153,9 @@ export interface ThreadCardProps {
 export function ThreadCard({
   thread,
   colorToken,
-  badgeLabel,
+  senderEmail,
+  senderName,
+  avatarUrl,
   isFocused = false,
   onArchived,
   onDeleted,
@@ -308,16 +308,13 @@ export function ThreadCard({
         />
       </label>
 
-      {/* Avatar */}
-      <div
-        aria-hidden="true"
-        className={cn(
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-avatar text-xs font-semibold",
-          avatarBgClass(colorToken),
-        )}
-      >
-        {badgeLabel.slice(0, 2).toUpperCase()}
-      </div>
+      {/* Avatar — sender initial + per-sender panel color (not the account badge) */}
+      <SenderAvatar
+        email={senderEmail}
+        name={senderName}
+        avatarUrl={avatarUrl}
+        className="text-xs"
+      />
 
       {/* Main content */}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">

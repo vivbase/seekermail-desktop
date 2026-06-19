@@ -13,6 +13,7 @@ import { useImMessages } from "@/ipc/queries/im";
 import { usePendingCounts } from "@/ipc/queries/drafts";
 import type { AgentStatusValue } from "@/ipc/agents";
 import type { ImMessage } from "@/ipc/im";
+import AgentAvatar from "./AgentAvatar";
 import ChannelTopbar from "./ChannelTopbar";
 import MessageBubble from "./MessageBubble";
 import ChannelInput from "./ChannelInput";
@@ -32,7 +33,7 @@ export default function TeamChannel() {
   const { t } = useTranslation("team");
   const { data: accounts = [] } = useAccounts();
   const { data: statuses = [] } = useAgentStatuses();
-  const { data: page } = useImMessages();
+  const { data: page, refetch } = useImMessages();
   const messages = useMemo(() => page?.items ?? [], [page]);
 
   const [membersOpen, setMembersOpen] = useState(false);
@@ -48,13 +49,44 @@ export default function TeamChannel() {
   );
   const primary = accounts.find((a) => a.isPrimary);
 
+  // Agent reply indicator (F_I5): after the operator sends a message, show a
+  // "replying…" bubble and poll faster until a new agent message lands (or 30 s
+  // elapses). A reply is detected by the agent-message count going up.
+  const agentCount = useMemo(
+    () => messages.filter((m) => m.senderType === "agent").length,
+    [messages],
+  );
+  const [awaitingReply, setAwaitingReply] = useState(false);
+  const agentCountAtSend = useRef(0);
+
+  const handleSent = () => {
+    agentCountAtSend.current = agentCount;
+    setAwaitingReply(true);
+  };
+
+  useEffect(() => {
+    if (awaitingReply && agentCount > agentCountAtSend.current) setAwaitingReply(false);
+  }, [awaitingReply, agentCount]);
+
+  useEffect(() => {
+    if (!awaitingReply) return;
+    const poll = setInterval(() => void refetch(), 1500);
+    const timeout = setTimeout(() => setAwaitingReply(false), 30000);
+    return () => {
+      clearInterval(poll);
+      clearTimeout(timeout);
+    };
+  }, [awaitingReply, refetch]);
+
   const allOffline =
     accounts.length > 0 && statuses.length > 0 && statuses.every((s) => s.status === "offline");
 
   // "+ New Query" focuses the composer; the digest tallies open decisions + drafts.
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const { draftCount } = usePendingCounts();
-  const queryMsgs = messages.filter((m) => m.messageType === "query_card" && m.status === "pending");
+  const queryMsgs = messages.filter(
+    (m) => m.messageType === "query_card" && m.status === "pending",
+  );
   const decisions = queryMsgs.length;
   const high = queryMsgs.filter((m) => {
     try {
@@ -65,11 +97,12 @@ export default function TeamChannel() {
     }
   }).length;
 
-  // Lock the stream to the bottom whenever a new message arrives.
+  // Lock the stream to the bottom whenever a new message (or the replying
+  // indicator) arrives.
   useEffect(() => {
     const el = streamRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length]);
+  }, [messages.length, awaitingReply]);
 
   const todayKey = dayKey(Math.floor(Date.now() / 1000));
   const rows: Row[] = [];
@@ -161,9 +194,49 @@ export default function TeamChannel() {
             </div>
           ),
         )}
+
+        {awaitingReply && (
+          <div className="mb-2 flex">
+            <div className="me-auto flex max-w-[75%] gap-2">
+              {primary ? (
+                <AgentAvatar
+                  email={primary.email}
+                  colorToken={primary.colorToken}
+                  size={32}
+                  className="mt-0.5 shrink-0"
+                />
+              ) : (
+                <span className="mt-0.5 h-8 w-8 shrink-0 rounded-avatar bg-p5" aria-hidden />
+              )}
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex items-center gap-2 rounded-card border border-divider bg-surface px-3 py-2"
+              >
+                <span className="font-ui text-xs text-p7">{t("team_agent_replying")}</span>
+                <span className="flex gap-0.5" aria-hidden>
+                  <span
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-p7"
+                    style={{ animationDelay: "-0.3s" }}
+                  />
+                  <span
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-p7"
+                    style={{ animationDelay: "-0.15s" }}
+                  />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-p7" />
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <ChannelInput accounts={accounts} disabled={accounts.length === 0} inputRef={composerRef} />
+      <ChannelInput
+        accounts={accounts}
+        disabled={accounts.length === 0}
+        inputRef={composerRef}
+        onSent={handleSent}
+      />
 
       <MemberDrawer
         open={membersOpen}
