@@ -4,7 +4,14 @@
 // Immediate-save throughout (F_H1 §4.3) — no Save/Cancel buttons.
 import { useTranslation } from "react-i18next";
 
-import { useSetTheme, useThemeSetting } from "@/ipc/queries/settings";
+import {
+  useFontScaleSetting,
+  useReadingScaleSetting,
+  useSetFontScale,
+  useSetReadingScale,
+  useSetTheme,
+  useThemeSetting,
+} from "@/ipc/queries/settings";
 import { useUi, type Density } from "@/stores/ui";
 import { cn } from "@/lib/cn";
 import type { ThemePreference } from "@/lib/theme";
@@ -16,6 +23,29 @@ const THEME_OPTIONS: { value: ThemePreference; labelKey: string }[] = [
   { value: "system", labelKey: "appearance_theme_system" },
   { value: "light", labelKey: "appearance_theme_light" },
   { value: "dark", labelKey: "appearance_theme_dark" },
+];
+
+// ── Text size / UI scale (analysis 25) ──────────────────────────────────────────
+// Each step is a whole-UI zoom multiplier; selecting one scales the entire
+// interface proportionally so the layout never breaks. Numeric values mirror
+// FONT_SCALE_STEPS in lib/fontScale.ts.
+
+const TEXT_SIZE_OPTIONS: { value: number; labelKey: string }[] = [
+  { value: 0.9, labelKey: "appearance_text_size_small" },
+  { value: 1, labelKey: "appearance_text_size_default" },
+  { value: 1.15, labelKey: "appearance_text_size_large" },
+  { value: 1.3, labelKey: "appearance_text_size_larger" },
+  { value: 1.5, labelKey: "appearance_text_size_largest" },
+];
+
+// Reading text size scales only the email body (analysis 25, Layer 2); the size
+// words are shared with Text Size to keep one vocabulary.
+const READING_SIZE_OPTIONS: { value: number; labelKey: string }[] = [
+  { value: 0.9, labelKey: "appearance_text_size_small" },
+  { value: 1, labelKey: "appearance_text_size_default" },
+  { value: 1.15, labelKey: "appearance_text_size_large" },
+  { value: 1.3, labelKey: "appearance_text_size_larger" },
+  { value: 1.5, labelKey: "appearance_text_size_largest" },
 ];
 
 // ── Language ──────────────────────────────────────────────────────────────────
@@ -40,6 +70,14 @@ export default function AppearanceSettings() {
   const { theme } = useThemeSetting();
   const setTheme = useSetTheme();
 
+  // Persisted UI scale (app_settings.ui.font_scale); 1 = 100% until first save.
+  const { fontScale } = useFontScaleSetting();
+  const setFontScale = useSetFontScale();
+
+  // Persisted email reading scale (app_settings.ui.reading_font_scale).
+  const { readingScale } = useReadingScaleSetting();
+  const setReadingScale = useSetReadingScale();
+
   const density = useUi((s) => s.density);
   const setDensity = useUi((s) => s.setDensity);
 
@@ -58,6 +96,34 @@ export default function AppearanceSettings() {
               active={theme === opt.value}
               label={t(opt.labelKey)}
               onClick={() => setTheme.mutate(opt.value)}
+            />
+          ))}
+        </div>
+      </SettingRow>
+
+      {/* Text size — whole-UI proportional scale (analysis 25) */}
+      <SettingRow label={t("appearance_text_size")}>
+        <div className="flex gap-2" role="group" aria-label={t("appearance_text_size")}>
+          {TEXT_SIZE_OPTIONS.map((opt) => (
+            <ToggleChip
+              key={opt.value}
+              active={Math.abs(fontScale - opt.value) < 0.001}
+              label={t(opt.labelKey)}
+              onClick={() => setFontScale.mutate(opt.value)}
+            />
+          ))}
+        </div>
+      </SettingRow>
+
+      {/* Reading text size — scales the email body only (analysis 25, Layer 2) */}
+      <SettingRow label={t("appearance_reading_size")}>
+        <div className="flex gap-2" role="group" aria-label={t("appearance_reading_size")}>
+          {READING_SIZE_OPTIONS.map((opt) => (
+            <ToggleChip
+              key={opt.value}
+              active={Math.abs(readingScale - opt.value) < 0.001}
+              label={t(opt.labelKey)}
+              onClick={() => setReadingScale.mutate(opt.value)}
             />
           ))}
         </div>

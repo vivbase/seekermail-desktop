@@ -10,6 +10,18 @@ import {
   THEME_SETTING_KEY,
   type ThemePreference,
 } from "@/lib/theme";
+import {
+  applyFontScale,
+  clampFontScale,
+  DEFAULT_FONT_SCALE,
+  FONT_SCALE_SETTING_KEY,
+} from "@/lib/fontScale";
+import {
+  applyReadingScale,
+  clampReadingScale,
+  DEFAULT_READING_SCALE,
+  READING_SCALE_SETTING_KEY,
+} from "@/lib/readingScale";
 
 import { ipc } from "../client";
 
@@ -120,6 +132,56 @@ export function useSetTheme() {
       return ipc("set_setting", { key: THEME_SETTING_KEY, value: JSON.stringify(theme) });
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: settingKeys.detail(THEME_SETTING_KEY) }),
+  });
+}
+
+// ── UI scale / text size (analysis 25) ─────────────────────────────────────────
+
+/** The persisted UI scale multiplier; defaults to 1 (no scaling) until set. */
+export function useFontScaleSetting() {
+  const query = useAppSetting<number>(FONT_SCALE_SETTING_KEY);
+  const fontScale =
+    typeof query.data === "number" ? clampFontScale(query.data) : DEFAULT_FONT_SCALE;
+  return { ...query, fontScale };
+}
+
+/** Persist a UI scale choice and apply it to the document immediately. */
+export function useSetFontScale() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (scale: number) => {
+      const clamped = clampFontScale(scale);
+      // Apply before the IPC round-trip so the change feels instant.
+      applyFontScale(clamped);
+      return ipc("set_setting", { key: FONT_SCALE_SETTING_KEY, value: JSON.stringify(clamped) });
+    },
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: settingKeys.detail(FONT_SCALE_SETTING_KEY) }),
+  });
+}
+
+// ── Email reading text size (analysis 25, Layer 2) ──────────────────────────────
+
+/** The persisted email-body reading scale; defaults to 1 until set. */
+export function useReadingScaleSetting() {
+  const query = useAppSetting<number>(READING_SCALE_SETTING_KEY);
+  const readingScale =
+    typeof query.data === "number" ? clampReadingScale(query.data) : DEFAULT_READING_SCALE;
+  return { ...query, readingScale };
+}
+
+/** Persist a reading-scale choice and apply it to the document immediately. */
+export function useSetReadingScale() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (scale: number) => {
+      const clamped = clampReadingScale(scale);
+      // Apply before the IPC round-trip so the change feels instant.
+      applyReadingScale(clamped);
+      return ipc("set_setting", { key: READING_SCALE_SETTING_KEY, value: JSON.stringify(clamped) });
+    },
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: settingKeys.detail(READING_SCALE_SETTING_KEY) }),
   });
 }
 

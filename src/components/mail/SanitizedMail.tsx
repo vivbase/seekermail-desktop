@@ -90,7 +90,7 @@ export default function SanitizedMail({
           dangerouslySetInnerHTML={{ __html: clean }}
         />
       ) : (
-        <pre className="seeker-mail-plain whitespace-pre-wrap break-words font-mono text-sm text-p9">
+        <pre className="seeker-mail-plain whitespace-pre-wrap break-words font-mono text-p9">
           {highlightPlainText(bodyText ?? "", highlightPhrase)}
         </pre>
       )}
@@ -113,7 +113,11 @@ export default function SanitizedMail({
 // preserved inline styles / presentational attributes win, and contain wide
 // tables instead of letting them overflow the reading column.
 const MAIL_BODY_CSS = `
-.seeker-mail-body { font-size: 14px; line-height: 1.6; word-break: break-word; overflow-x: auto; }
+/* Reading text size (analysis 25, Layer 2): the 14px base is multiplied by
+   --reading-scale (default 1), set on <html> by lib/readingScale.ts. This scales
+   the email body only; the app chrome is unaffected. */
+.seeker-mail-body { font-size: calc(14px * var(--reading-scale, 1)); line-height: 1.6; word-break: break-word; overflow-x: auto; }
+.seeker-mail-plain { font-size: calc(14px * var(--reading-scale, 1)); line-height: 1.6; }
 .seeker-mail-body a { color: var(--terra); text-decoration: underline; }
 .seeker-mail-body img { max-width: 100%; height: auto; }
 /* Remote images are emptied at ingest (src="") and restored on demand by the

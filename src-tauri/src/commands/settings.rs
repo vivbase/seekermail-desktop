@@ -22,6 +22,8 @@ pub const TRACKER_POLICY_KEY: &str = "privacy.tracker_policy";
 pub const REMOTE_IMAGE_POLICY_KEY: &str = "privacy.remote_image_policy";
 /// `app_settings` key for the T050 theme preference.
 pub const THEME_KEY: &str = "ui.theme";
+/// `app_settings` key for the analysis-25 UI scale (text size) preference.
+pub const FONT_SCALE_KEY: &str = "ui.font_scale";
 
 fn validate_key(key: &str) -> AppResult<()> {
     if ALLOWED_KEY_PREFIXES.iter().any(|p| key.starts_with(p)) {
@@ -113,6 +115,23 @@ pub async fn initial_theme(state: &AppState) -> String {
         Some("light") => "light".to_string(),
         Some("dark") => "dark".to_string(),
         _ => "system".to_string(),
+    }
+}
+
+/// Boot-time UI scale read for the FOUC guard (analysis 25). Returns a clamped
+/// multiplier in `[0.9, 1.5]`; anything missing or malformed falls back to `1.0`
+/// so the UI renders at 100%.
+pub async fn initial_font_scale(state: &AppState) -> f64 {
+    const MIN: f64 = 0.9;
+    const MAX: f64 = 1.5;
+    let raw = SettingRepo::new(state.storage.db())
+        .get(FONT_SCALE_KEY)
+        .await
+        .ok()
+        .flatten();
+    match raw.and_then(|v| serde_json::from_str::<f64>(&v).ok()) {
+        Some(n) if n.is_finite() => n.clamp(MIN, MAX),
+        _ => 1.0,
     }
 }
 
@@ -253,5 +272,25 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(initial_theme(&state).await, "system");
+    }
+
+    #[tokio::test]
+    async fn initial_font_scale_clamps_and_falls_back() {
+        let (state, _rx) = AppState::test_state().await;
+        // Unset → default 1.0.
+        assert_eq!(initial_font_scale(&state).await, 1.0);
+        // In-range value is returned as-is.
+        do_set_setting(&state, FONT_SCALE_KEY, "1.15")
+            .await
+            .unwrap();
+        assert_eq!(initial_font_scale(&state).await, 1.15);
+        // Out-of-range is clamped to the ceiling.
+        do_set_setting(&state, FONT_SCALE_KEY, "9").await.unwrap();
+        assert_eq!(initial_font_scale(&state).await, 1.5);
+        // Malformed (JSON string, not a number) → default 1.0.
+        do_set_setting(&state, FONT_SCALE_KEY, "\"big\"")
+            .await
+            .unwrap();
+        assert_eq!(initial_font_scale(&state).await, 1.0);
     }
 }

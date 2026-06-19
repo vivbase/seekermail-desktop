@@ -12,6 +12,7 @@ import RiskBanner from "./RiskBanner";
 import { ToastViewport } from "@/components/ui/Toast";
 import { useUi } from "@/stores/ui";
 import { useHasAccounts } from "@/lib/accountGate";
+import { useFontScaleShortcuts } from "@/hooks/useFontScaleShortcuts";
 
 function RouteFallback() {
   const { t } = useTranslation("common");
@@ -45,6 +46,9 @@ export default function AppShell() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [navigate]);
+
+  // Global UI-scale shortcuts: Cmd/Ctrl + / - / 0 (analysis 25 follow-up).
+  useFontScaleShortcuts();
 
   // The only routing gate: no accounts → onboarding.
   if (!hasAccounts) {

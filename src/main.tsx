@@ -13,6 +13,17 @@ import { ipc, registerIpcEvents } from "./ipc";
 import { applyLocale } from "./i18n/applyLocale";
 import { DEFAULT_LOCALE } from "./i18n/locales";
 import { applyTheme, initialThemeHint, isThemePreference, THEME_SETTING_KEY } from "./lib/theme";
+import {
+  applyFontScale,
+  clampFontScale,
+  FONT_SCALE_SETTING_KEY,
+  initialFontScaleHint,
+} from "./lib/fontScale";
+import {
+  applyReadingScale,
+  clampReadingScale,
+  READING_SCALE_SETTING_KEY,
+} from "./lib/readingScale";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +52,34 @@ void ipc("get_setting", { key: THEME_SETTING_KEY })
   })
   .catch(() => {
     // Backend not ready / first run — the boot hint stays in effect.
+  });
+
+// UI scale (analysis 25): same pattern as theme — font-scale-boot.ts already set
+// --ui-scale from the injected hint; re-assert it (HMR safety), then reconcile
+// against the persisted `ui.font_scale` setting in case the global was missing.
+applyFontScale(initialFontScaleHint());
+void ipc("get_setting", { key: FONT_SCALE_SETTING_KEY })
+  .then((raw) => {
+    const parsed: unknown = raw === null ? null : JSON.parse(raw);
+    if (typeof parsed === "number") {
+      const next = clampFontScale(parsed);
+      if (next !== initialFontScaleHint()) applyFontScale(next);
+    }
+  })
+  .catch(() => {
+    // Backend not ready / first run — the boot hint stays in effect.
+  });
+
+// Reading text size (analysis 25, Layer 2): no boot script (the email body is not
+// visible at first paint), but apply the persisted value so an opened mail renders
+// at the chosen size immediately.
+void ipc("get_setting", { key: READING_SCALE_SETTING_KEY })
+  .then((raw) => {
+    const parsed: unknown = raw === null ? null : JSON.parse(raw);
+    if (typeof parsed === "number") applyReadingScale(clampReadingScale(parsed));
+  })
+  .catch(() => {
+    // Backend not ready / first run — the body stays at 100%.
   });
 
 const rootEl = document.getElementById("root");

@@ -42,6 +42,12 @@
 
   /* Elevation */
   --shadow-card: 0 1px 3px rgba(35, 31, 26, 0.08), 0 4px 16px rgba(35, 31, 26, 0.06);
+
+  /* UI scale — global text-size multiplier (analysis 25). 1 = 100% (no scaling).
+   * Consumed by `#root { zoom: var(--ui-scale) }` (styles/index.css) so the whole
+   * interface scales proportionally and the layout cannot break. The runtime value
+   * is written onto <html> by lib/fontScale.ts; this is just the default. */
+  --ui-scale: 1;
 }
 
 /* Dark theme overrides (T050). The mechanism is final; the exact values are
