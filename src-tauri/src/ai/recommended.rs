@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use zeroize::Zeroize;
 
-use crate::account::oauth::new_pkce;
+use crate::account::pkce::new_pkce;
 use crate::ai::matrix::build_default_matrix;
 use crate::ai::providers;
 use crate::ai::registry::AccountAiConfig;

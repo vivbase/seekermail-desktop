@@ -17,9 +17,17 @@ interface ChannelInputProps {
   disabled?: boolean;
   /** Optional external ref to the textarea so "+ New Query" can focus the composer. */
   inputRef?: RefObject<HTMLTextAreaElement>;
+  /** Fired after a message is accepted by the backend, so the channel can show
+   * a "replying…" indicator while an agent answers. */
+  onSent?: () => void;
 }
 
-export default function ChannelInput({ accounts, disabled = false, inputRef }: ChannelInputProps) {
+export default function ChannelInput({
+  accounts,
+  disabled = false,
+  inputRef,
+  onSent,
+}: ChannelInputProps) {
   const { t } = useTranslation("team");
   const post = usePostImMessage();
   const localRef = useRef<HTMLTextAreaElement>(null);
@@ -59,7 +67,10 @@ export default function ChannelInput({ accounts, disabled = false, inputRef }: C
         messageType: "text",
         content: textContent(content),
       },
-      { onError: () => setFailed((f) => [...f, content]) },
+      {
+        onSuccess: () => onSent?.(),
+        onError: () => setFailed((f) => [...f, content]),
+      },
     );
   };
 

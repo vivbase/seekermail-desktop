@@ -31,6 +31,7 @@ pub mod sales;
 pub mod settings;
 pub mod sse;
 pub mod style;
+pub mod team_chat;
 pub mod types;
 
 #[cfg(test)]

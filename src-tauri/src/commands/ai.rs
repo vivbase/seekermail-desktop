@@ -26,9 +26,9 @@ use crate::state::AppState;
 use crate::storage::map_sqlx_err;
 use crate::types::{
     AccountAiSettings, AiDraft, AiProvider, ApproveDraftResult, ConfiguredProviderInfo,
-    ListAiDraftsParams, LocalProviderEndpoint, OllamaModelEntry, RegenerateDraftParams,
-    RequestAiReplyParams, SendMailParams, UpdateAiSettingsParams, VerifyAiProviderParams,
-    VerifyAiProviderResult,
+    ListAiDraftsParams, ListCloudModelsParams, LocalProviderEndpoint, OllamaModelEntry,
+    RegenerateDraftParams, RequestAiReplyParams, SendMailParams, UpdateAiSettingsParams,
+    VerifyAiProviderParams, VerifyAiProviderResult,
 };
 use crate::util::{now_unix, parse_uuid};
 
@@ -421,6 +421,32 @@ fn to_local_endpoints(bases: Vec<String>) -> Vec<LocalProviderEndpoint> {
         .collect()
 }
 
+/// Read a cloud provider's model catalog (`GET /v1/models`) for the T068
+/// add-cloud-provider model picker. Azure / Gemini / OpenAI-compatible vendors
+/// ride the `openai` wire variant with a custom base URL (F_F1 §4.1), so they
+/// dispatch here onto the OpenAI catalog reader. Like `list_ollama_models`,
+/// failures are out-of-band: a bad key surfaces as `AUTH_INVALID_CREDENTIALS`
+/// and an unreachable endpoint as `AI_PROVIDER_UNREACHABLE`. The transient key
+/// lives only inside this frame.
+async fn do_list_cloud_models(
+    provider: AiProvider,
+    api_key: Option<&str>,
+    base_url: Option<&str>,
+) -> AppResult<Vec<String>> {
+    let models = match provider {
+        AiProvider::Openai => providers::openai::list_models(api_key, base_url).await,
+        AiProvider::Anthropic => {
+            providers::anthropic::AnthropicClient::list_models(api_key, base_url).await
+        }
+        AiProvider::Ollama | AiProvider::LocalOnnx | AiProvider::None => {
+            return Err(AppError::Validation(
+                "a cloud provider is required to read a model catalog".into(),
+            ))
+        }
+    };
+    models.map_err(AppError::from)
+}
+
 /// Read the daemon's installed models and project them onto the wire shape
 /// (F_F2 §4.3). Unlike `verify_ai_provider`, failures here are out-of-band:
 /// an unreachable daemon surfaces as `AI_PROVIDER_UNREACHABLE`.
@@ -611,6 +637,22 @@ pub async fn list_ollama_models(
     do_list_ollama_models(base_url.as_deref())
         .await
         .map_err(IpcError::from)
+}
+
+/// Model catalog for a cloud provider (`GET /v1/models`), powering the
+/// add-cloud-provider model picker (T068, F_F1 §4.1). The transient key is used
+/// for this one request and never saved. Errors: `AUTH_INVALID_CREDENTIALS`
+/// (bad key), `AI_PROVIDER_UNREACHABLE` (endpoint down), `VALIDATION`
+/// (non-cloud provider).
+#[tauri::command]
+pub async fn list_cloud_models(params: ListCloudModelsParams) -> Result<Vec<String>, IpcError> {
+    do_list_cloud_models(
+        params.provider,
+        params.api_key.as_deref(),
+        params.base_url.as_deref(),
+    )
+    .await
+    .map_err(IpcError::from)
 }
 
 /// Provider summary across all accounts — one row per account whose
@@ -1297,6 +1339,57 @@ mod tests {
         assert!(!message.contains("Bearer"));
     }
 
+    // ── T068 cloud model catalog ─────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn list_cloud_models_openai_reads_catalog() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/models"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "object": "list",
+                "data": [
+                    { "id": "gpt-5.5", "object": "model" },
+                    { "id": "gpt-4o", "object": "model" },
+                ],
+            })))
+            .mount(&server)
+            .await;
+
+        let models = do_list_cloud_models(
+            AiProvider::Openai,
+            Some("sk-transient-test-key"),
+            Some(&server.uri()),
+        )
+        .await
+        .unwrap();
+        assert_eq!(models, vec!["gpt-4o", "gpt-5.5"]);
+    }
+
+    #[tokio::test]
+    async fn list_cloud_models_rejects_non_cloud_providers() {
+        for provider in [AiProvider::Ollama, AiProvider::LocalOnnx, AiProvider::None] {
+            let err = do_list_cloud_models(provider, None, Some("http://127.0.0.1:1"))
+                .await
+                .unwrap_err();
+            assert_eq!(err.code(), ErrorCode::Validation);
+        }
+    }
+
+    #[tokio::test]
+    async fn list_cloud_models_bad_key_is_auth_error() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/models"))
+            .respond_with(ResponseTemplate::new(401))
+            .mount(&server)
+            .await;
+        let err = do_list_cloud_models(AiProvider::Openai, Some("sk-bad"), Some(&server.uri()))
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), ErrorCode::AuthInvalidCredentials);
+    }
+
     // ── F4 provider matrix (T065) ────────────────────────────────────────────
 
     /// Seed an account whose base AI provider/model are set (matrix tests
@@ -1929,7 +2022,8 @@ mod tests {
         let id = seed_ai_draft(&state, &account, "pending").await;
 
         let result = do_approve_draft(&state, &id).await.unwrap();
-        assert!(result.message_id.contains("seekermail.local"));
+        assert!(result.message_id.starts_with('<') && result.message_id.ends_with('>'));
+        assert!(result.message_id.contains('@') && !result.message_id.contains("seekermail.local"));
         assert!(result.pending_id.is_some());
         assert!(result.sent_at > 0);
 

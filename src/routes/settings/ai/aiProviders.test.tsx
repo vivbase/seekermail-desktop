@@ -109,7 +109,7 @@ describe("AddCloudProviderSheet — connection test rendering", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-bad-key" } });
-    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "gpt-4o" } });
+    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "claude-sonnet-4-6" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Test Connection" }));
@@ -129,13 +129,68 @@ describe("AddCloudProviderSheet — connection test rendering", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-test-key" } });
-    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "gpt-4o" } });
+    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "claude-sonnet-4-6" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Test Connection" }));
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent("Could not reach the provider endpoint."),
     );
+  });
+});
+
+describe("AddCloudProviderSheet — model picker", () => {
+  it("fetches the live model catalog and lets you select a returned model", async () => {
+    // The catalog command returns an id that is NOT in the curated shortlist,
+    // so its appearance proves the live fetch populated the dropdown.
+    overrideCommand("list_cloud_models", ["claude-zeta-9"]);
+    renderWithProviders(
+      <AddCloudProviderSheet accounts={[WORK_ACCOUNT]} onClose={vi.fn()} onSaved={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-test-key" } });
+
+    // Curated options exist before any fetch.
+    const select = screen.getByLabelText("Model");
+    expect(within(select).getByRole("option", { name: "claude-opus-4-8" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load models" }));
+    await screen.findByRole("option", { name: "claude-zeta-9" });
+
+    fireEvent.change(select, { target: { value: "claude-zeta-9" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    // Advancing to the connection-test step means the model selection took.
+    expect(screen.getByRole("button", { name: "Test Connection" })).toBeInTheDocument();
+  });
+
+  it("reveals a free-text input when Custom is chosen", () => {
+    renderWithProviders(
+      <AddCloudProviderSheet accounts={[WORK_ACCOUNT]} onClose={vi.fn()} onSaved={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-test-key" } });
+    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "__custom__" } });
+
+    const custom = screen.getByLabelText("Custom model ID");
+    fireEvent.change(custom, { target: { value: "gpt-5.5-2026-04-23" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByRole("button", { name: "Test Connection" })).toBeInTheDocument();
+  });
+
+  it("prefills the vendor base URL and model shortlist when a preset is chosen", () => {
+    renderWithProviders(
+      <AddCloudProviderSheet accounts={[WORK_ACCOUNT]} onClose={vi.fn()} onSaved={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Continue" })); // step 1 → 2
+
+    // The provider radios stay mounted across steps; pick one of the top providers.
+    fireEvent.click(screen.getByRole("radio", { name: "DeepSeek" }));
+
+    expect((screen.getByLabelText("Base URL") as HTMLInputElement).value).toBe(
+      "https://api.deepseek.com",
+    );
+    const select = screen.getByLabelText("Model");
+    expect(within(select).getByRole("option", { name: "deepseek-v4-pro" })).toBeInTheDocument();
   });
 });
 
@@ -151,7 +206,7 @@ describe("AddCloudProviderSheet — save", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     const keyInput = screen.getByLabelText("API Key");
     fireEvent.change(keyInput, { target: { value: "sk-transient-test" } });
-    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "claude-sonnet-4-5" } });
+    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "claude-sonnet-4-6" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     // Step 3: the default mock verifies in-band ok.
@@ -174,7 +229,7 @@ describe("AddCloudProviderSheet — save", () => {
     expect(args.account_id).toBe(WORK_ACCOUNT.id);
     expect(args.params.aiApiKey).toBe("sk-transient-test");
     expect(args.params.aiProvider).toBe("anthropic");
-    expect(args.params.aiModel).toBe("claude-sonnet-4-5");
+    expect(args.params.aiModel).toBe("claude-sonnet-4-6");
     // ADR-0004: the form copy of the key is dropped when submit starts.
     expect((keyInput as HTMLInputElement).value).toBe("");
   });

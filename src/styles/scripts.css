@@ -45,3 +45,31 @@ html[dir="rtl"] .compose-topbar {
 html[dir="rtl"] .panel-actions {
   flex-direction: row-reverse;
 }
+
+/* ── Rich-text compose editor (T044, F_G4 §4.4) ──
+ * Tailwind's preflight strips list markers and quote indentation; the
+ * contentEditable surface relies on real markup from execCommand, so restore
+ * those affordances scoped to the editor. Logical properties keep RTL correct. */
+.compose-editor ul {
+  list-style: disc;
+  margin: 0.25rem 0;
+  padding-inline-start: 1.5rem;
+}
+.compose-editor ol {
+  list-style: decimal;
+  margin: 0.25rem 0;
+  padding-inline-start: 1.5rem;
+}
+.compose-editor li {
+  margin: 0.1rem 0;
+}
+.compose-editor blockquote {
+  margin: 0.35rem 0;
+  padding-inline-start: 0.75rem;
+  border-inline-start: 2px solid var(--p5);
+  color: var(--p8);
+}
+.compose-editor a {
+  color: var(--terra);
+  text-decoration: underline;
+}

@@ -65,6 +65,17 @@ export type VerifyAiProviderParams = {
   baseUrl: string | null;
 };
 
+/**
+ * Input to `list_cloud_models` — read a cloud provider's model catalog
+ * (`GET /v1/models`) for the add-cloud-provider model picker, without saving.
+ * The key travels only inside the in-flight call (ADR-0004).
+ */
+export type ListCloudModelsParams = {
+  provider: AiProvider;
+  apiKey: string | null;
+  baseUrl: string | null;
+};
+
 /** In-band probe result (09 §2): failures resolve with `ok: false`, never throw. */
 export type VerifyAiProviderResult = {
   ok: boolean;

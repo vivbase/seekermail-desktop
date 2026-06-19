@@ -16,38 +16,156 @@ import {
   type AiProvider,
   type ConfiguredProviderInfo,
 } from "@/ipc/aiSettings";
-import { useUpdateAiSettings, useVerifyProvider } from "@/ipc/queries/aiProviders";
+import {
+  useListCloudModels,
+  useUpdateAiSettings,
+  useVerifyProvider,
+} from "@/ipc/queries/aiProviders";
 import { cn } from "@/lib/cn";
 
-/** UI-level provider taxonomy (F_F1 §4.1). Azure / Gemini / OpenAI-compatible
- *  vendors ride the `openai` wire variant with a custom base URL (dev/06 §1). */
-export type CloudProviderType = "anthropic" | "openai" | "openai_compat" | "azure" | "gemini";
+/** UI-level provider taxonomy (F_F1 §4.1). Every non-Anthropic vendor rides the
+ *  `openai` wire variant with its own base URL (dev/06 §1); Anthropic uses its
+ *  native Messages API. The list covers the top global model providers plus
+ *  Azure and a generic OpenAI-compatible escape hatch. */
+export type CloudProviderType =
+  | "openai"
+  | "anthropic"
+  | "gemini"
+  | "xai"
+  | "deepseek"
+  | "qwen"
+  | "mistral"
+  | "moonshot"
+  | "zhipu"
+  | "llama"
+  | "azure"
+  | "openai_compat";
+
+interface ProviderPreset {
+  /** Wire variant the backend adapter dispatches on. */
+  wire: AiProvider;
+  /** Default API base URL prefilled when the preset is chosen (`""` = use the
+   *  adapter default, i.e. the vendor's own host for OpenAI / Anthropic). */
+  baseUrl: string;
+  /** Whether a base URL must be present before the connection test. */
+  baseUrlRequired: boolean;
+  /** Curated current model ids so the picker is useful before a key is entered;
+   *  the live "Load models" fetch (`GET /v1/models`) supersedes these, and
+   *  "Custom" always accepts any id. */
+  models: string[];
+}
+
+/** One-click presets for the top global LLM providers (June 2026) + Azure + a
+ *  generic OpenAI-compatible option. Base URLs match each vendor's documented
+ *  endpoint; the version-tolerant join in the Rust adapter handles those that
+ *  already carry a version segment (Gemini, Qwen, Zhipu, xAI). */
+export const CLOUD_PRESETS: Record<CloudProviderType, ProviderPreset> = {
+  openai: {
+    wire: "openai",
+    baseUrl: "",
+    baseUrlRequired: false,
+    models: ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-4o"],
+  },
+  anthropic: {
+    wire: "anthropic",
+    baseUrl: "",
+    baseUrlRequired: false,
+    models: ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5"],
+  },
+  gemini: {
+    wire: "openai",
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    baseUrlRequired: true,
+    models: ["gemini-3-pro", "gemini-3-flash", "gemini-2.5-pro", "gemini-2.5-flash"],
+  },
+  xai: {
+    wire: "openai",
+    baseUrl: "https://api.x.ai/v1",
+    baseUrlRequired: true,
+    models: ["grok-4.3", "grok-4", "grok-4-fast"],
+  },
+  deepseek: {
+    wire: "openai",
+    baseUrl: "https://api.deepseek.com",
+    baseUrlRequired: true,
+    models: ["deepseek-v4-pro", "deepseek-v4-flash", "deepseek-chat", "deepseek-reasoner"],
+  },
+  qwen: {
+    wire: "openai",
+    baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    baseUrlRequired: true,
+    models: ["qwen3-max", "qwen3.5-plus", "qwen3.5-flash", "qwen-plus"],
+  },
+  mistral: {
+    wire: "openai",
+    baseUrl: "https://api.mistral.ai/v1",
+    baseUrlRequired: true,
+    models: ["mistral-large-latest", "mistral-medium-latest", "magistral-medium-latest"],
+  },
+  moonshot: {
+    wire: "openai",
+    baseUrl: "https://api.moonshot.ai/v1",
+    baseUrlRequired: true,
+    models: ["kimi-k2.6", "kimi-k2.5", "kimi-k2"],
+  },
+  zhipu: {
+    wire: "openai",
+    baseUrl: "https://open.bigmodel.cn/api/paas/v4",
+    baseUrlRequired: true,
+    models: ["glm-5", "glm-4.6", "glm-4.5"],
+  },
+  llama: {
+    wire: "openai",
+    baseUrl: "https://api.llama.com/compat/v1",
+    baseUrlRequired: true,
+    models: ["llama-4.1-maverick", "llama-4-maverick", "llama-4-scout"],
+  },
+  azure: {
+    wire: "openai",
+    baseUrl: "",
+    baseUrlRequired: true,
+    models: ["gpt-5.5", "gpt-5.4", "gpt-4o"],
+  },
+  openai_compat: {
+    wire: "openai",
+    baseUrl: "",
+    baseUrlRequired: true,
+    models: [],
+  },
+};
 
 export const CLOUD_TYPES: CloudProviderType[] = [
-  "anthropic",
   "openai",
-  "openai_compat",
-  "azure",
+  "anthropic",
   "gemini",
+  "xai",
+  "deepseek",
+  "qwen",
+  "mistral",
+  "moonshot",
+  "zhipu",
+  "llama",
+  "azure",
+  "openai_compat",
 ];
 
-const BASE_URL_REQUIRED: Record<CloudProviderType, boolean> = {
-  anthropic: false,
-  openai: false,
-  openai_compat: true,
-  azure: true,
-  gemini: true,
-};
+/** Sentinel `<select>` value that reveals the free-text custom-model input. */
+const CUSTOM_MODEL = "__custom__";
 
 /** Wire provider slug for one UI type. */
 export function wireProviderFor(type: CloudProviderType): AiProvider {
-  return type === "anthropic" ? "anthropic" : "openai";
+  return CLOUD_PRESETS[type].wire;
 }
 
-/** Best-effort UI type for an existing row (the wire shape stores only the slug). */
+/** Best-effort UI type for an existing row (the wire shape stores only the slug
+ *  and base URL). Matches a known vendor by its base URL, else the generic type. */
 export function cloudTypeFor(row: ConfiguredProviderInfo): CloudProviderType {
   if (row.provider === "anthropic") return "anthropic";
-  return row.baseUrl ? "openai_compat" : "openai";
+  if (!row.baseUrl) return "openai";
+  const match = CLOUD_TYPES.find(
+    (id) => CLOUD_PRESETS[id].baseUrl !== "" && row.baseUrl?.startsWith(CLOUD_PRESETS[id].baseUrl),
+  );
+  return match ?? "openai_compat";
 }
 
 /**
@@ -101,12 +219,19 @@ export default function AddCloudProviderSheet({
   const { t } = useTranslation("aiProviders");
   const verify = useVerifyProvider();
   const updateAi = useUpdateAiSettings();
+  const listModels = useListCloudModels();
 
   const [step, setStep] = useState(1);
   const [cloudType, setCloudType] = useState<CloudProviderType>(initial?.cloudType ?? "anthropic");
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState(initial?.baseUrl ?? "");
   const [model, setModel] = useState(initial?.model ?? "");
+  // Live `GET /v1/models` results once the user runs "Load models"; merged with
+  // the curated shortlist in the picker.
+  const [fetchedModels, setFetchedModels] = useState<string[] | null>(null);
+  const [modelsError, setModelsError] = useState(false);
+  // True when the user chose "Custom" — the free-text model-id input is shown.
+  const [customModel, setCustomModel] = useState(false);
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(
     () => new Set(initial ? [initial.accountId] : accounts.map((a) => a.id)),
   );
@@ -114,7 +239,7 @@ export default function AddCloudProviderSheet({
   const [saveError, setSaveError] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const baseUrlRequired = BASE_URL_REQUIRED[cloudType];
+  const baseUrlRequired = CLOUD_PRESETS[cloudType].baseUrlRequired;
   const verified = verify.data?.ok === true;
 
   /** Any change to the connection inputs invalidates an earlier test result. */
@@ -122,6 +247,57 @@ export default function AddCloudProviderSheet({
     if (verify.data || verify.isError) verify.reset();
     if (step > 3) setStep(3);
   };
+
+  /** Switching provider type prefills the vendor's base URL and resets the
+   *  model choice (model ids differ per vendor) and the fetched catalog. */
+  const selectType = (type: CloudProviderType) => {
+    setCloudType(type);
+    setBaseUrl(CLOUD_PRESETS[type].baseUrl);
+    setModel("");
+    setCustomModel(false);
+    setFetchedModels(null);
+    setModelsError(false);
+    onConnectionFieldChange();
+  };
+
+  /** Pull the live model catalog (`GET /v1/models`) for the entered key. */
+  const loadModels = () => {
+    setModelsError(false);
+    listModels.mutate(
+      {
+        provider: wireProviderFor(cloudType),
+        apiKey: apiKey.trim() || null,
+        baseUrl: baseUrl.trim() || null,
+      },
+      {
+        onSuccess: (ids) => setFetchedModels(ids),
+        onError: () => setModelsError(true),
+      },
+    );
+  };
+
+  /** Dropdown change: a real id selects it; the sentinel opens the custom field. */
+  const onModelSelect = (value: string) => {
+    if (value === CUSTOM_MODEL) {
+      setCustomModel(true);
+      setModel("");
+    } else {
+      setCustomModel(false);
+      setModel(value);
+    }
+    onConnectionFieldChange();
+  };
+
+  // Curated shortlist + any live-fetched ids, deduped. A pre-filled (edited)
+  // model that is in neither list is prepended so it stays selectable.
+  const curatedModels = CLOUD_PRESETS[cloudType].models;
+  const modelOptions = Array.from(
+    new Set([
+      ...(model && !customModel ? [model] : []),
+      ...curatedModels,
+      ...(fetchedModels ?? []),
+    ]),
+  );
 
   const validateDetails = (): boolean => {
     if (!apiKey.trim() && !initial?.hasSavedKey) {
@@ -226,10 +402,7 @@ export default function AddCloudProviderSheet({
                 type="button"
                 role="radio"
                 aria-checked={cloudType === type}
-                onClick={() => {
-                  setCloudType(type);
-                  onConnectionFieldChange();
-                }}
+                onClick={() => selectType(type)}
                 className={cn(
                   "rounded-chip border px-3 py-2 text-start font-ui text-sm transition-colors",
                   cloudType === type
@@ -277,24 +450,63 @@ export default function AddCloudProviderSheet({
                 className="mt-1 w-full rounded-chip border border-divider bg-surface px-3 py-2 font-mono text-sm text-p9"
               />
             </label>
-            <label className="mt-3 block">
+            <div className="mt-3">
               <span className="font-ui text-[10px] uppercase tracking-wider text-p8">
                 {t("ai_model_label")}
               </span>
-              <input
-                type="text"
-                value={model}
-                onChange={(e) => {
-                  setModel(e.target.value);
-                  onConnectionFieldChange();
-                }}
-                className="mt-1 w-full rounded-chip border border-divider bg-surface px-3 py-2 font-mono text-sm text-p9"
-              />
-            </label>
-            {/* Hint lives outside the label so it does not bloat the input's
-                accessible name (screen readers would otherwise announce it as
-                part of the field label). */}
-            <p className="mt-1 font-body text-xs text-p7">{t("ai_model_custom_hint")}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <select
+                  aria-label={t("ai_model_label")}
+                  value={customModel ? CUSTOM_MODEL : model}
+                  onChange={(e) => onModelSelect(e.target.value)}
+                  className="grow rounded-chip border border-divider bg-surface px-3 py-2 font-mono text-sm text-p9"
+                >
+                  <option value="" disabled>
+                    {t("ai_model_placeholder")}
+                  </option>
+                  {modelOptions.map((id) => (
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
+                  ))}
+                  <option value={CUSTOM_MODEL}>{t("ai_model_option_custom")}</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={loadModels}
+                  disabled={listModels.isPending || !apiKey.trim()}
+                  className="shrink-0 rounded-chip border border-divider px-3 py-2 font-ui text-xs uppercase tracking-wider text-p9 transition-colors hover:bg-p4 disabled:opacity-40"
+                >
+                  {t("ai_model_load")}
+                </button>
+              </div>
+              {listModels.isPending && (
+                <p role="status" className="mt-1 font-body text-sm text-p8">
+                  {t("ai_model_loading")}
+                </p>
+              )}
+              {modelsError && (
+                <p role="alert" className="mt-1 font-body text-sm text-red">
+                  {t("ai_model_load_error")}
+                </p>
+              )}
+              {customModel && (
+                <input
+                  type="text"
+                  aria-label={t("ai_model_custom_label")}
+                  value={model}
+                  onChange={(e) => {
+                    setModel(e.target.value);
+                    onConnectionFieldChange();
+                  }}
+                  placeholder={t("ai_model_custom_placeholder")}
+                  className="mt-2 w-full rounded-chip border border-divider bg-surface px-3 py-2 font-mono text-sm text-p9"
+                />
+              )}
+              {/* Hint sits outside the controls so it never bloats their
+                  accessible names (screen readers announce only the field). */}
+              <p className="mt-1 font-body text-xs text-p7">{t("ai_model_picker_hint")}</p>
+            </div>
           </fieldset>
         )}
 
@@ -335,17 +547,9 @@ export default function AddCloudProviderSheet({
         {step >= 4 && (
           <fieldset className="mt-5">
             <legend className="section-label">{t("ai_select_models")}</legend>
-            <label className="mt-2 block">
-              <span className="font-ui text-[10px] uppercase tracking-wider text-p8">
-                {t("ai_model_label")}
-              </span>
-              <input
-                type="text"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="mt-1 w-full rounded-chip border border-divider bg-surface px-3 py-2 font-mono text-sm text-p9"
-              />
-            </label>
+            <p className="mt-2 font-body text-sm text-p9">
+              {t("ai_model_label")}: <span className="font-mono text-p10">{model}</span>
+            </p>
             <p className="section-label mt-4">{t("ai_accounts_label")}</p>
             <div className="mt-2 space-y-1">
               {accounts.map((account) => (

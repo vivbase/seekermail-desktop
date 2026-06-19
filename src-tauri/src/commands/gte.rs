@@ -3,8 +3,9 @@
 //! Read-only aggregates over the local store, so they work without live IMAP:
 //! indexing coverage from `mails.embedding_status`, today's knowledge lookups /
 //! risks from `ai_decisions` / `risk_events`, and sync recency from `sync_state`.
-//! The "Top Topics" breakdown was sourced from deal tags, which were removed with
-//! the transaction-view feature; it now returns empty until a new source lands.
+//! The "Top Topics" breakdown groups the AI decision log by its `impact` class
+//! (risk / reply / identity / rule / context) — the always-present engine signal
+//! that replaced the removed deal tags.
 //!
 //! Thin command wrappers per the command convention (03 §1): the SQL lives in the
 //! private loaders below and the command maps `AppError → IpcError`.
@@ -26,8 +27,9 @@ pub async fn get_gte_stats(state: State<'_, AppState>) -> Result<GteStats, IpcEr
         .map_err(IpcError::from)
 }
 
-/// Topic counts for the prototype "Top Topics". The deal-tag source was removed
-/// with the transaction-view feature, so this currently returns an empty list.
+/// Topic counts for the prototype "Top Topics", grouped from the AI decision log's
+/// `impact` classification (risk / reply / identity / rule / context). This replaced
+/// the removed deal-tag source.
 #[tauri::command]
 pub async fn get_topic_breakdown(state: State<'_, AppState>) -> Result<Vec<TopicCount>, IpcError> {
     load_topic_breakdown(state.storage.db().pool())
@@ -129,11 +131,53 @@ async fn load_gte_stats(db: &SqlitePool) -> AppResult<GteStats> {
     })
 }
 
-async fn load_topic_breakdown(_db: &SqlitePool) -> AppResult<Vec<TopicCount>> {
-    // The breakdown was built from deal tags (`deals` / `mail_deals`), which were
-    // removed with the transaction-view feature. There is no replacement topic
-    // signal in the schema yet, so the list is intentionally empty for now.
-    Ok(Vec::new())
+async fn load_topic_breakdown(db: &SqlitePool) -> AppResult<Vec<TopicCount>> {
+    // Topics come from the AI decision log's `impact` class (risk | reply |
+    // identity | rule | context) — the always-present engine signal that replaced
+    // the removed deal tags. One bar per class, counted across all accounts.
+    let rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT impact, COUNT(*) AS n \
+         FROM ai_decisions \
+         GROUP BY impact \
+         ORDER BY n DESC, impact ASC \
+         LIMIT 12",
+    )
+    .fetch_all(db)
+    .await
+    .map_err(AnyError::from)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|(impact, count)| {
+            let (label, color) = topic_label_color(&impact);
+            TopicCount {
+                label,
+                color,
+                count,
+            }
+        })
+        .collect())
+}
+
+/// Map an `ai_decisions.impact` class to a human-readable Top-Topics label and a
+/// design-system colour token (rendered by the UI as `var(--<token>)`). Unknown
+/// future values fall back to a title-cased label and the neutral `p9` token.
+fn topic_label_color(impact: &str) -> (String, String) {
+    match impact {
+        "risk" => ("Risk".to_string(), "terra".to_string()),
+        "reply" => ("Replies".to_string(), "green".to_string()),
+        "identity" => ("Identity".to_string(), "slate".to_string()),
+        "rule" => ("Rules".to_string(), "amber".to_string()),
+        "context" => ("Context".to_string(), "sage".to_string()),
+        other => {
+            let mut chars = other.chars();
+            let label = match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => "Other".to_string(),
+            };
+            (label, "p9".to_string())
+        }
+    }
 }
 
 /// Recent indexed mails as "knowledge entries" — GTE recent list + Repository browse.
@@ -194,8 +238,19 @@ async fn load_knowledge_entries(
     .map_err(AnyError::from)?;
 
     let mut entries = Vec::with_capacity(rows.len());
-    for (id, account_id, acct_color, acct_badge, subject, excerpt, body, source, thread, date_sent, indexed_at) in
-        rows
+    for (
+        id,
+        account_id,
+        acct_color,
+        acct_badge,
+        subject,
+        excerpt,
+        body,
+        source,
+        thread,
+        date_sent,
+        indexed_at,
+    ) in rows
     {
         // Topic/category tags came from deal tags, which were removed with the
         // transaction-view feature; knowledge entries carry no tags for now.

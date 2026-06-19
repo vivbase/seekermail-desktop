@@ -86,7 +86,7 @@ impl<'a> AttachmentRepo<'a> {
             let id = new_uuid();
             sqlx::query(
                 "INSERT INTO attachments (id, mail_id, content_id, filename, content_type, \
-                     size_bytes, is_inline, downloaded, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)",
+                     size_bytes, is_inline, part_index, downloaded, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)",
             )
             .bind(&id)
             .bind(mail_id)
@@ -95,6 +95,7 @@ impl<'a> AttachmentRepo<'a> {
             .bind(&att.content_type)
             .bind(att.size_bytes as i64)
             .bind(att.is_inline as i64)
+            .bind(att.part_index as i64)
             .bind(now)
             .execute(&mut *tx)
             .await
@@ -103,6 +104,18 @@ impl<'a> AttachmentRepo<'a> {
         }
         tx.commit().await.map_err(map_sqlx_err)?;
         Ok(ids)
+    }
+
+    /// The attachment's 0-based MIME part index (migration 016), used by the
+    /// deferred byte-download to re-address the part on the server. Kept off the
+    /// wire `Attachment` DTO (internal addressing only), so it is read on demand.
+    pub async fn part_index(&self, id: &str) -> AppResult<u32> {
+        let row: Option<(i64,)> = sqlx::query_as("SELECT part_index FROM attachments WHERE id = ?")
+            .bind(id)
+            .fetch_optional(self.db.pool())
+            .await
+            .map_err(map_sqlx_err)?;
+        row.map(|(n,)| n.max(0) as u32).ok_or(AppError::NotFound)
     }
 
     /// Mark an attachment downloaded with its on-disk path + checksum.
@@ -226,6 +239,7 @@ mod tests {
                 size_bytes: 1234,
                 content_id: None,
                 is_inline: false,
+                part_index: 0,
                 data: None,
             }],
         };

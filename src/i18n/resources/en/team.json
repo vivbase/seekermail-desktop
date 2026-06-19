@@ -23,6 +23,7 @@
   "team_input_disabled": "Add an account to start the channel.",
   "team_mention_hint": "Type @ to mention an agent",
   "team_send": "Send",
+  "team_agent_replying": "An agent is replying…",
   "team_members": "Members",
   "team_members_open": "Show members",
   "team_members_close": "Hide members",

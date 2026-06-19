@@ -25,7 +25,7 @@ use crate::error::AppResult;
 use crate::state::AppState;
 use crate::storage::map_sqlx_err;
 use crate::types::{AiDraft, CancelSendResult, SendMailParams};
-use crate::util::{new_uuid, now_unix};
+use crate::util::now_unix;
 
 /// Undo window before an E3 draft is actually sent (F_E3 §4.3). The frontend
 /// toast duration mirrors this value.
@@ -195,7 +195,10 @@ async fn deliver_one(state: &AppState, draft_id: &str, now: i64) -> AppResult<bo
         }
         None => (None, None),
     };
-    let message_id = format!("<{}@seekermail.local>", new_uuid());
+    let account = crate::storage::AccountRepo::new(state.storage.db())
+        .get(&draft.account_id)
+        .await?;
+    let message_id = crate::send::make_message_id(&account.email);
     let params = SendMailParams {
         account_id: draft.account_id.clone(),
         to: vec![draft.to_addr.clone()],

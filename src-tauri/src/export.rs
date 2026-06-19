@@ -146,6 +146,8 @@ pub fn export_bindings(out_path: &str) -> anyhow::Result<()> {
     types.register::<crate::types::CreateAccountParams>();
     types.register::<crate::types::UpdateAccountParams>();
     types.register::<crate::types::OAuthBeginResult>();
+    // ── SeekerMail ID identity (A6, T121) ───────────────────────────────────
+    types.register::<crate::types::SeekerMailId>();
     types.register::<crate::types::ProviderHints>();
     types.register::<crate::types::VerifyConnectionParams>();
     types.register::<crate::types::VerifyConnectionResult>();
@@ -236,6 +238,11 @@ pub fn export_bindings(out_path: &str) -> anyhow::Result<()> {
     types.register::<crate::types::LegalKeyClauses>();
     types.register::<crate::types::AnalyzeLegalRiskParams>();
     types.register::<crate::types::LegalAnalysisResult>();
+
+    // ── Module E risk events (T071) ─────────────────────────────────────────
+    types.register::<crate::types::RiskEvent>();
+    types.register::<crate::types::ListRiskEventsParams>();
+    types.register::<crate::types::ResolveRiskParams>();
 
     // ── D2 sales role analysis (T072) ───────────────────────────────────────
     types.register::<crate::types::CounterpartyStance>();

@@ -1,7 +1,11 @@
 // Add-account wizard (T017). Five steps held in component state (no routing):
-// protocol → credentials → connection test → knowledge depth → confirm. All data
-// flows through the IPC hooks; no component-level `invoke`.
-import { useEffect, useState } from "react";
+// protocol → credentials → connect (IMAP test / OAuth authorize) → knowledge
+// depth → confirm. All data flows through the IPC hooks; no component-level
+// `invoke`. OAuth accounts (gmail/outlook) must complete the grant on the
+// connect step — via the `seekermail://` deep-link callback or a manual code
+// paste — before the wizard advances, so a credential-less account can never be
+// created (F_A2). A grant abandoned mid-flow drops the just-created mailbox.
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   CreateAccountParams,
@@ -12,7 +16,10 @@ import type {
 
 import {
   useBeginOAuth,
+  useCompleteOAuth,
   useCreateAccount,
+  useDeleteAccount,
+  useMailOAuthCallbackListener,
   useSampleMailbox,
   useSetKnowledgeDepth,
   useVerifyConnection,
@@ -24,6 +31,7 @@ interface AddAccountWizardProps {
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
+type AuthStatus = "idle" | "authorizing" | "done" | "error";
 
 const COLOR_TOKENS = ["slate", "terra", "sage"] as const;
 
@@ -46,15 +54,27 @@ export default function AddAccountWizard({ onClose }: AddAccountWizardProps) {
   const [sampling, setSampling] = useState<SamplingResult | null>(null);
   const [depth, setDepth] = useState<number | null>(12);
 
+  // OAuth authorize step: the account is created first (the grant needs its id),
+  // then the grant must complete before the wizard advances.
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("idle");
+  const [stateNonce, setStateNonce] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [manualCode, setManualCode] = useState("");
+
   const verify = useVerifyConnection();
   const create = useCreateAccount();
   const beginOAuth = useBeginOAuth();
+  const completeOAuth = useCompleteOAuth();
+  const del = useDeleteAccount();
   const sample = useSampleMailbox();
   const setKnowledgeDepth = useSetKnowledgeDepth();
 
-  const isOAuth = provider === "gmail" || provider === "outlook";
+  // Gmail imports via IMAP + App Password now; only Outlook/Microsoft uses OAuth
+  // (Google's mail scope is restricted/paid — knowledge base analysis/29).
+  const isOAuth = provider === "outlook";
 
   const num = (s: string): number | null => (s.trim() === "" ? null : Number(s));
+  const errMsg = (e: unknown): string | null => (e instanceof Error ? e.message : null);
 
   const buildParams = (): CreateAccountParams => ({
     email,
@@ -97,14 +117,98 @@ export default function AddAccountWizard({ onClose }: AddAccountWizardProps) {
     );
   };
 
+  // IMAP: create after the connection test passes, then go to the depth step.
   const createThenAdvance = () => {
     create.mutate(buildParams(), {
       onSuccess: (acc) => {
         setAccountId(acc.id);
         setStep(4);
-        if (isOAuth) beginOAuth.mutate({ provider, accountId: acc.id });
       },
     });
+  };
+
+  // OAuth: create the account, open the browser grant, and gate on completion.
+  const beginAuthorize = useCallback(
+    (id: string) => {
+      setAuthStatus("authorizing");
+      setAuthError(null);
+      beginOAuth.mutate(
+        { provider, accountId: id },
+        {
+          onSuccess: (begun) => setStateNonce(begun.state),
+          onError: (e) => {
+            setAuthStatus("error");
+            setAuthError(errMsg(e));
+          },
+        },
+      );
+    },
+    [beginOAuth, provider],
+  );
+
+  const createThenAuthorize = () => {
+    create.mutate(buildParams(), {
+      onSuccess: (acc) => {
+        setAccountId(acc.id);
+        setStep(3);
+        beginAuthorize(acc.id);
+      },
+    });
+  };
+
+  const completeWith = useCallback(
+    (code: string, nonce: string | null) => {
+      if (!nonce || !code.trim() || !accountId) return;
+      completeOAuth.mutate(
+        { code: code.trim(), stateNonce: nonce },
+        {
+          onSuccess: () => setAuthStatus("done"),
+          onError: (e) => {
+            setAuthStatus("error");
+            setAuthError(errMsg(e));
+          },
+        },
+      );
+    },
+    [accountId, completeOAuth],
+  );
+
+  // Deep-link callback (`oauth:mail_callback`) → complete automatically.
+  const onMailCallback = useCallback(
+    (payload: { code: string; state: string }) => {
+      if (authStatus === "authorizing") completeWith(payload.code, stateNonce ?? payload.state);
+    },
+    [authStatus, stateNonce, completeWith],
+  );
+  useMailOAuthCallbackListener(onMailCallback);
+
+  // Drop a half-authorized OAuth mailbox so no credential-less account lingers.
+  const discardIncomplete = () => {
+    if (accountId && isOAuth && authStatus !== "done") del.mutate(accountId);
+  };
+
+  const handleClose = () => {
+    discardIncomplete();
+    onClose();
+  };
+
+  const handleBack = () => {
+    if (step === 1) {
+      handleClose();
+      return;
+    }
+    // Leaving the OAuth authorize step before it completes undoes the just-created
+    // account so a retry starts clean.
+    if (step === 3 && isOAuth && authStatus !== "done") {
+      discardIncomplete();
+      setAccountId(null);
+      setStateNonce(null);
+      setAuthStatus("idle");
+      setManualCode("");
+      setStep(2);
+      return;
+    }
+    setStep((s) => (s - 1) as Step);
   };
 
   const finish = () => {
@@ -139,7 +243,7 @@ export default function AddAccountWizard({ onClose }: AddAccountWizardProps) {
               {(
                 [
                   ["imap", "wizard_protocol_imap"],
-                  ["gmail", "wizard_protocol_oauth"],
+                  ["outlook", "wizard_protocol_oauth"],
                 ] as const
               ).map(([value, key]) => (
                 <button
@@ -213,7 +317,7 @@ export default function AddAccountWizard({ onClose }: AddAccountWizardProps) {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 3 && !isOAuth && (
             <div className="space-y-3">
               <button
                 type="button"
@@ -239,6 +343,65 @@ export default function AddAccountWizard({ onClose }: AddAccountWizardProps) {
             </div>
           )}
 
+          {step === 3 && isOAuth && (
+            <div className="space-y-3">
+              {authStatus === "done" ? (
+                <p className="font-body text-sm text-green">{t("wizard_oauth_done")}</p>
+              ) : (
+                <p className="font-body text-sm text-p9">{t("wizard_oauth_authorizing")}</p>
+              )}
+              <p className="font-body text-xs leading-relaxed text-p8">
+                {t("wizard_oauth_authorizing_hint")}
+              </p>
+              <button
+                type="button"
+                onClick={() => accountId && beginAuthorize(accountId)}
+                disabled={beginOAuth.isPending}
+                className="rounded-chip border border-divider px-3 py-1.5 font-ui text-xs uppercase tracking-wider text-p9 disabled:opacity-50"
+              >
+                {t("wizard_oauth_open")}
+              </button>
+              {authStatus !== "done" && (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    completeWith(manualCode, stateNonce);
+                  }}
+                  className="space-y-2 border-t border-divider pt-3"
+                >
+                  <label
+                    htmlFor="oauth-code"
+                    className="block font-ui text-[10px] uppercase tracking-wider text-p8"
+                  >
+                    {t("wizard_oauth_manual_label")}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="oauth-code"
+                      value={manualCode}
+                      onChange={(e) => setManualCode(e.target.value)}
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="min-w-0 flex-1 rounded-chip border border-divider bg-surface px-3 py-2 font-mono text-xs text-p9"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!manualCode.trim() || completeOAuth.isPending}
+                      className="rounded-chip bg-p9 px-3 py-2 font-ui text-xs uppercase tracking-wider text-white disabled:opacity-50"
+                    >
+                      {t("wizard_oauth_manual_submit")}
+                    </button>
+                  </div>
+                </form>
+              )}
+              {authStatus === "error" && (
+                <p role="alert" className="font-body text-sm text-red">
+                  {authError ?? t("wizard_oauth_error")}
+                </p>
+              )}
+            </div>
+          )}
+
           {step === 4 && (
             <KnowledgeDepthStep sampling={sampling} selected={depth} onSelect={setDepth} />
           )}
@@ -256,7 +419,7 @@ export default function AddAccountWizard({ onClose }: AddAccountWizardProps) {
         <footer className="flex items-center justify-between border-t border-divider px-5 py-4">
           <button
             type="button"
-            onClick={step === 1 ? onClose : () => setStep((s) => (s - 1) as Step)}
+            onClick={handleBack}
             className="font-ui text-xs uppercase tracking-wider text-p8"
           >
             {step === 1 ? t("wizard_cancel") : t("wizard_back")}
@@ -265,9 +428,11 @@ export default function AddAccountWizard({ onClose }: AddAccountWizardProps) {
             step={step}
             isOAuth={isOAuth}
             canAdvanceTest={!!testResult?.imapOk}
+            authDone={authStatus === "done"}
             onProtocol={() => setStep(2)}
-            onCredentials={() => (isOAuth ? createThenAdvance() : setStep(3))}
+            onCredentials={() => (isOAuth ? createThenAuthorize() : setStep(3))}
             onTest={createThenAdvance}
+            onAuthNext={() => setStep(4)}
             onDepth={() => setStep(5)}
             onFinish={finish}
           />
@@ -281,9 +446,11 @@ function WizardNext(props: {
   step: Step;
   isOAuth: boolean;
   canAdvanceTest: boolean;
+  authDone: boolean;
   onProtocol: () => void;
   onCredentials: () => void;
   onTest: () => void;
+  onAuthNext: () => void;
   onDepth: () => void;
   onFinish: () => void;
 }) {
@@ -304,6 +471,18 @@ function WizardNext(props: {
         </button>
       );
     case 3:
+      if (props.isOAuth) {
+        return (
+          <button
+            type="button"
+            className={cls}
+            disabled={!props.authDone}
+            onClick={props.onAuthNext}
+          >
+            {t("wizard_next")}
+          </button>
+        );
+      }
       return (
         <button
           type="button"

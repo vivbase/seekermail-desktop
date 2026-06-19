@@ -1,9 +1,12 @@
 // Accounts settings list (T017). Lists accounts with four-state badges and hosts
-// the add-account wizard. Server state via TanStack Query hooks.
+// the add-account wizard. The SeekerMail ID card sits on top and is INDEPENDENT of
+// the mailbox list (A6, decoupled model) — it renders whether or not any mailbox
+// exists. Server state via TanStack Query hooks.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAccounts } from "@/ipc/queries/accounts";
+import SeekerMailIdCard from "@/components/account/SeekerMailIdCard";
 import AccountRow from "./AccountRow";
 import AddAccountWizard from "./AddAccountWizard";
 
@@ -13,7 +16,6 @@ export default function AccountList() {
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const list = accounts.data ?? [];
-  const isOnly = list.length === 1;
 
   return (
     <section className="mx-auto max-w-2xl p-6">
@@ -28,6 +30,9 @@ export default function AccountList() {
         </button>
       </header>
 
+      {/* Identity is independent of mailboxes — show the ID card regardless. */}
+      <SeekerMailIdCard />
+
       {accounts.isLoading ? (
         <p className="font-body text-sm text-p8">{t("state_loading")}</p>
       ) : list.length === 0 ? (
@@ -35,7 +40,7 @@ export default function AccountList() {
       ) : (
         <ul className="space-y-3">
           {list.map((account) => (
-            <AccountRow key={account.id} account={account} isOnly={isOnly} />
+            <AccountRow key={account.id} account={account} />
           ))}
         </ul>
       )}

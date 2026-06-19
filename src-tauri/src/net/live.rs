@@ -6,9 +6,9 @@
 //! * [`LiveConnProbe`] — real connection probe (T014): a TLS IMAP `LOGIN` (which
 //!   actually validates the credentials) via `async-imap` over `tokio-rustls`, plus
 //!   an SMTP reachability check via `lettre`.
-//! * [`LiveImapFactory`] — the streaming IMAP **session** (SELECT / SEARCH / FETCH for
-//!   sync) is the remaining binding point; until it lands the probe still proves real
-//!   connectivity and the service/command layers above this seam are untouched.
+//! * [`LiveImapFactory`] — opens a real authenticated streaming IMAP **session**
+//!   ([`LiveImapSession`]) implementing SELECT / UID SEARCH / UID FETCH for sync
+//!   plus per-attachment part fetch (T021/T022/T025).
 
 use std::sync::Arc;
 
@@ -345,25 +345,40 @@ where
         })
     }
 
-    fn fetch_part(&mut self, uid: i64, part: &str) -> BoxFuture<'_, AppResult<Vec<u8>>> {
-        let part = part.to_string();
+    fn fetch_part(&mut self, uid: i64, part_index: u32) -> BoxFuture<'_, AppResult<Vec<u8>>> {
         Box::pin(async move {
+            // Fetch the full RFC-822 message and slice out the requested attachment
+            // by re-parsing it. Addressing by the parser's own attachment index
+            // (the value stored at ingest) keeps both sides in lock-step without
+            // re-deriving IMAP BODYSTRUCTURE part numbers, which mail-parser does
+            // not expose and which are error-prone for nested multiparts.
             let mut stream = self
                 .session
-                .uid_fetch(uid.to_string(), format!("BODY.PEEK[{part}]"))
+                .uid_fetch(uid.to_string(), "BODY.PEEK[]")
                 .await
                 .map_err(|e| classify_imap_err(&e))?;
-            let mut bytes: Option<Vec<u8>> = None;
+            let mut raw: Option<Vec<u8>> = None;
             while let Some(item) = stream.next().await {
                 let fetch = item.map_err(|e| classify_imap_err(&e))?;
-                if let Some(data) = fetch.body().or_else(|| fetch.text()) {
-                    bytes = Some(data.to_vec());
+                if let Some(body) = fetch.body() {
+                    raw = Some(body.to_vec());
                     break;
                 }
             }
-            bytes.ok_or_else(|| {
-                AppError::ImapConnection(format!("no data for UID {uid} part {part}"))
-            })
+            let raw =
+                raw.ok_or_else(|| AppError::ImapConnection(format!("no body for UID {uid}")))?;
+            let msg = mail_parser::MessageParser::default()
+                .parse(&raw)
+                .ok_or_else(|| {
+                    AppError::ImapConnection(format!("unparsable body for UID {uid}"))
+                })?;
+            // A part the message no longer contains is terminal (e.g. server-side
+            // change) — surface NotFound so auto-download stops retrying.
+            let part = msg
+                .attachments()
+                .nth(part_index as usize)
+                .ok_or(AppError::NotFound)?;
+            Ok(part.contents().to_vec())
         })
     }
 }
@@ -400,5 +415,252 @@ impl ConnProbe for LiveConnProbe {
                 error_message: (!errs.is_empty()).then(|| errs.join("; ")),
             }
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::net::{TokenEndpoint, TokenRequest};
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    fn code_exchange(token_url: String) -> TokenRequest {
+        TokenRequest {
+            token_url,
+            client_id: "client-abc".into(),
+            redirect_uri: "http://127.0.0.1:0/cb".into(),
+            code: Some("auth-code".into()),
+            code_verifier: Some("pkce-verifier".into()),
+            refresh_token: None,
+            scope: Some("offline_access".into()),
+        }
+    }
+
+    /// A minimal, tag-echoing IMAP server scripted for one INBOX with three
+    /// messages (UIDs 2, 3, 5). It speaks just enough of RFC-3501 to drive
+    /// [`LiveImapSession`] through LOGIN → SELECT → UID SEARCH → UID FETCH over a
+    /// plain (non-TLS) socket. Returns the bound port.
+    async fn spawn_scripted_imap() -> u16 {
+        use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+        use tokio::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move {
+            let (mut sock, _) = listener.accept().await.unwrap();
+            let (rd, mut wr) = sock.split();
+            let mut reader = BufReader::new(rd);
+            // Untagged greeting before any command.
+            wr.write_all(b"* OK IMAP4rev1 Service Ready\r\n")
+                .await
+                .unwrap();
+
+            let mut line = String::new();
+            loop {
+                line.clear();
+                if reader.read_line(&mut line).await.unwrap() == 0 {
+                    break; // client closed the connection
+                }
+                let trimmed = line.trim_end();
+                let mut parts = trimmed.splitn(3, ' ');
+                let tag = parts.next().unwrap_or("").to_string();
+                let cmd = parts.next().unwrap_or("").to_ascii_uppercase();
+                let rest = parts.next().unwrap_or("");
+
+                match cmd.as_str() {
+                    "LOGIN" => {
+                        wr.write_all(format!("{tag} OK LOGIN completed\r\n").as_bytes())
+                            .await
+                            .unwrap();
+                    }
+                    "SELECT" => {
+                        wr.write_all(
+                            b"* 3 EXISTS\r\n* 0 RECENT\r\n\
+                              * OK [UIDVALIDITY 42] UIDs valid\r\n\
+                              * OK [UIDNEXT 6] Predicted next UID\r\n",
+                        )
+                        .await
+                        .unwrap();
+                        wr.write_all(
+                            format!("{tag} OK [READ-WRITE] SELECT completed\r\n").as_bytes(),
+                        )
+                        .await
+                        .unwrap();
+                    }
+                    "UID" => {
+                        let sub = rest.split(' ').next().unwrap_or("").to_ascii_uppercase();
+                        if sub == "SEARCH" {
+                            wr.write_all(b"* SEARCH 2 3 5\r\n").await.unwrap();
+                            wr.write_all(format!("{tag} OK SEARCH completed\r\n").as_bytes())
+                                .await
+                                .unwrap();
+                        } else {
+                            // UID FETCH: emit three literal-bearing FETCH responses.
+                            for (seq, uid, body) in [
+                                (1u32, 2u32, &b"raw-2"[..]),
+                                (2, 3, &b"raw-3"[..]),
+                                (3, 5, &b"raw-5"[..]),
+                            ] {
+                                wr.write_all(
+                                    format!(
+                                        "* {seq} FETCH (UID {uid} BODY[] {{{}}}\r\n",
+                                        body.len()
+                                    )
+                                    .as_bytes(),
+                                )
+                                .await
+                                .unwrap();
+                                wr.write_all(body).await.unwrap();
+                                wr.write_all(b")\r\n").await.unwrap();
+                            }
+                            wr.write_all(format!("{tag} OK FETCH completed\r\n").as_bytes())
+                                .await
+                                .unwrap();
+                        }
+                    }
+                    "LOGOUT" => {
+                        wr.write_all(b"* BYE\r\n").await.unwrap();
+                        wr.write_all(format!("{tag} OK LOGOUT completed\r\n").as_bytes())
+                            .await
+                            .unwrap();
+                        break;
+                    }
+                    _ => {
+                        wr.write_all(format!("{tag} OK\r\n").as_bytes())
+                            .await
+                            .unwrap();
+                    }
+                }
+            }
+        });
+        port
+    }
+
+    #[tokio::test]
+    async fn live_imap_session_runs_select_search_fetch_over_a_socket() {
+        use crate::net::{ImapCreds, ImapFactory};
+
+        let port = spawn_scripted_imap().await;
+        let creds = ImapCreds {
+            host: "127.0.0.1".into(),
+            port,
+            tls: false, // plain socket — exercise the non-TLS LiveImapFactory branch
+            email: "you@example.com".into(),
+            secret: "app-password".into(),
+        };
+
+        let mut session = LiveImapFactory::new().open(creds).await.unwrap();
+
+        let status = session.select_inbox().await.unwrap();
+        assert_eq!(status.uid_validity, 42);
+        assert_eq!(status.uid_next, 6);
+        assert_eq!(status.exists, 3);
+
+        // SINCE search → newest (highest UID) first.
+        let uids = session.search_uids_since(0).await.unwrap();
+        assert_eq!(uids, vec![5, 3, 2]);
+
+        // FETCH the bodies and confirm UID→bytes pairing survives the wire parse.
+        let bodies = session.fetch_bodies(&[2, 3, 5]).await.unwrap();
+        assert_eq!(bodies.len(), 3);
+        assert!(bodies.iter().any(|(u, b)| *u == 2 && b == b"raw-2"));
+        assert!(bodies.iter().any(|(u, b)| *u == 5 && b == b"raw-5"));
+    }
+
+    #[tokio::test]
+    async fn code_exchange_parses_access_refresh_and_expiry() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "access_token": "at-123",
+                "refresh_token": "rt-456",
+                "expires_in": 1200,
+                "token_type": "Bearer"
+            })))
+            .mount(&server)
+            .await;
+
+        let resp = LiveTokenEndpoint::new()
+            .exchange(code_exchange(format!("{}/token", server.uri())))
+            .await
+            .unwrap();
+        assert_eq!(resp.access_token, "at-123");
+        assert_eq!(resp.refresh_token.as_deref(), Some("rt-456"));
+        assert_eq!(resp.expires_in_secs, 1200);
+    }
+
+    #[tokio::test]
+    async fn refresh_grant_succeeds_and_expiry_defaults_when_absent() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/token"))
+            // No `expires_in` and no `refresh_token` in the response.
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(serde_json::json!({ "access_token": "at-only" })),
+            )
+            .mount(&server)
+            .await;
+
+        let req = TokenRequest {
+            token_url: format!("{}/token", server.uri()),
+            client_id: "client-abc".into(),
+            redirect_uri: "http://127.0.0.1:0/cb".into(),
+            code: None,
+            code_verifier: None,
+            refresh_token: Some("old-refresh".into()),
+            scope: None,
+        };
+        let resp = LiveTokenEndpoint::new().exchange(req).await.unwrap();
+        assert_eq!(resp.access_token, "at-only");
+        assert!(resp.refresh_token.is_none());
+        // Missing `expires_in` falls back to the one-hour default.
+        assert_eq!(resp.expires_in_secs, 3600);
+    }
+
+    #[tokio::test]
+    async fn non_2xx_status_is_oauth_failure() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/token"))
+            .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+                "error": "invalid_grant"
+            })))
+            .mount(&server)
+            .await;
+
+        let err = LiveTokenEndpoint::new()
+            .exchange(code_exchange(format!("{}/token", server.uri())))
+            .await
+            .unwrap_err();
+        match err {
+            AppError::AuthOAuthFailed(msg) => assert!(msg.contains("400"), "got: {msg}"),
+            other => panic!("expected AuthOAuthFailed, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn missing_code_and_refresh_fails_without_a_request() {
+        // No mail server is contacted: the grant type can't be determined.
+        let req = TokenRequest {
+            token_url: "http://127.0.0.1:1/token".into(),
+            client_id: "client-abc".into(),
+            redirect_uri: "http://127.0.0.1:0/cb".into(),
+            code: None,
+            code_verifier: None,
+            refresh_token: None,
+            scope: None,
+        };
+        let err = LiveTokenEndpoint::new().exchange(req).await.unwrap_err();
+        assert!(matches!(err, AppError::AuthOAuthFailed(_)));
+    }
+
+    #[test]
+    fn tls_connector_builds_with_the_pinned_provider() {
+        // Exercises the rustls/ring wiring (panics if the provider can't supply
+        // the safe default protocol versions).
+        let _connector = tls_connector();
     }
 }

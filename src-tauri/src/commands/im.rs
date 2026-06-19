@@ -44,6 +44,12 @@ pub async fn post_im_message(
         }
     });
 
+    // Agent-IM intelligent reply (F_I5): when a human posts text to the shared
+    // channel, one agent answers in-channel — grounded in the operator's own
+    // mail. Detached so it never blocks the command return; only human messages
+    // trigger it, so an agent's own reply can't loop back in.
+    crate::ai::team_chat::spawn_reply(state.inner(), &msg);
+
     Ok(msg)
 }
 

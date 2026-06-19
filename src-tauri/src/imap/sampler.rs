@@ -79,6 +79,37 @@ mod tests {
         assert!(res.ranges.iter().all(|r| r.mail_count.is_none()));
     }
 
+    #[tokio::test]
+    async fn sample_counts_buckets_against_a_fake_mailbox() {
+        // The success path — connect → SELECT → SEARCH SINCE per bucket — is
+        // unreachable through the offline adapter; drive it with a fake mailbox.
+        use crate::net::fakes::{net_with_imap, FakeImapFactory, FakeMailbox};
+
+        let account_id = "5f2d6a1e-0000-4000-8000-000000000001";
+        let mailbox = FakeMailbox::new()
+            .with_inbox(1, 200, 3)
+            .with_uids([101, 102, 103]);
+        let (state, _rx) =
+            AppState::test_state_with_net(net_with_imap(FakeImapFactory::new(mailbox))).await;
+
+        sqlx::query(
+            "INSERT INTO accounts (id, email, display_name, provider, imap_host, color_token, \
+                 badge_label, created_at, updated_at) \
+             VALUES (?, 'a@x.com', 'A', 'imap', 'imap.example.com', 'slate', 'A', 0, 0)",
+        )
+        .bind(account_id)
+        .execute(state.storage.db().pool())
+        .await
+        .unwrap();
+
+        let res = sample_mailbox(&state, account_id).await.unwrap();
+        assert_eq!(res.ranges.len(), 6);
+        // The fake returns all three UIDs for every SINCE bucket → every bucket
+        // counts 3, and the size estimate is populated (not the degraded `None`).
+        assert!(res.ranges.iter().all(|r| r.mail_count == Some(3)));
+        assert!(res.ranges.iter().all(|r| r.estimated_mb.is_some()));
+    }
+
     #[test]
     fn estimate_in_expected_range() {
         // 9,600 mails should land in the 2,000–4,000 MB band (T016 §8).

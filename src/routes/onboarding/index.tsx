@@ -118,11 +118,15 @@ export default function Onboarding() {
       )}
 
       <div className="w-full max-w-[480px]">
-        {/* Brand mark */}
-        <div className="mb-6 flex flex-col items-center gap-2">
-          <BrandMark size={44} />
-          <p className="section-label text-p8">SeekerMail</p>
-        </div>
+        {/* Brand mark — shown above the card on steps 2-4. On step 1 the logo
+            lives inside the welcome card instead (see StepWelcome), so it is
+            hidden here to avoid a duplicate brand lockup. */}
+        {step !== 1 && (
+          <div className="mb-6 flex flex-col items-center gap-2">
+            <BrandMark size={44} />
+            <p className="section-label text-p8">SeekerMail</p>
+          </div>
+        )}
 
         {/* Step card */}
         <div className="rounded-card bg-surface shadow-card">
@@ -212,9 +216,11 @@ function StepWelcome({
 }) {
   return (
     <div className="flex flex-col items-center gap-6 text-center">
-      {/* Decorative mark */}
-      <div className="flex h-16 w-16 items-center justify-center rounded-avatar bg-p4" aria-hidden>
-        <span className="font-display text-2xl italic text-p9">S</span>
+      {/* Brand lockup — moved here from the page header so the welcome card
+          carries the SeekerMail logo directly. */}
+      <div className="flex flex-col items-center gap-2" aria-hidden>
+        <BrandMark size={56} />
+        <p className="section-label text-p8">SeekerMail</p>
       </div>
 
       <div>

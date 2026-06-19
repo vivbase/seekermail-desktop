@@ -144,20 +144,32 @@ pub async fn begin_oauth_flow(
     provider: Provider,
     account_id: String,
 ) -> Result<OAuthBeginResult, IpcError> {
-    let url = oauth::begin(&state, provider, &account_id).map_err(IpcError::from)?;
+    let (url, state_nonce) = oauth::begin(&state, provider, &account_id).map_err(IpcError::from)?;
     open_url(&url);
-    Ok(OAuthBeginResult { authorize_url: url })
+    Ok(OAuthBeginResult {
+        authorize_url: url,
+        state: state_nonce,
+    })
 }
 
 #[tauri::command]
 pub async fn complete_oauth_flow(
     state: State<'_, AppState>,
+    scheduler: State<'_, Arc<SyncScheduler>>,
     code: String,
     state_nonce: String,
 ) -> Result<(), IpcError> {
-    oauth::complete(&state, &code, &state_nonce)
+    let (account_id, _expiry) = oauth::complete(&state, &code, &state_nonce)
         .await
         .map_err(IpcError::from)?;
+    // Token stored — clear any prior auth-error and (re)start polling so mail
+    // imports immediately, even if the account's first poll already failed and
+    // its task exited (the T021 poll loop stops on an auth error).
+    let _ = crate::storage::AccountRepo::new(state.storage.db())
+        .clear_auth_error(&account_id)
+        .await;
+    scheduler.add_account(&account_id);
+    scheduler.trigger_now(&account_id);
     Ok(())
 }
 

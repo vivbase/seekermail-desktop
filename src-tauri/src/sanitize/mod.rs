@@ -229,9 +229,17 @@ impl Sanitizer {
         attrs.insert("a", ["href", "title", "style"].into_iter().collect());
         attrs.insert(
             "img",
-            ["src", "alt", "width", "height", "data-remote-src", "align", "style"]
-                .into_iter()
-                .collect(),
+            [
+                "src",
+                "alt",
+                "width",
+                "height",
+                "data-remote-src",
+                "align",
+                "style",
+            ]
+            .into_iter()
+            .collect(),
         );
         // Presentational table attributes keep HTML-mail layout intact. They are
         // inert (no script / URL vectors); `style` is additionally CSS-scrubbed
@@ -240,7 +248,13 @@ impl Sanitizer {
         attrs.insert(
             "table",
             [
-                "width", "height", "align", "bgcolor", "cellpadding", "cellspacing", "border",
+                "width",
+                "height",
+                "align",
+                "bgcolor",
+                "cellpadding",
+                "cellspacing",
+                "border",
                 "style",
             ]
             .into_iter()
@@ -248,7 +262,9 @@ impl Sanitizer {
         );
         attrs.insert(
             "tr",
-            ["align", "valign", "bgcolor", "style"].into_iter().collect(),
+            ["align", "valign", "bgcolor", "style"]
+                .into_iter()
+                .collect(),
         );
         for cell in ["td", "th"] {
             attrs.insert(
@@ -265,9 +281,31 @@ impl Sanitizer {
         // Allow a scrubbed `style` on the remaining structural / text tags so
         // inline layout (padding, colour, font sizing) survives ingest.
         for tag in [
-            "span", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote", "pre",
-            "code", "em", "strong", "b", "i", "u", "sup", "sub", "figure", "figcaption", "thead",
-            "tbody", "hr",
+            "span",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "ul",
+            "ol",
+            "li",
+            "blockquote",
+            "pre",
+            "code",
+            "em",
+            "strong",
+            "b",
+            "i",
+            "u",
+            "sup",
+            "sub",
+            "figure",
+            "figcaption",
+            "thead",
+            "tbody",
+            "hr",
         ] {
             attrs.insert(tag, ["style"].into_iter().collect());
         }
@@ -529,10 +567,10 @@ mod tests {
 
     #[test]
     fn keeps_presentational_layout_attributes() {
-        let html = r#"<table width="600" bgcolor="#ffffff" align="center" cellpadding="0" cellspacing="0"><tr valign="top"><td align="left" width="50%">cell</td></tr></table>"#;
+        let html = r##"<table width="600" bgcolor="#ffffff" align="center" cellpadding="0" cellspacing="0"><tr valign="top"><td align="left" width="50%">cell</td></tr></table>"##;
         let out = s().clean(html);
         assert!(out.html.contains(r#"width="600""#));
-        assert!(out.html.contains(r#"bgcolor="#ffffff""#));
+        assert!(out.html.contains(r##"bgcolor="#ffffff""##));
         assert!(out.html.contains(r#"align="center""#));
         assert!(out.html.contains(r#"valign="top""#));
         assert!(out.html.contains(r#"align="left""#));

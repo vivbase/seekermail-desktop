@@ -1,7 +1,9 @@
 // Bottom action toolbar for the L2 reading view (T041, F_G3 §4.5).
-// Reply / Reply all / Forward seed the compose store then navigate to /compose.
-// Archive / Delete call mutations; onArchived / onDeleted callbacks let the
-// parent (the route) show the UndoToast. Mark unread + Star are in the More menu.
+// Reply / Reply all / Forward navigate to /compose with router state
+// { mode, mail, ownEmail }; the compose route seeds the editor from it (To,
+// From-account, subject, quote block). Archive / Delete call mutations;
+// onArchived / onDeleted callbacks let the parent (the route) show the
+// UndoToast. Mark unread + Star are in the More menu.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -13,7 +15,7 @@ import {
   useSetMailRead,
   useSetMailStarred,
 } from "@/ipc/queries/mail";
-import { useCompose } from "@/stores/compose";
+import { useAccounts } from "@/ipc/queries/accounts";
 import { cn } from "@/lib/cn";
 import { AiReplyButton } from "./AiReplyButton";
 
@@ -195,7 +197,11 @@ export function MailToolbar({
   const deleteMail = useDeleteMail();
   const setMailRead = useSetMailRead();
   const setMailStarred = useSetMailStarred();
-  const openCompose = useCompose((s) => s.open);
+
+  // The account that received this mail is the default From-account on reply,
+  // and its address is excluded from the reply-all recipient list.
+  const { data: accounts = [] } = useAccounts();
+  const ownEmail = accounts.find((a) => a.id === mail.accountId)?.email ?? "";
 
   const [moreOpenInternal, setMoreOpenInternal] = useState(false);
 
@@ -207,30 +213,15 @@ export function MailToolbar({
   // ── Compose navigation ────────────────────────────────────────────────────
 
   const navigateReply = () => {
-    openCompose({
-      inReplyTo: mail.id,
-      subject: mail.subject.startsWith("Re: ") ? mail.subject : `Re: ${mail.subject}`,
-      to: mail.fromEmail,
-    });
-    navigate("/compose");
+    navigate("/compose", { state: { mode: "reply", mail, ownEmail } });
   };
 
   const navigateReplyAll = () => {
-    const toAddrs = [mail.fromEmail, ...mail.to.map((r) => r.email)].join(", ");
-    openCompose({
-      inReplyTo: mail.id,
-      subject: mail.subject.startsWith("Re: ") ? mail.subject : `Re: ${mail.subject}`,
-      to: toAddrs,
-      cc: mail.cc.map((r) => r.email).join(", "),
-    });
-    navigate("/compose");
+    navigate("/compose", { state: { mode: "reply-all", mail, ownEmail } });
   };
 
   const navigateForward = () => {
-    openCompose({
-      subject: mail.subject.startsWith("Fwd: ") ? mail.subject : `Fwd: ${mail.subject}`,
-    });
-    navigate("/compose");
+    navigate("/compose", { state: { mode: "forward", mail, ownEmail } });
   };
 
   // ── Destructive actions ───────────────────────────────────────────────────

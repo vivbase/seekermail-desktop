@@ -101,8 +101,8 @@ impl<'a> MailRepo<'a> {
             for att in &mail.attachments {
                 sqlx::query(
                     "INSERT INTO attachments (id, mail_id, content_id, filename, content_type, \
-                         size_bytes, is_inline, downloaded, created_at) \
-                     VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)",
+                         size_bytes, is_inline, part_index, downloaded, created_at) \
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)",
                 )
                 .bind(new_uuid())
                 .bind(&mail_id)
@@ -111,6 +111,7 @@ impl<'a> MailRepo<'a> {
                 .bind(&att.content_type)
                 .bind(att.size_bytes as i64)
                 .bind(att.is_inline as i64)
+                .bind(att.part_index as i64)
                 .bind(now)
                 .execute(&mut *tx)
                 .await

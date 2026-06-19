@@ -8,9 +8,11 @@
 //!
 //! ## Transport seam (mirrors `net::*`)
 //! The real SMTP transport (`lettre`) is heavy + network-bound, so — exactly like
-//! IMAP/OAuth (`net/mod.rs`) — it lives behind `--features live-net`. The default
-//! build "accepts" the message offline so the cancel window, SENT persistence, and
-//! `mail:new` event are all exercised without a server.
+//! IMAP/OAuth (`net/mod.rs`) — it lives behind `--features live-net`. A feature-less
+//! build cannot transmit: under `cargo test` the offline transport accepts (no
+//! network) so the cancel window, SENT persistence, and `mail:new` event stay
+//! exercisable; in a real feature-less binary it instead returns an error, so a
+//! stock `cargo build` can never silently pretend a message was sent.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -99,7 +101,7 @@ pub async fn schedule_send(state: &AppState, params: SendMailParams) -> AppResul
     }
 
     let pending_id = new_uuid();
-    let message_id = format!("<{}@seekermail.local>", pending_id);
+    let message_id = make_message_id(&account.email);
     let (tx, rx) = oneshot::channel::<()>();
     state.send_queue.register(pending_id.clone(), tx);
 
@@ -200,13 +202,44 @@ fn read_smtp_secret(state: &AppState, account_id: &str) -> String {
         .unwrap_or_default()
 }
 
+/// The sending domain for outgoing Message-IDs and the SMTP HELO name, derived
+/// from the account address. Falls back to a stable, routable product domain if
+/// the address has no usable domain part (it always should in practice).
+fn sender_domain(email: &str) -> String {
+    match email.rsplit_once('@') {
+        Some((_, domain)) if !domain.trim().is_empty() => domain.trim().to_ascii_lowercase(),
+        _ => "seekermail.app".to_string(),
+    }
+}
+
+/// Build an RFC 5322 Message-ID (angle-bracketed) anchored to the sender's own
+/// domain. Replaces the legacy non-routable `@seekermail.local` id, which mail
+/// providers score as a spam signal and which broke local/wire id parity.
+pub(crate) fn make_message_id(from_email: &str) -> String {
+    format!("<{}@{}>", new_uuid(), sender_domain(from_email))
+}
+
 // ── Transport (offline default / lettre under live-net) ──────────────────────
 
-#[cfg(not(feature = "live-net"))]
+// Offline build in a REAL binary (not a test): refuse to send. A feature-less
+// `cargo build` must never silently pretend a message went out — nothing here can
+// reach the network. The shipped product is always built with `--features
+// live-net`; this guard only fires for a developer build that forgot the flag.
+#[cfg(all(not(feature = "live-net"), not(test)))]
 async fn transport_send(_creds: &SmtpCreds, msg: &OutboundMessage) -> AppResult<()> {
-    // Offline build: no network. The cancel window, SENT persistence, and the
-    // mail:new event are still exercised end-to-end.
-    tracing::info!(event = "smtp_send", mode = "offline", message_id = %msg.message_id, "message accepted by offline transport");
+    tracing::error!(event = "smtp_send", mode = "offline", message_id = %msg.message_id, "refusing to send: offline build — nothing was transmitted (rebuild with --features live-net)");
+    Err(AppError::SmtpSend(
+        "offline build: refusing to send — nothing was transmitted (rebuild with --features live-net)"
+            .into(),
+    ))
+}
+
+// Offline build under `cargo test`: accept without a network so the scheduling,
+// SENT persistence, and `mail:new` event of the send pipeline stay exercisable in
+// unit tests. This stub is compiled out of every shipped binary.
+#[cfg(all(not(feature = "live-net"), test))]
+async fn transport_send(_creds: &SmtpCreds, msg: &OutboundMessage) -> AppResult<()> {
+    tracing::warn!(event = "smtp_send", mode = "offline-test", message_id = %msg.message_id, "offline test stub: message NOT transmitted");
     Ok(())
 }
 
@@ -214,6 +247,7 @@ async fn transport_send(_creds: &SmtpCreds, msg: &OutboundMessage) -> AppResult<
 async fn transport_send(creds: &SmtpCreds, msg: &OutboundMessage) -> AppResult<()> {
     use lettre::message::{header::ContentType, Mailbox, MultiPart, SinglePart};
     use lettre::transport::smtp::authentication::Credentials;
+    use lettre::transport::smtp::extension::ClientId;
     use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
     let parse_mbox = |r: &Recipient| -> AppResult<Mailbox> {
@@ -238,6 +272,19 @@ async fn transport_send(creds: &SmtpCreds, msg: &OutboundMessage) -> AppResult<(
     for r in &msg.bcc {
         builder = builder.bcc(parse_mbox(r)?);
     }
+
+    // Identity + threading headers (T043): a routable Message-ID, the reply
+    // chain, and a client User-Agent. Providers penalise mail that omits these
+    // or carries a non-routable id, and replies must thread on the recipient's
+    // side. Stored ids already carry angle brackets, so they are passed verbatim.
+    builder = builder.message_id(Some(msg.message_id.clone()));
+    if let Some(in_reply_to) = &msg.in_reply_to {
+        builder = builder.in_reply_to(in_reply_to.clone());
+    }
+    if let Some(references) = &msg.references {
+        builder = builder.references(references.clone());
+    }
+    builder = builder.user_agent(format!("SeekerMail/{}", env!("CARGO_PKG_VERSION")));
 
     let email = match &msg.body_html {
         Some(html) => builder.multipart(
@@ -268,6 +315,7 @@ async fn transport_send(creds: &SmtpCreds, msg: &OutboundMessage) -> AppResult<(
     .map_err(|e| AppError::SmtpSend(format!("connect: {e}")))?
     .port(creds.port)
     .credentials(creds_obj)
+    .hello_name(ClientId::Domain(sender_domain(&creds.email)))
     .build();
 
     mailer.send(email).await.map_err(map_lettre_err)?;
@@ -346,7 +394,9 @@ mod tests {
         let (state, _rx) = AppState::test_state().await;
         account(&state, true).await;
         let res = schedule_send(&state, params()).await.unwrap();
-        assert!(res.message_id.contains("seekermail.local"));
+        assert!(res.message_id.starts_with('<') && res.message_id.ends_with('>'));
+        assert!(res.message_id.contains("@x.com"));
+        assert!(!res.message_id.contains("seekermail.local"));
 
         tokio::time::pause();
         tokio::time::advance(Duration::from_secs(SEND_CANCEL_WINDOW_SECS + 1)).await;

@@ -7,7 +7,7 @@ import { useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useArchiveMail, useDeleteMail, useSetMailRead } from "@/ipc/queries/mail";
-import { useCompose } from "@/stores/compose";
+import { useAccounts } from "@/ipc/queries/accounts";
 import type { MailDetail } from "@shared/bindings";
 
 interface UseL2ShortcutsOptions {
@@ -38,7 +38,11 @@ export function useL2Shortcuts({
   const archiveMail = useArchiveMail();
   const deleteMail = useDeleteMail();
   const setMailRead = useSetMailRead();
-  const openCompose = useCompose((s) => s.open);
+
+  // The receiving account is the default From-account on reply and is excluded
+  // from the reply-all recipient list. Resolved by the compose route from state.
+  const { data: accounts = [] } = useAccounts();
+  const ownEmail = accounts.find((a) => a.id === mail?.accountId)?.email ?? "";
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -51,12 +55,7 @@ export function useL2Shortcuts({
         case "R":
           if (!mail) break;
           e.preventDefault();
-          openCompose({
-            inReplyTo: mail.id,
-            subject: mail.subject.startsWith("Re: ") ? mail.subject : `Re: ${mail.subject}`,
-            to: mail.fromEmail,
-          });
-          navigate("/compose");
+          navigate("/compose", { state: { mode: "reply", mail, ownEmail } });
           break;
 
         // Reply all
@@ -64,13 +63,7 @@ export function useL2Shortcuts({
         case "A":
           if (!mail) break;
           e.preventDefault();
-          openCompose({
-            inReplyTo: mail.id,
-            subject: mail.subject.startsWith("Re: ") ? mail.subject : `Re: ${mail.subject}`,
-            to: [mail.fromEmail, ...mail.to.map((r) => r.email)].join(", "),
-            cc: mail.cc.map((r) => r.email).join(", "),
-          });
-          navigate("/compose");
+          navigate("/compose", { state: { mode: "reply-all", mail, ownEmail } });
           break;
 
         // Forward
@@ -78,10 +71,7 @@ export function useL2Shortcuts({
         case "F":
           if (!mail) break;
           e.preventDefault();
-          openCompose({
-            subject: mail.subject.startsWith("Fwd: ") ? mail.subject : `Fwd: ${mail.subject}`,
-          });
-          navigate("/compose");
+          navigate("/compose", { state: { mode: "forward", mail, ownEmail } });
           break;
 
         // Archive
@@ -163,7 +153,7 @@ export function useL2Shortcuts({
       onArchived,
       onDeleted,
       onToggleMore,
-      openCompose,
+      ownEmail,
       setMailRead,
     ],
   );

@@ -5,10 +5,12 @@
 //! the total bytes buffered across in-flight downloads. SHA-256 dedup hard-links
 //! duplicate blobs (F_A5 §5.4). Executables are never written or opened (F_A5 §7).
 //!
-//! Note: the v0.2 transport seam returns a part's full bytes; they are still
-//! chunked to disk in 64 KB writes with a streaming SHA. Persisting exact MIME
-//! part numbers for `FETCH BODY.PEEK[part]` is a follow-up (the seam currently
-//! fetches by a placeholder part id).
+//! Note: the transport seam returns a part's full bytes (addressed by the stored
+//! 0-based MIME part index, migration 016); they are streamed to disk in 64 KB
+//! writes with a streaming SHA. The live session re-parses the message and slices
+//! out that part — correct for any MIME nesting, at the cost of re-fetching the
+//! message body. A future optimisation can persist exact `BODYSTRUCTURE` part
+//! numbers for a ranged `FETCH BODY.PEEK[n]`.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -97,17 +99,13 @@ pub async fn download_one(
     let _mem = MEM_SEM.clone().acquire_many_owned(size_mb).await.unwrap();
 
     // ── Fetch via the transport seam ────────────────────────────────────────
+    // Address the exact MIME part by its stored 0-based index (migration 016).
+    // The live session re-parses the message and returns that part's bytes, so
+    // the index must match the one the parser assigned at ingest time.
+    let part_index = att_repo.part_index(attachment_id).await?;
     let creds = crate::imap::sync::imap_creds_for(state, &ctx.account_id).await?;
     let mut session = state.net.imap.open(creds).await?;
-    // Placeholder part id (see module note).
-    let bytes = session.fetch_part(uid, &att.id).await.map_err(|e| {
-        // A missing attachment (server 404) is terminal — stop retrying.
-        if matches!(e, AppError::NotFound) {
-            // best-effort flag; ignore secondary error
-            let _ = attachment_id;
-        }
-        e
-    })?;
+    let bytes = session.fetch_part(uid, part_index).await?;
 
     if mode == DownloadMode::Manual {
         state.events.attachment_progress(attachment_id, 50);
@@ -358,6 +356,7 @@ mod tests {
                 size_bytes: 10,
                 content_id: None,
                 is_inline: false,
+                part_index: 0,
                 data: None,
             }],
         };

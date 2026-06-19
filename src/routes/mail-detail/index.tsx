@@ -1,7 +1,8 @@
 // L2 immersive reading view (T041). Route: /mail/:id
-// Fetches full MailDetail, marks the mail read on mount, renders a centred
-// 680 px column with MailHeader → MailBody → AttachmentList, a sticky
-// MailToolbar at the bottom, and a collapsible ThreadDrawer on the right.
+// Fetches full MailDetail, marks the mail read on mount. The top nav bar and
+// MailHeader are anchored left near the nav rail (max-w 720), while MailBody →
+// AttachmentList sit in a centred 680 px reading column. A sticky MailToolbar
+// pins to the bottom and a collapsible ThreadDrawer sits on the right.
 // Keyboard shortcuts are active via useL2Shortcuts.
 // Scroll position is persisted to the selection store on unmount.
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,6 +24,7 @@ import { type AccountColorToken } from "@/lib/accountColor";
 import { MailHeader } from "@/components/mail/MailHeader";
 import { MailBody } from "@/components/mail/MailBody";
 import { MailToolbar } from "@/components/mail/MailToolbar";
+import { ReadingSizeControl } from "@/components/mail/ReadingSizeControl";
 import { RiskAlertBanner } from "@/components/mail/RiskAlertBanner";
 import { ThreadDrawer } from "@/components/mail/ThreadDrawer";
 import { AttachmentList } from "@/components/mail/AttachmentList";
@@ -183,7 +185,7 @@ export default function MailDetail() {
         <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
           {/* Top navigation bar */}
           <div className="sticky top-0 z-10 border-b border-divider bg-surface backdrop-blur-sm">
-            <div className="mx-auto flex max-w-[680px] items-center gap-3 px-5 py-2">
+            <div className="flex max-w-[720px] items-center gap-3 px-8 py-2">
               <button
                 type="button"
                 onClick={() => navigate(-1)}
@@ -204,13 +206,18 @@ export default function MailDetail() {
                 {t("back")}
               </button>
 
+              {/* Reading text-size stepper — scales the email body only (analysis 25) */}
+              <div className="ms-auto">
+                <ReadingSizeControl />
+              </div>
+
               {/* Thread toggle */}
               <button
                 type="button"
                 onClick={() => setDrawerOpen((v) => !v)}
                 aria-pressed={drawerOpen}
                 aria-label={drawerOpen ? t("hide_thread") : t("show_thread")}
-                className="ms-auto flex items-center gap-1.5 rounded-chip px-2 py-1.5 font-ui text-xs text-p8 transition-colors hover:bg-p4 hover:text-p10 focus:outline-none focus-visible:ring-2 focus-visible:ring-p9"
+                className="flex items-center gap-1.5 rounded-chip px-2 py-1.5 font-ui text-xs text-p8 transition-colors hover:bg-p4 hover:text-p10 focus:outline-none focus-visible:ring-2 focus-visible:ring-p9"
               >
                 <svg
                   width="14"
@@ -228,8 +235,9 @@ export default function MailDetail() {
             </div>
           </div>
 
-          {/* Content column */}
-          <div className="mx-auto w-full max-w-[680px] px-5 py-6">
+          {/* Header band — anchored left near the nav rail (T4 banners + header).
+              The body below keeps its own centred reading column. */}
+          <div className="w-full max-w-[720px] px-8 pt-6">
             {/* T4 non-dismissable risk banners — above MailHeader (T071 §3.2). */}
             {t4Events.length > 0 && (
               <div className="mb-5 flex flex-col gap-3">
@@ -248,7 +256,10 @@ export default function MailDetail() {
                 onToggleStar={handleToggleStar}
               />
             </div>
+          </div>
 
+          {/* Body reading column — stays centred for a comfortable line length */}
+          <div className="mx-auto w-full max-w-[680px] px-5 pb-6">
             <MailBody mail={mail} trackerInfo={trackerInfo} />
 
             {mail.hasAttachments && <AttachmentList mailId={mail.id} />}

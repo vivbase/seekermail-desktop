@@ -3,6 +3,8 @@
 //! Every outbound protocol — IMAP, SMTP, and the OAuth token HTTP endpoint — is
 //! reached through a trait object so the service logic above it is exercised with
 //! in-memory fakes (the cards' explicit "test seam": T014 §8, T015 §8, T021 §8).
+//! Those fakes live in [`fakes`] (compiled under `#[cfg(test)]`) and are injected
+//! into [`crate::state::AppState`] via `test_state_with_net`.
 //!
 //! * The DEFAULT build wires the `offline` implementations: they compile with no
 //!   network crates and return a clean "offline" failure / empty result, so the
@@ -18,10 +20,17 @@ use std::sync::Arc;
 
 use futures::future::BoxFuture;
 
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
+// `AppError` is referenced only by the offline-only `offline_err` below; importing
+// it unconditionally warns as unused under `--features live-net`.
+#[cfg(not(feature = "live-net"))]
+use crate::error::AppError;
 
+#[cfg(test)]
+pub mod fakes;
 #[cfg(feature = "live-net")]
 mod live;
+#[cfg(not(feature = "live-net"))]
 mod offline;
 
 // ── Shared value types ──────────────────────────────────────────────────────
@@ -102,8 +111,11 @@ pub trait ImapSession: Send {
     /// `FETCH BODY.PEEK[]` raw RFC-822 bytes for each requested UID.
     #[allow(clippy::type_complexity)]
     fn fetch_bodies(&mut self, uids: &[i64]) -> BoxFuture<'_, AppResult<Vec<(i64, Vec<u8>)>>>;
-    /// `FETCH BODY.PEEK[part]` raw bytes for a single MIME part (attachment).
-    fn fetch_part(&mut self, uid: i64, part: &str) -> BoxFuture<'_, AppResult<Vec<u8>>>;
+    /// Raw bytes for a single attachment, addressed by its 0-based index within
+    /// the message's `attachments()` iterator (the value stored in
+    /// `attachments.part_index`, migration 016). The live adapter fetches the full
+    /// message and slices out that part, which is correct for any MIME nesting.
+    fn fetch_part(&mut self, uid: i64, part_index: u32) -> BoxFuture<'_, AppResult<Vec<u8>>>;
 }
 
 /// Opens [`ImapSession`]s. One per build flavour (offline / live).
@@ -161,6 +173,7 @@ impl std::fmt::Debug for Net {
 
 /// Helper for offline/live adapters: a uniform "this build can't reach the
 /// network" error.
+#[cfg(not(feature = "live-net"))]
 pub(crate) fn offline_err(what: &str) -> AppError {
     AppError::ImapConnection(format!(
         "{what}: offline build (enable --features live-net)"

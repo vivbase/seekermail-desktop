@@ -11,7 +11,6 @@ import { ThreadCard } from "./ThreadCard";
 interface ThreadExpandedProps {
   threadId: string;
   colorToken: string;
-  badgeLabel: string;
   onArchived?: (threadId: string) => void;
   onDeleted?: (threadId: string) => void;
 }
@@ -41,7 +40,6 @@ function mailToThread(mail: MailSummary) {
 export function ThreadExpanded({
   threadId,
   colorToken,
-  badgeLabel,
   onArchived,
   onDeleted,
 }: ThreadExpandedProps) {
@@ -71,7 +69,8 @@ export function ThreadExpanded({
           <ThreadCard
             thread={mailToThread(mail)}
             colorToken={colorToken}
-            badgeLabel={badgeLabel}
+            senderEmail={mail.fromEmail}
+            senderName={mail.fromName}
             onArchived={onArchived}
             onDeleted={onDeleted}
           />

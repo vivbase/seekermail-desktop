@@ -1,6 +1,8 @@
 // TanStack Query hooks for the account commands (T017). Components consume these,
 // never `ipc()` or `invoke` directly (07 §6).
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   CreateAccountParams,
   ImageAllowScope,
@@ -9,7 +11,7 @@ import type {
   VerifyConnectionParams,
 } from "@shared/bindings";
 
-import { ipc } from "../client";
+import { ipc, isTauri } from "../client";
 import type { UpdateAiSettingsParams } from "../aiSettings";
 
 export const accountKeys = {
@@ -128,6 +130,42 @@ export function useBeginOAuth() {
     mutationFn: (vars: { provider: Provider; accountId: string }) =>
       ipc("begin_oauth_flow", { provider: vars.provider, account_id: vars.accountId }),
   });
+}
+
+/** Event the deep-link handler emits for an account-mail OAuth callback. */
+export const MAIL_OAUTH_CALLBACK_EVENT = "oauth:mail_callback";
+
+/**
+ * Finish a mailbox OAuth grant (from the deep-link callback or a manual code
+ * paste). The backend exchanges the code, stores the token in the Keychain, and
+ * the account can sync; on success every accounts query refetches.
+ */
+export function useCompleteOAuth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { code: string; stateNonce: string }) =>
+      ipc("complete_oauth_flow", { code: vars.code, state_nonce: vars.stateNonce }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: accountKeys.all }),
+  });
+}
+
+/**
+ * Subscribe to the account-mail OAuth deep-link callback while mounted. No-op
+ * outside Tauri (dev browser / vitest), where the manual code paste is the path.
+ */
+export function useMailOAuthCallbackListener(
+  onCallback: (payload: { code: string; state: string }) => void,
+) {
+  useEffect(() => {
+    if (!isTauri()) return undefined;
+    const pending: Promise<UnlistenFn> = listen<{ code: string; state: string }>(
+      MAIL_OAUTH_CALLBACK_EVENT,
+      (event) => onCallback(event.payload),
+    );
+    return () => {
+      void pending.then((unlisten) => unlisten());
+    };
+  }, [onCallback]);
 }
 
 export function useReauthAccount() {

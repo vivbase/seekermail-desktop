@@ -14,9 +14,13 @@ import { useAccounts } from "@/ipc/queries/accounts";
 import { useMailCount } from "@/ipc/queries/mail";
 import { cn } from "@/lib/cn";
 
-/** All Mail folder tabs (prototype: All Mail · Sent · Drafts · Trash). */
-type FolderView = "all" | "sent" | "drafts" | "trash";
+/** All Mail folder tabs (prototype: Inbox · All Mail · Sent · Drafts · Trash).
+ * `inbox` is the received-only IMAP INBOX folder and is the default landing tab
+ * (IA: "main view defaults to Inbox"). `all` applies no folder filter, so it
+ * unifies received + sent + archived across the account(s). */
+type FolderView = "inbox" | "all" | "sent" | "drafts" | "trash";
 const FOLDER_MAP: Record<FolderView, string | null> = {
+  inbox: "INBOX",
   all: null,
   sent: "SENT",
   drafts: "DRAFTS",
@@ -29,8 +33,8 @@ export default function AllMail() {
 
   // Local account filter — null means all accounts.
   const [filterAccountId, setFilterAccountId] = useState<string | null>(null);
-  // Mailbox folder tab — null folder = all mail.
-  const [folderView, setFolderView] = useState<FolderView>("all");
+  // Mailbox folder tab — defaults to the received-only Inbox (IA default view).
+  const [folderView, setFolderView] = useState<FolderView>("inbox");
 
   const { data: accounts } = useAccounts();
 
@@ -48,7 +52,7 @@ export default function AllMail() {
             tabIndex={-1}
             className="font-display text-3xl italic text-p10 outline-none"
           >
-            {t("list_page_all_mail")}
+            {t("list_page_inbox")}
           </h1>
 
           {/* Account filter */}
@@ -88,7 +92,7 @@ export default function AllMail() {
         )}
       </header>
 
-      {/* Folder tabs (prototype am-tab row): All Mail · Sent · Drafts · Trash */}
+      {/* Folder tabs (prototype am-tab row): Inbox · All Mail · Sent · Drafts · Trash */}
       <FolderTabs value={folderView} onChange={setFolderView} accountId={filterAccountId} />
 
       {/* Thread list — ThreadList reads mailFilter from the store; accountId
@@ -168,7 +172,7 @@ function AccountChip({
   );
 }
 
-// ── Folder tabs (All Mail · Sent · Drafts · Trash) ───────────────────────────
+// ── Folder tabs (Inbox · All Mail · Sent · Drafts · Trash) ───────────────────
 
 function FolderTabs({
   value,
@@ -182,12 +186,14 @@ function FolderTabs({
   const { t } = useTranslation("list");
   const acct = accountId ?? undefined;
   // Per-tab counts, filtered at the data layer by folder.
+  const inboxCount = useMailCount({ accountId: acct, folder: "INBOX" }).data ?? 0;
   const allCount = useMailCount({ accountId: acct }).data ?? 0;
   const sentCount = useMailCount({ accountId: acct, folder: "SENT" }).data ?? 0;
   const draftCount = useMailCount({ accountId: acct, folder: "DRAFTS" }).data ?? 0;
   const trashCount = useMailCount({ accountId: acct, folder: "TRASH" }).data ?? 0;
 
   const tabs: { key: FolderView; label: string; count: number }[] = [
+    { key: "inbox", label: t("tab_inbox"), count: inboxCount },
     { key: "all", label: t("tab_all_mail"), count: allCount },
     { key: "sent", label: t("tab_sent"), count: sentCount },
     { key: "drafts", label: t("tab_drafts"), count: draftCount },
@@ -195,7 +201,11 @@ function FolderTabs({
   ];
 
   return (
-    <div role="tablist" aria-label={t("folders_title")} className="flex items-center gap-1 border-b border-divider px-6">
+    <div
+      role="tablist"
+      aria-label={t("folders_title")}
+      className="flex items-center gap-1 border-b border-divider px-6"
+    >
       {tabs.map((tab) => {
         const active = value === tab.key;
         return (

@@ -5,7 +5,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ipc } from "../client";
-import type { UpdateAiSettingsParams, VerifyAiProviderParams } from "../aiSettings";
+import type {
+  ListCloudModelsParams,
+  UpdateAiSettingsParams,
+  VerifyAiProviderParams,
+} from "../aiSettings";
 import { accountKeys } from "./accounts";
 
 export const aiProviderKeys = {
@@ -38,6 +42,17 @@ export function useScanLocalProviders() {
 export function useListOllamaModels() {
   return useMutation({
     mutationFn: (baseUrl: string | null) => ipc("list_ollama_models", { base_url: baseUrl }),
+  });
+}
+
+/**
+ * Cloud provider model catalog (`GET /v1/models`) for the add-cloud-provider
+ * model picker. The key rides only inside the in-flight payload — no hook
+ * caches or re-exposes it (ADR-0004).
+ */
+export function useListCloudModels() {
+  return useMutation({
+    mutationFn: (params: ListCloudModelsParams) => ipc("list_cloud_models", { params }),
   });
 }
 

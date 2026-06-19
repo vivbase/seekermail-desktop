@@ -1,5 +1,10 @@
 // One account row + expandable panel (T017). Color badge, four-state indicator,
 // sync range / history progress / disk usage, and row actions. IPC via hooks.
+//
+// A6 decoupled model: a mailbox is just a data source. "Disconnect" removes only
+// this mailbox (the last one included — no more "can't remove your only account"
+// dead-end). Signing out of the SeekerMail ID is a separate action on the ID card,
+// independent of mailboxes.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Account } from "@shared/bindings";
@@ -21,14 +26,13 @@ type AccountStatus = "active" | "disabled" | "auth_failed" | "sync_error";
 
 interface AccountRowProps {
   account: Account;
-  isOnly: boolean;
 }
 
-export default function AccountRow({ account, isOnly }: AccountRowProps) {
+export default function AccountRow({ account }: AccountRowProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   const sync = useSyncState(account.id);
   const disk = useDiskUsage(account.id);
@@ -106,7 +110,11 @@ export default function AccountRow({ account, isOnly }: AccountRowProps) {
               <Action label={t("acct_enable")} onClick={() => enable.mutate(account.id)} />
             )}
             <Action label={t("acct_edit")} onClick={() => setEditing(true)} />
-            <Action label={t("acct_delete")} destructive onClick={() => setConfirmDelete(true)} />
+            <Action
+              label={t("acct_signout")}
+              destructive
+              onClick={() => setConfirmDisconnect(true)}
+            />
           </div>
         </div>
       )}
@@ -119,18 +127,19 @@ export default function AccountRow({ account, isOnly }: AccountRowProps) {
         />
       )}
 
+      {/* A6 decoupled: disconnecting a mailbox removes only that data source — the
+          last one included. The SeekerMail ID (if any) is unaffected. */}
       <ConfirmDialog
-        open={confirmDelete}
-        title={t("acct_delete_confirm_title")}
-        body={isOnly ? t("acct_delete_last") : t("acct_delete_confirm_body")}
+        open={confirmDisconnect}
+        title={t("acct_signout_mbx_title", { name: account.displayName })}
+        body={t("acct_signout_mbx_body", { name: account.displayName, email: account.email })}
         destructive
-        confirmLabel={t("acct_delete")}
-        confirmDisabled={isOnly}
+        confirmLabel={t("acct_signout")}
         onConfirm={() => {
           del.mutate(account.id);
-          setConfirmDelete(false);
+          setConfirmDisconnect(false);
         }}
-        onCancel={() => setConfirmDelete(false)}
+        onCancel={() => setConfirmDisconnect(false)}
       />
     </li>
   );

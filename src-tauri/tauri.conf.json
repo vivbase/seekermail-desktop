@@ -61,6 +61,11 @@
     "updater": {
       "endpoints": ["https://updates.seekermail.app/{{target}}/{{arch}}/{{current_version}}"],
       "pubkey": "UPDATER_PUBKEY_SET_AT_RELEASE_SETUP"
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["seekermail"]
+      }
     }
   }
 }

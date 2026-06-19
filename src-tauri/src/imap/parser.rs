@@ -139,21 +139,34 @@ pub fn parse_raw(raw: &RawMail, sanitizer: &Sanitizer) -> Option<ParsedMail> {
         .filter(|s| !s.is_empty())
         .or_else(|| Some(truncate_chars(&subject, 200)));
 
-    // Attachments: metadata only (bytes downloaded later, T025).
+    // Attachments: metadata only (bytes downloaded later, T025). `part_index` is
+    // the attachment's ordinal position in this same `attachments()` iterator;
+    // `fetch_part` re-parses the message and addresses the part by that index, so
+    // the two must enumerate identically (they call the same parser on the same
+    // bytes). The real `content_type` is read from the part's MIME headers and
+    // only degrades to `application/octet-stream` when the header is truly absent.
     let mut attachments: Vec<ParsedAttachment> = Vec::new();
-    for part in msg.attachments() {
+    for (idx, part) in msg.attachments().enumerate() {
         let filename = part
             .attachment_name()
             .map(|s| s.to_string())
             .unwrap_or_else(|| "attachment.bin".to_string());
         let content_id = part.content_id().map(|s| s.to_string());
+        let content_type = part
+            .content_type()
+            .map(|ct| match ct.subtype() {
+                Some(sub) => format!("{}/{}", ct.ctype(), sub),
+                None => ct.ctype().to_string(),
+            })
+            .unwrap_or_else(|| "application/octet-stream".to_string());
         let size_bytes = part.contents().len() as u64;
         attachments.push(ParsedAttachment {
             filename,
-            content_type: "application/octet-stream".to_string(),
+            content_type,
             size_bytes,
             is_inline: content_id.is_some(),
             content_id,
+            part_index: idx as u32,
             data: None,
         });
     }
@@ -293,5 +306,49 @@ mod tests {
             "From: a@x.com\r\nSubject: A very\r\n long subject\r\nMessage-ID: <m@x>\r\n\r\nbody";
         let m = parse_raw(&raw(eml), &Sanitizer::new()).unwrap();
         assert!(m.subject.contains("long subject") || m.subject == "A very long subject");
+    }
+
+    /// A multipart message with one PDF attachment: the real `content_type` is
+    /// preserved (not the old hardcoded `octet-stream`) and the part index is 0.
+    const MULTIPART_EML: &str = "From: a@x.com\r\n\
+Subject: With file\r\n\
+Message-ID: <m@x>\r\n\
+Content-Type: multipart/mixed; boundary=\"b\"\r\n\
+\r\n\
+--b\r\n\
+Content-Type: text/plain\r\n\
+\r\n\
+Hello body\r\n\
+--b\r\n\
+Content-Type: application/pdf; name=\"report.pdf\"\r\n\
+Content-Disposition: attachment; filename=\"report.pdf\"\r\n\
+Content-Transfer-Encoding: base64\r\n\
+\r\n\
+SGVsbG8=\r\n\
+--b--\r\n";
+
+    #[test]
+    fn attachment_content_type_and_part_index_are_real() {
+        let m = parse_raw(&raw(MULTIPART_EML), &Sanitizer::new()).unwrap();
+        assert_eq!(m.attachments.len(), 1);
+        let att = &m.attachments[0];
+        assert_eq!(att.content_type, "application/pdf");
+        assert_eq!(att.filename, "report.pdf");
+        assert_eq!(att.part_index, 0);
+        assert!(!att.is_inline);
+        // `size_bytes` is the decoded length (base64 "SGVsbG8=" → "Hello" = 5).
+        assert_eq!(att.size_bytes, 5);
+    }
+
+    #[test]
+    fn nth_attachment_round_trips_bytes() {
+        // Mirrors `LiveImapSession::fetch_part`: parse the full message and slice
+        // the attachment at the stored part index. This is the exact mechanism the
+        // deferred download relies on, validated here without a live IMAP server.
+        let msg = MessageParser::default()
+            .parse(MULTIPART_EML.as_bytes())
+            .unwrap();
+        let part = msg.attachments().nth(0).expect("one attachment at index 0");
+        assert_eq!(part.contents(), b"Hello");
     }
 }

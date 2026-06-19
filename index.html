@@ -17,6 +17,8 @@
     <!-- Theme FOUC guard (T050): module scripts run in order, so the dark-mode
          class is applied before the app bundle evaluates and React paints. -->
     <script type="module" src="/src/theme-boot.ts"></script>
+    <!-- UI-scale FOUC guard (analysis 25): sets --ui-scale before the app paints. -->
+    <script type="module" src="/src/font-scale-boot.ts"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

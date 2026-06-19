@@ -234,7 +234,7 @@ export default function SearchRoute() {
   const recent = history.data ?? [];
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-3xl flex-col px-6 py-6">
+    <div className="flex h-full w-full flex-col px-7 py-6">
       {/* Page header (matches the app's italic-serif page titles) */}
       <header className="mb-4 shrink-0">
         <h1 className="font-display text-2xl italic text-p10">{t("panel_title")}</h1>

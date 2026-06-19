@@ -121,10 +121,7 @@ pub async fn list_mails(
 
 /// Full mail detail for the reading view (G3).
 #[tauri::command]
-pub async fn get_mail(
-    state: State<'_, AppState>,
-    mail_id: String,
-) -> Result<MailDetail, IpcError> {
+pub async fn get_mail(state: State<'_, AppState>, mail_id: String) -> Result<MailDetail, IpcError> {
     MailRepo::new(state.storage.db())
         .get_mail(&mail_id)
         .await

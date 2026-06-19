@@ -146,20 +146,100 @@ impl AnthropicClient {
         )))
     }
 
+    /// List the model ids the endpoint exposes via `GET {base}/v1/models`.
+    /// Backs the `list_cloud_models` config command (the add-cloud-provider
+    /// model picker, T068) and the connection-test probe below. The transient
+    /// key is held in a [`Secret`] for this one request and dropped on return;
+    /// error payloads carry only endpoint kind / HTTP status (09 §5).
+    pub async fn list_models(
+        api_key: Option<&str>,
+        base_url: Option<&str>,
+    ) -> Result<Vec<String>, ProviderError> {
+        let base = base_url
+            .filter(|u| !u.trim().is_empty())
+            .map(|u| u.trim_end_matches('/').to_string())
+            .unwrap_or_else(|| DEFAULT_BASE_URL.to_string());
+        let url = format!("{base}/v1/models");
+        let http = reqwest::Client::builder()
+            .connect_timeout(CONNECT_TIMEOUT)
+            .timeout(TOTAL_TIMEOUT)
+            .build()
+            .map_err(|_| ProviderError::Unreachable("http client init failed".into()))?;
+
+        let mut request = http
+            .get(&url)
+            .header("anthropic-version", ANTHROPIC_VERSION);
+        if let Some(k) = api_key {
+            // Wrapped in `Secret` so the plaintext zeroizes when this block ends.
+            let secret = Secret::new(k);
+            request = request.header("x-api-key", secret.expose());
+        }
+        let response = request.send().await.map_err(map_transport_error)?;
+
+        let response = ensure_success(response).await?;
+        let text = response
+            .text()
+            .await
+            .map_err(|_| ProviderError::BadResponse("failed reading models list body".into()))?;
+        let parsed: WireModelsList = serde_json::from_str(&text)
+            .map_err(|_| ProviderError::BadResponse("models list did not parse as json".into()))?;
+        let mut ids: Vec<String> = parsed
+            .data
+            .into_iter()
+            .map(|m| m.id)
+            .filter(|id| !id.is_empty())
+            .collect();
+        ids.sort();
+        ids.dedup();
+        Ok(ids)
+    }
+
     /// One-shot reachability + auth probe for `verify_ai_provider` (02 §H),
     /// run against a key/endpoint the user has typed but not yet saved.
     /// Cross-card signature convention — `commands::ai` calls this directly.
+    ///
+    /// Verification reads the model catalog (`GET /v1/models`) rather than
+    /// issuing a Messages call: it exercises DNS/TLS/auth end to end, spends no
+    /// tokens, and confirms the model id by catalog membership. Endpoints with
+    /// no usable catalog (404/parse) fall back to the one-shot Messages probe;
+    /// `Auth`/`RateLimited`/`Unreachable` are conclusive and surface at once.
     pub async fn probe(
         model: &str,
         api_key: Option<&str>,
         base_url: Option<&str>,
     ) -> Result<ProviderHealth, ProviderError> {
-        let key_source = match api_key {
-            Some(key) => KeySource::Direct(Secret::new(key)),
-            None => KeySource::Anonymous,
-        };
-        let client = Self::new(model.to_string(), base_url.map(str::to_string), key_source);
-        client.health().await
+        let started = Instant::now();
+        match Self::list_models(api_key, base_url).await {
+            Ok(models) => {
+                let latency_ms = elapsed_ms(started);
+                if models.iter().any(|m| m == model) {
+                    Ok(ProviderHealth {
+                        ok: true,
+                        model_name: Some(model.to_string()),
+                        latency_ms,
+                    })
+                } else {
+                    // Catalog loaded but does not list this id (status only).
+                    Err(ProviderError::BadResponse(
+                        "http 404 (model not in catalog)".into(),
+                    ))
+                }
+            }
+            Err(
+                err @ (ProviderError::Auth
+                | ProviderError::RateLimited { .. }
+                | ProviderError::Unreachable(_)),
+            ) => Err(err),
+            // Reachable but no usable `/v1/models`: fall back to the Messages probe.
+            Err(_) => {
+                let key_source = match api_key {
+                    Some(key) => KeySource::Direct(Secret::new(key)),
+                    None => KeySource::Anonymous,
+                };
+                let client = Self::new(model.to_string(), base_url.map(str::to_string), key_source);
+                client.health().await
+            }
+        }
     }
 
     /// Resolve the API key for one call. The returned [`Secret`] stays in the
@@ -527,6 +607,19 @@ struct WireUsage {
     output_tokens: u32,
 }
 
+/// `GET /v1/models` catalog: `{"data":[{"type":"model","id":…}],"has_more":…}`.
+#[derive(Debug, Default, Deserialize)]
+struct WireModelsList {
+    #[serde(default)]
+    data: Vec<WireModelEntry>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct WireModelEntry {
+    #[serde(default)]
+    id: String,
+}
+
 /// Anthropic error envelope: `{"type":"error","error":{"type":…,"message":…}}`.
 #[derive(Debug, Default, Deserialize)]
 struct ErrorEnvelope {
@@ -758,6 +851,50 @@ mod tests {
             .await
             .unwrap();
         assert!(health.ok);
+    }
+
+    // ── model catalog + catalog-based probe (T068) ──────────────────────────
+
+    #[tokio::test]
+    async fn anthropic_list_models_parses_catalog() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/models"))
+            .and(header("x-api-key", TEST_KEY))
+            .and(header("anthropic-version", ANTHROPIC_VERSION))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "data": [
+                    { "type": "model", "id": "claude-sonnet-4-6" },
+                    { "type": "model", "id": "claude-opus-4-8" },
+                ],
+                "has_more": false,
+            })))
+            .mount(&server)
+            .await;
+
+        let models = AnthropicClient::list_models(Some(TEST_KEY), Some(&server.uri()))
+            .await
+            .unwrap();
+        // Sorted + deduped.
+        assert_eq!(models, vec!["claude-opus-4-8", "claude-sonnet-4-6"]);
+    }
+
+    #[tokio::test]
+    async fn anthropic_probe_ok_via_catalog_membership() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/models"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "data": [ { "type": "model", "id": TEST_MODEL } ],
+            })))
+            .mount(&server)
+            .await;
+
+        let health = AnthropicClient::probe(TEST_MODEL, Some(TEST_KEY), Some(&server.uri()))
+            .await
+            .unwrap();
+        assert!(health.ok);
+        assert_eq!(health.model_name.as_deref(), Some(TEST_MODEL));
     }
 
     #[tokio::test]
