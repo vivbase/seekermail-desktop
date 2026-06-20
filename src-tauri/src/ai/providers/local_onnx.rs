@@ -1136,6 +1136,7 @@ mod tests {
                 attachments: root.join("attachments"),
                 logs: root.join("logs"),
                 models: root.join("models"),
+                resources: root.join("resources"),
                 root,
             };
             std::fs::create_dir_all(&paths.models).unwrap();

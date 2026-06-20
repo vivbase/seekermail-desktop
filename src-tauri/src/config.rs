@@ -42,10 +42,17 @@ pub struct Paths {
     pub vectors: PathBuf,
     pub attachments: PathBuf,
     pub logs: PathBuf,
-    /// Bundled model resources (bge-m3 ONNX + tokenizer + lock, T010/T030). In a
-    /// packaged app this is Tauri's `resource_dir()`; in dev it is overridable via
-    /// `SEEKERMAIL_RESOURCE_DIR`, else `{root}/models`.
+    /// User-writable models directory (`{root}/models`). Holds user-supplied local
+    /// *generative* model files (`.gguf`, T063). The bundled bge-m3 *embedding*
+    /// model is NOT here — it ships read-only under [`Paths::resources`].
     pub models: PathBuf,
+    /// Bundled, read-only resource directory holding the bge-m3 ONNX embedding
+    /// model (`model.onnx` + `model.onnx_data` + `tokenizer.json` + lock, T010/T030).
+    /// In a packaged app `run()`'s setup hook points this at Tauri's
+    /// `resource_dir()/resources`; it is overridable via `SEEKERMAIL_RESOURCE_DIR`,
+    /// and otherwise falls back to `{root}/models` so non-Tauri callers (tests,
+    /// benches) still resolve.
+    pub resources: PathBuf,
 }
 
 impl Paths {
@@ -62,7 +69,11 @@ impl Paths {
                 base.data_dir().join("SeekerMail")
             }
         };
-        let models = match std::env::var_os("SEEKERMAIL_RESOURCE_DIR") {
+        // The bundled embedding model ships under the app's resource dir. The real
+        // packaged path needs the AppHandle, so it is wired in `run()`'s setup hook
+        // (where `resource_dir()` exists). Honour the dev override here, and
+        // otherwise fall back to `{root}/models` so non-Tauri callers still resolve.
+        let resources = match std::env::var_os("SEEKERMAIL_RESOURCE_DIR") {
             Some(dir) if !dir.is_empty() => std::path::PathBuf::from(dir),
             _ => root.join("models"),
         };
@@ -71,7 +82,8 @@ impl Paths {
             vectors: root.join("vectors"),
             attachments: root.join("attachments"),
             logs: root.join("logs"),
-            models,
+            models: root.join("models"),
+            resources,
             root,
         })
     }
@@ -85,19 +97,23 @@ impl Paths {
         Ok(())
     }
 
-    /// The bge-m3 ONNX model file (T010/T030).
+    /// The bge-m3 ONNX graph file (T010/T030). bge-m3 uses ONNX *external data*, so
+    /// `model.onnx` (the ~700 KB graph) and its sibling `model.onnx_data` (the
+    /// ~2.2 GB weights) must live in the same directory; ORT resolves the data file
+    /// by the basename stored inside the graph. The names match the assets fetched
+    /// by `scripts/setup-model.mjs` and bundled via `tauri.conf.json` `resources`.
     pub fn model_onnx(&self) -> PathBuf {
-        self.models.join("bge-m3.onnx")
+        self.resources.join("model.onnx")
     }
 
     /// The bge-m3 tokenizer JSON (T010/T030).
     pub fn model_tokenizer(&self) -> PathBuf {
-        self.models.join("tokenizer.json")
+        self.resources.join("tokenizer.json")
     }
 
-    /// The model checksum lock written by T010 (`{ "sha256": "…" }`, T030 §6).
+    /// The model checksum lock written by `scripts/setup-model.mjs` (T010/T030 §6).
     pub fn model_lock(&self) -> PathBuf {
-        self.models.join("model.lock.json")
+        self.resources.join("model.lock.json")
     }
 
     /// An account's private data root: `{root}/{accountUUID}/` (F_A3 §4.4). Blob

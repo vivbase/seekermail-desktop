@@ -63,6 +63,23 @@ pub fn run() {
         .setup(move |app| {
             use tauri::Manager;
 
+            // Point the bundled-model resource dir at the packaged app's resources
+            // (where `model.onnx` + `model.onnx_data` + `tokenizer.json` ship). This
+            // needs the AppHandle's `resource_dir()`, so it happens here rather than
+            // in `Paths::resolve`. Without it the real bge-m3 embedder can't find its
+            // model and silently falls back to the offline embedder. A set
+            // `SEEKERMAIL_RESOURCE_DIR` dev override wins and is left untouched.
+            let mut paths = paths;
+            if std::env::var_os("SEEKERMAIL_RESOURCE_DIR").is_none() {
+                match app.path().resource_dir() {
+                    Ok(dir) => paths.resources = dir.join("resources"),
+                    Err(e) => tracing::warn!(
+                        error = %e,
+                        "resource_dir unavailable; embedding model falls back to the user models dir"
+                    ),
+                }
+            }
+
             let emitter = events::Emitter::new(app.handle().clone());
             let (state, mail_rx, embed_rx, pipeline_rx) =
                 tauri::async_runtime::block_on(AppState::bootstrap(paths.clone(), emitter))
