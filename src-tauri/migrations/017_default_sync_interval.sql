@@ -1,0 +1,16 @@
+-- 017_default_sync_interval.sql
+-- Lower the default mail-sync poll interval from 300s to 60s.
+--
+-- IMAP IDLE (src/imap/idle_task.rs) now delivers new mail in near-real-time, so
+-- the interval poll is only a safety net plus the fallback for servers that do
+-- not advertise IDLE; a tighter 60s floor keeps that fallback responsive. New
+-- accounts already get 60s explicitly from AccountRepo::create; this migration
+-- brings existing accounts that are still on the old 300s default down to 60s.
+-- Accounts a user has customised to any other value are left untouched.
+--
+-- Note: SQLite cannot ALTER a column DEFAULT in place, and create() always writes
+-- sync_interval_secs explicitly (so the table-level DEFAULT is never consulted on
+-- INSERT). A full table rebuild solely to restate the default is not worth the
+-- risk, so the 001_init column default is left as-is and only existing rows are
+-- migrated here.
+UPDATE accounts SET sync_interval_secs = 60 WHERE sync_interval_secs = 300;

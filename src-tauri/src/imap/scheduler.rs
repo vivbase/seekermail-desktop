@@ -12,7 +12,7 @@ use tokio::sync::{Notify, Semaphore};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
-use super::{backfill, poll_task};
+use super::{backfill, idle_task, poll_task};
 use crate::account::AccountService;
 use crate::config::MAX_CONCURRENT_POLLS;
 use crate::state::AppState;
@@ -20,7 +20,8 @@ use crate::state::AppState;
 struct AccountHandle {
     notify: Arc<Notify>,
     cancel: CancellationToken,
-    handle: JoinHandle<()>,
+    poll_handle: JoinHandle<()>,
+    idle_handle: JoinHandle<()>,
 }
 
 /// Background sync orchestrator.
@@ -57,10 +58,20 @@ impl SyncScheduler {
     pub fn add_account(&self, account_id: &str) {
         let notify = Arc::new(Notify::new());
         let cancel = self.root_cancel.child_token();
-        let handle = poll_task::spawn(
+        let poll_handle = poll_task::spawn(
             self.state.clone(),
             account_id.to_string(),
             self.sem.clone(),
+            cancel.clone(),
+            notify.clone(),
+        );
+        // The IDLE listener shares the poll task's `notify` (it pokes it the moment
+        // new mail arrives) and `cancel` (one token stops both). It provides the
+        // near-real-time push; the poll loop stays as the keepalive-interval safety
+        // net and the fallback for servers that don't advertise IDLE.
+        let idle_handle = idle_task::spawn(
+            self.state.clone(),
+            account_id.to_string(),
             cancel.clone(),
             notify.clone(),
         );
@@ -70,7 +81,8 @@ impl SyncScheduler {
             AccountHandle {
                 notify,
                 cancel,
-                handle,
+                poll_handle,
+                idle_handle,
             },
         ) {
             old.cancel.cancel();
@@ -122,7 +134,9 @@ impl SyncScheduler {
         self.root_cancel.cancel();
         let handles: Vec<JoinHandle<()>> = {
             let mut map = self.accounts.lock().expect("scheduler map poisoned");
-            map.drain().map(|(_, h)| h.handle).collect()
+            map.drain()
+                .flat_map(|(_, h)| [h.poll_handle, h.idle_handle])
+                .collect()
         };
         for h in handles {
             let _ = h.await;

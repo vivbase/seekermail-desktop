@@ -20,10 +20,12 @@ use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 use tokio_rustls::TlsConnector;
 
 use super::{
-    ConnProbe, ConnProbeConfig, ConnProbeReport, ImapCreds, ImapFactory, ImapSession, InboxStatus,
-    SmtpCreds, TokenEndpoint, TokenRequest, TokenResponse,
+    ConnProbe, ConnProbeConfig, ConnProbeReport, IdleOutcome, ImapCreds, ImapFactory, ImapSession,
+    InboxStatus, SmtpCreds, TokenEndpoint, TokenRequest, TokenResponse,
 };
 use crate::error::{AppError, AppResult};
+
+use async_imap::extensions::idle::IdleResponse;
 
 /// OAuth token endpoint over HTTPS (`reqwest`, rustls).
 pub struct LiveTokenEndpoint {
@@ -214,10 +216,14 @@ impl ImapFactory for LiveImapFactory {
                     .await
                     .map_err(|e| AppError::ImapConnection(format!("TLS handshake: {e}")))?;
                 let session = imap_login(tls, &creds.email, &creds.secret).await?;
-                Ok(Box::new(LiveImapSession { session }) as Box<dyn ImapSession>)
+                Ok(Box::new(LiveImapSession {
+                    session: Some(session),
+                }) as Box<dyn ImapSession>)
             } else {
                 let session = imap_login(tcp, &creds.email, &creds.secret).await?;
-                Ok(Box::new(LiveImapSession { session }) as Box<dyn ImapSession>)
+                Ok(Box::new(LiveImapSession {
+                    session: Some(session),
+                }) as Box<dyn ImapSession>)
             }
         })
     }
@@ -259,7 +265,23 @@ struct LiveImapSession<S>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + std::fmt::Debug + Send,
 {
-    session: async_imap::Session<S>,
+    /// `Option` so `idle_wait` can move the session into an IDLE `Handle` and then
+    /// reclaim it via `done()`. Every other method expects it to be `Some`; the
+    /// `sess()` helper surfaces a clear error if it is ever taken.
+    session: Option<async_imap::Session<S>>,
+}
+
+impl<S> LiveImapSession<S>
+where
+    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + std::fmt::Debug + Send,
+{
+    /// The live session, or a connection error if it was left taken by a panicking
+    /// IDLE (should never happen on the success paths).
+    fn sess(&mut self) -> AppResult<&mut async_imap::Session<S>> {
+        self.session
+            .as_mut()
+            .ok_or_else(|| AppError::ImapConnection("imap session unavailable".into()))
+    }
 }
 
 impl<S> ImapSession for LiveImapSession<S>
@@ -269,7 +291,7 @@ where
     fn select_inbox(&mut self) -> BoxFuture<'_, AppResult<InboxStatus>> {
         Box::pin(async move {
             let mb = self
-                .session
+                .sess()?
                 .select("INBOX")
                 .await
                 .map_err(|e| classify_imap_err(&e))?;
@@ -287,7 +309,7 @@ where
                 .unwrap_or_else(chrono::Utc::now)
                 .format("%d-%b-%Y");
             let set = self
-                .session
+                .sess()?
                 .uid_search(format!("SINCE {date}"))
                 .await
                 .map_err(|e| classify_imap_err(&e))?;
@@ -301,7 +323,7 @@ where
         Box::pin(async move {
             let from = uid_from.max(1);
             let set = self
-                .session
+                .sess()?
                 .uid_search(format!("UID {from}:*"))
                 .await
                 .map_err(|e| classify_imap_err(&e))?;
@@ -331,7 +353,7 @@ where
                 return Ok(out);
             }
             let mut stream = self
-                .session
+                .sess()?
                 .uid_fetch(set, "BODY.PEEK[]")
                 .await
                 .map_err(|e| classify_imap_err(&e))?;
@@ -353,7 +375,7 @@ where
             // re-deriving IMAP BODYSTRUCTURE part numbers, which mail-parser does
             // not expose and which are error-prone for nested multiparts.
             let mut stream = self
-                .session
+                .sess()?
                 .uid_fetch(uid.to_string(), "BODY.PEEK[]")
                 .await
                 .map_err(|e| classify_imap_err(&e))?;
@@ -379,6 +401,41 @@ where
                 .nth(part_index as usize)
                 .ok_or(AppError::NotFound)?;
             Ok(part.contents().to_vec())
+        })
+    }
+
+    fn idle_wait(
+        &mut self,
+        max_wait: std::time::Duration,
+    ) -> BoxFuture<'_, AppResult<IdleOutcome>> {
+        Box::pin(async move {
+            // IDLE consumes the session; reclaim it via `done()` before returning so
+            // the next call (select / fetch / idle) still has a live session.
+            let session = self
+                .session
+                .take()
+                .ok_or_else(|| AppError::ImapConnection("idle: no active session".into()))?;
+            let mut handle = session.idle();
+            if let Err(e) = handle.init().await {
+                // `handle` (and its socket) drops here — the listener reconnects.
+                return Err(classify_imap_err(&e));
+            }
+            // The wait future and its `StopSource` both borrow `handle`, so scope
+            // them in an inner block before `done()` reclaims the session.
+            let response = {
+                let (wait, _stop) = handle.wait_with_timeout(max_wait);
+                wait.await
+            };
+            match handle.done().await {
+                Ok(session) => self.session = Some(session),
+                Err(e) => return Err(classify_imap_err(&e)),
+            }
+            match response {
+                Ok(IdleResponse::NewData(_)) => Ok(IdleOutcome::MailArrived),
+                Ok(IdleResponse::Timeout) => Ok(IdleOutcome::TimedOut),
+                Ok(IdleResponse::ManualInterrupt) => Ok(IdleOutcome::TimedOut),
+                Err(e) => Err(classify_imap_err(&e)),
+            }
         })
     }
 }

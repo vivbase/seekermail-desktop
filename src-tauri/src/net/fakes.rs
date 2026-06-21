@@ -12,14 +12,14 @@
 //! and can't be downcast back).
 #![allow(dead_code)]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 
 use futures::future::BoxFuture;
 
 use super::{
-    ConnProbe, ConnProbeConfig, ConnProbeReport, ImapCreds, ImapFactory, ImapSession, InboxStatus,
-    Net, TokenEndpoint, TokenRequest, TokenResponse,
+    ConnProbe, ConnProbeConfig, ConnProbeReport, IdleOutcome, ImapCreds, ImapFactory, ImapSession,
+    InboxStatus, Net, TokenEndpoint, TokenRequest, TokenResponse,
 };
 use crate::error::{AppError, AppResult};
 
@@ -34,6 +34,9 @@ pub struct FakeMailbox {
     pub uids: Vec<i64>,
     pub bodies: HashMap<i64, Vec<u8>>,
     pub parts: HashMap<(i64, u32), Vec<u8>>,
+    /// Scripted IDLE outcomes consumed in order by [`FakeImapSession::idle_wait`];
+    /// when empty, `idle_wait` parks for its timeout (mimics a quiet server).
+    pub idle_script: Arc<Mutex<VecDeque<IdleOutcome>>>,
 }
 
 impl FakeMailbox {
@@ -48,6 +51,7 @@ impl FakeMailbox {
             uids: Vec::new(),
             bodies: HashMap::new(),
             parts: HashMap::new(),
+            idle_script: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
 
@@ -72,6 +76,13 @@ impl FakeMailbox {
 
     pub fn with_part(mut self, uid: i64, index: u32, bytes: impl Into<Vec<u8>>) -> Self {
         self.parts.insert((uid, index), bytes.into());
+        self
+    }
+
+    /// Script the outcomes the next `idle_wait` calls return, in order. When the
+    /// script is exhausted, `idle_wait` parks for its timeout (a quiet server).
+    pub fn with_idle_outcomes(self, outcomes: impl IntoIterator<Item = IdleOutcome>) -> Self {
+        self.idle_script.lock().unwrap().extend(outcomes);
         self
     }
 }
@@ -137,6 +148,26 @@ impl ImapSession for FakeImapSession {
         // `NotFound` so auto-download stops retrying.
         let part = self.mailbox.parts.get(&(uid, part_index)).cloned();
         Box::pin(async move { part.ok_or(AppError::NotFound) })
+    }
+
+    fn idle_wait(
+        &mut self,
+        max_wait: std::time::Duration,
+    ) -> BoxFuture<'_, AppResult<IdleOutcome>> {
+        self.log.lock().unwrap().push("idle_wait".to_string());
+        let next = self.mailbox.idle_script.lock().unwrap().pop_front();
+        Box::pin(async move {
+            match next {
+                Some(outcome) => Ok(outcome),
+                // No scripted events left → behave like a quiet server: park until
+                // the keepalive window elapses, then report a timeout. Keeps the
+                // listener loop from spinning in tests.
+                None => {
+                    tokio::time::sleep(max_wait).await;
+                    Ok(IdleOutcome::TimedOut)
+                }
+            }
+        })
     }
 }
 
@@ -339,6 +370,30 @@ mod tests {
             Some("open:you@example.com")
         );
         assert!(calls.iter().any(|c| c == "select_inbox"));
+    }
+
+    #[tokio::test]
+    async fn idle_wait_returns_scripted_outcomes_then_times_out() {
+        let mailbox = FakeMailbox::new().with_idle_outcomes([IdleOutcome::MailArrived]);
+        let factory = FakeImapFactory::new(mailbox);
+        let mut session = factory.open(creds("you@example.com")).await.unwrap();
+
+        // The scripted outcome is consumed first…
+        assert_eq!(
+            session
+                .idle_wait(std::time::Duration::from_millis(5))
+                .await
+                .unwrap(),
+            IdleOutcome::MailArrived
+        );
+        // …then a quiet server parks for the (tiny) timeout and reports TimedOut.
+        assert_eq!(
+            session
+                .idle_wait(std::time::Duration::from_millis(5))
+                .await
+                .unwrap(),
+            IdleOutcome::TimedOut
+        );
     }
 
     #[tokio::test]

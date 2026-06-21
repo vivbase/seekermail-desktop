@@ -158,7 +158,7 @@ impl<'a> AccountRepo<'a> {
             "INSERT INTO accounts (id, email, display_name, provider, imap_host, imap_port, \
                  smtp_host, smtp_port, color_token, badge_label, role_type, role_description, \
                  auth_level, is_primary, is_active, sync_interval_secs, created_at, updated_at) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 300, ?, ?)",
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 60, ?, ?)",
         )
         .bind(&a.id)
         .bind(&a.email)

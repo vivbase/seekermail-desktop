@@ -30,7 +30,7 @@ pub fn spawn(
             .get(&account_id)
             .await
             .map(|a| a.sync_interval_secs.max(15))
-            .unwrap_or(300);
+            .unwrap_or(60);
         let mut ticker = tokio::time::interval(Duration::from_secs(interval_secs as u64));
 
         loop {

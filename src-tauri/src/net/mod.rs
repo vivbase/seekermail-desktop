@@ -63,6 +63,16 @@ pub struct InboxStatus {
     pub exists: u32,
 }
 
+/// Outcome of one IMAP IDLE wait (push sync). The listener treats *any* server
+/// change as "go fetch" — the dedup cursor in `poll_once` decides what is new.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IdleOutcome {
+    /// The server reported a mailbox change — fetch new mail now.
+    MailArrived,
+    /// The keepalive window elapsed with no change — re-issue IDLE.
+    TimedOut,
+}
+
 /// In-band connection-probe report (T014). Mirrors [`crate::types::VerifyConnectionResult`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnProbeReport {
@@ -116,6 +126,12 @@ pub trait ImapSession: Send {
     /// `attachments.part_index`, migration 016). The live adapter fetches the full
     /// message and slices out that part, which is correct for any MIME nesting.
     fn fetch_part(&mut self, uid: i64, part_index: u32) -> BoxFuture<'_, AppResult<Vec<u8>>>;
+    /// Block in IMAP IDLE until the server reports a mailbox change or `max_wait`
+    /// elapses (then a re-IDLE keepalive is due). Requires a prior `select_inbox`.
+    /// Used only by the push listener ([`crate::imap::idle_task`]); the interval
+    /// poll path never calls it.
+    fn idle_wait(&mut self, max_wait: std::time::Duration)
+        -> BoxFuture<'_, AppResult<IdleOutcome>>;
 }
 
 /// Opens [`ImapSession`]s. One per build flavour (offline / live).

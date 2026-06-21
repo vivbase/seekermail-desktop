@@ -26,6 +26,10 @@ pub const BACKFILL_BATCH_SIZE: usize = 200;
 pub const BACKFILL_BATCH_PAUSE_MS: u64 = 500;
 /// Batch size for incremental poll FETCH (T022).
 pub const POLL_FETCH_BATCH_SIZE: usize = 50;
+/// Re-issue IMAP IDLE at least this often so the server never logs the connection
+/// off as idle (RFC 2177 advises < 29 min); doubles as a liveness probe. The push
+/// listener (`imap::idle_task`) waits at most this long before re-entering IDLE.
+pub const IDLE_KEEPALIVE_SECS: u64 = 29 * 60;
 /// Concurrent manual attachment downloads (T025, F_A5 §5.3).
 pub const ATTACH_MANUAL_CONCURRENCY: usize = 2;
 /// Concurrent auto attachment downloads per account (T025).

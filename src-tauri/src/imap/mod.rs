@@ -10,6 +10,7 @@ pub mod attachment;
 pub mod backfill;
 pub mod backoff;
 pub mod dedup;
+pub mod idle_task;
 pub mod parser;
 pub mod poll_task;
 pub mod sampler;
