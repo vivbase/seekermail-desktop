@@ -56,3 +56,6 @@ seekermail-desktop-2026/
 
 # ---- Vite/Vitest config timestamp artifacts ----
 *.timestamp-*.mjs
+
+# ---- TypeScript incremental build info ----
+tsconfig.tsbuildinfo
