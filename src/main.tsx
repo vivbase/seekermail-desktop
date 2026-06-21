@@ -10,6 +10,7 @@ import "./styles/prototype.css"; // 1:1 ported prototype stylesheet (tokens + co
 import "./i18n"; // initialize i18next (English default locale)
 import App from "./App";
 import { ipc, registerIpcEvents } from "./ipc";
+import { installExternalLinkHandler } from "./lib/externalLinks";
 import { applyLocale } from "./i18n/applyLocale";
 import { DEFAULT_LOCALE } from "./i18n/locales";
 import { applyTheme, initialThemeHint, isThemePreference, THEME_SETTING_KEY } from "./lib/theme";
@@ -37,6 +38,10 @@ const queryClient = new QueryClient({
 
 // Register backend event → query-invalidation listeners once (no-op off-Tauri).
 registerIpcEvents(queryClient);
+
+// Route external link clicks (in mail HTML, drafts, repository) to the OS
+// default browser instead of letting them navigate the app's own webview.
+installExternalLinkHandler();
 
 // Apply the persisted/default locale: sets <html lang/dir/script-*>.
 applyLocale(DEFAULT_LOCALE);

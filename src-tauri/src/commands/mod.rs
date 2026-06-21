@@ -23,6 +23,7 @@ pub mod reindex;
 pub mod risk;
 pub mod search;
 pub mod settings;
+pub mod shell;
 pub mod style;
 pub mod sync_range;
 pub mod system;

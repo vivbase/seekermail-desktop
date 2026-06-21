@@ -322,6 +322,8 @@ pub fn run() {
             // ── Attachment text extraction + index (T108/T109) ───────────────
             commands::extraction::start_attachment_extraction_backfill,
             commands::extraction::build_attachment_index,
+            // ── Shell / external links ───────────────────────────────────────
+            commands::shell::open_external_url,
             // ── Tracker / remote images (T029) ───────────────────────────────
             commands::mail::get_tracker_info,
             commands::mail::allow_remote_images,
