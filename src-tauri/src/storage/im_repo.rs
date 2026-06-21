@@ -191,6 +191,46 @@ pub async fn mark_read(db: &Db, id: &str) -> AppResult<()> {
     Ok(())
 }
 
+/// Mark every still-unread message in the shared channel read in one statement —
+/// what "opening the TEAM channel" does. Idempotent (only touches `read_at IS
+/// NULL` rows) and returns the number marked. Pending decision cards keep
+/// counting toward the badge via their `status` (see `count_unread`), so this
+/// clears chatter without ever hiding an open decision.
+pub async fn mark_all_read(db: &Db) -> AppResult<u64> {
+    let affected =
+        sqlx::query("UPDATE im_messages SET read_at = ? WHERE channel_id = ? AND read_at IS NULL")
+            .bind(now_unix())
+            .bind(MAIN_CHANNEL)
+            .execute(db.pool())
+            .await
+            .map_err(map_sqlx_err)?
+            .rows_affected();
+    Ok(affected)
+}
+
+/// TEAM nav-badge count (the hybrid the operator chose): an item counts when it
+/// still needs attention, i.e. it is **either**
+///   • an unresolved decision card (`status = 'pending'`), counted even after it
+///     has been read, until it is answered/skipped; **or**
+///   • an unread message from an agent (`sender_type = 'agent' AND read_at IS
+///     NULL`).
+/// The operator's own messages and `system` notices never count, and reading the
+/// channel (`mark_all_read`) clears the unread half while leaving open decisions.
+/// `status = 'pending'` is only ever set on agent `query_card` rows, so the two
+/// arms can overlap on a single row but `count(*)` never double-counts it.
+pub async fn count_unread(db: &Db) -> AppResult<i64> {
+    let (n,): (i64,) = sqlx::query_as(
+        "SELECT count(*) FROM im_messages \
+         WHERE channel_id = ? \
+           AND (status = 'pending' OR (sender_type = 'agent' AND read_at IS NULL))",
+    )
+    .bind(MAIN_CHANNEL)
+    .fetch_one(db.pool())
+    .await
+    .map_err(map_sqlx_err)?;
+    Ok(n)
+}
+
 /// Retention sweep (T092, F_I2 §5): drop messages older than 90 days, then prune
 /// the oldest rows beyond the 5000-message cap. Returns the number deleted.
 /// Called fire-and-forget after each insert, so it must never block the command.
@@ -366,6 +406,107 @@ mod tests {
         assert!(first.is_some());
         // A second mark must not overwrite the original timestamp.
         mark_read(&db, &m.id).await.unwrap();
+        assert_eq!(get_message(&db, &m.id).await.unwrap().read_at, first);
+    }
+
+    #[tokio::test]
+    async fn count_unread_counts_pending_and_unread_agent_only() {
+        let db = db().await;
+        // Unread agent message → counts.
+        insert_message(
+            &db,
+            "main",
+            "agent",
+            "acc-a",
+            "text",
+            &text_content("hi"),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+        // The operator's own message (unread) → never counts.
+        insert_message(
+            &db,
+            "main",
+            "human",
+            "human",
+            "text",
+            &text_content("hey"),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+        // A system notice (unread) → never counts.
+        insert_message(
+            &db,
+            "main",
+            "system",
+            "system",
+            "text",
+            &text_content("joined"),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+        // A pending decision card (agent) → counts even though it is unread.
+        let card = insert_message(
+            &db,
+            "main",
+            "agent",
+            "acc-a",
+            "query_card",
+            &text_content("decide"),
+            None,
+            Some("pending"),
+        )
+        .await
+        .unwrap();
+
+        // One unread agent text + one pending card = 2.
+        assert_eq!(count_unread(&db).await.unwrap(), 2);
+
+        // Reading the channel clears the unread agent text, but the pending card
+        // keeps counting via its status.
+        let marked = mark_all_read(&db).await.unwrap();
+        assert_eq!(marked, 4, "every unread row gets a read_at");
+        assert_eq!(
+            count_unread(&db).await.unwrap(),
+            1,
+            "only the open decision remains"
+        );
+
+        // Resolving the decision drops it from the badge entirely.
+        sqlx::query("UPDATE im_messages SET status = 'answered' WHERE id = ?")
+            .bind(&card.id)
+            .execute(db.pool())
+            .await
+            .unwrap();
+        assert_eq!(count_unread(&db).await.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn mark_all_read_is_idempotent() {
+        let db = db().await;
+        let m = insert_message(
+            &db,
+            "main",
+            "agent",
+            "acc-a",
+            "text",
+            &text_content("x"),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(mark_all_read(&db).await.unwrap(), 1);
+        let first = get_message(&db, &m.id).await.unwrap().read_at;
+        assert!(first.is_some());
+        // A second sweep touches nothing and preserves the original timestamp.
+        assert_eq!(mark_all_read(&db).await.unwrap(), 0);
         assert_eq!(get_message(&db, &m.id).await.unwrap().read_at, first);
     }
 

@@ -14,6 +14,9 @@ const PAGE_LIMIT = 200;
 
 export const imKeys = {
   messages: ["imMessages"] as const,
+  // Child of `messages` on purpose: invalidating `["imMessages"]` (the list)
+  // prefix-matches this too, so the badge refreshes together with the timeline.
+  unread: ["imMessages", "unread"] as const,
 };
 
 /** The shared channel timeline, oldest-first. */
@@ -24,6 +27,28 @@ export function useImMessages() {
       ipc("list_im_messages", { sender_id: null, status: null, limit: PAGE_LIMIT, offset: 0 }),
     refetchInterval: 5000,
     staleTime: 2000,
+  });
+}
+
+/** TEAM nav-badge count: unread agent messages + unresolved decision cards
+ *  (T101). Polls so the badge stays live even when the operator is on another
+ *  page; opening the channel (`useMarkTeamRead`) clears the unread half. */
+export function useTeamUnreadCount() {
+  return useQuery({
+    queryKey: imKeys.unread,
+    queryFn: () => ipc("count_team_unread"),
+    refetchInterval: 8000,
+    staleTime: 4000,
+  });
+}
+
+/** Mark the whole shared channel read — call when the TEAM page opens. */
+export function useMarkTeamRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => ipc("mark_im_channel_read", { channel_id: MAIN_CHANNEL }),
+    // Refresh the timeline + badge (the unread key is a child of `messages`).
+    onSuccess: () => void qc.invalidateQueries({ queryKey: imKeys.messages }),
   });
 }
 

@@ -41,7 +41,7 @@
   "agent_row_label": "Agents",
   "agent_primary_aria": "Primary agent",
   "agent_domain_aria": "Mailbox domain {domain}",
-  "team_badge_aria": "{count, plural, one {# question awaiting your decision} other {# questions awaiting your decision}}",
+  "team_badge_aria": "{count, plural, one {# Team item needs your attention} other {# Team items need your attention}}",
   "qa_card_pending_label": "Needs your decision",
   "qa_card_resolved_label": "Resolved",
   "qa_card_open_pending": "Open in Pending →",

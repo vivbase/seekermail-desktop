@@ -135,4 +135,22 @@ describe("TeamChannel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show members" }));
     expect(screen.getByRole("dialog", { name: "Members" })).toBeInTheDocument();
   });
+
+  it("marks the channel read on open so the TEAM badge clears its unread half", async () => {
+    // Seed one guaranteed-unread agent message so the effect fires regardless of
+    // test order (the shared mock store is mutated by earlier mounts).
+    await client.ipc("post_im_message", {
+      channel_id: "main",
+      sender_type: "agent",
+      sender_id: "demo-1",
+      message_type: "text",
+      content: JSON.stringify({ text: "New thread flagged for you." }),
+      linked_email_id: null,
+    });
+    const spy = vi.spyOn(client, "ipc");
+    withProviders(<TeamChannel />);
+    await waitFor(() =>
+      expect(spy.mock.calls.some((c) => c[0] === "mark_im_channel_read")).toBe(true),
+    );
+  });
 });

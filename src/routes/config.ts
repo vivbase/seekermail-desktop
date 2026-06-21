@@ -9,7 +9,9 @@ export type SidebarItem = {
   kind: "route";
   path: string;
   navKey: string;
-  badge?: "team" | "agents";
+  // Only TEAM carries a red badge (unread + open decisions). AGENTS shows none:
+  // a count of configured agents is not a notification.
+  badge?: "team";
 };
 
 /** The left-rail items, in prototype order. */
@@ -18,6 +20,6 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
   { kind: "route", path: "/all-mail", navKey: "nav_inbox" },
   { kind: "route", path: "/search", navKey: "nav_search" },
   { kind: "route", path: "/team", navKey: "nav_team", badge: "team" },
-  { kind: "route", path: "/agents", navKey: "nav_agents", badge: "agents" },
+  { kind: "route", path: "/agents", navKey: "nav_agents" },
   { kind: "route", path: "/repository", navKey: "nav_repository" },
 ];

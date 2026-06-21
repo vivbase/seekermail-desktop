@@ -81,6 +81,38 @@ pub async fn mark_im_message_read(state: State<'_, AppState>, id: String) -> Res
         .map_err(IpcError::from)
 }
 
+/// Mark the whole shared channel read — what opening the TEAM page does. Clears
+/// the unread half of the TEAM badge; open decision cards keep counting (T101).
+/// `channel_id` must be `"main"` (the no-private-chats guard).
+#[tauri::command]
+pub async fn mark_im_channel_read(
+    state: State<'_, AppState>,
+    channel_id: String,
+) -> Result<(), IpcError> {
+    if channel_id != im_repo::MAIN_CHANNEL {
+        return Err(IpcError::from(crate::error::AppError::Validation(format!(
+            "channel_id must be '{}' (no private chats), got '{channel_id}'",
+            im_repo::MAIN_CHANNEL
+        ))));
+    }
+    im_repo::mark_all_read(state.storage.db())
+        .await
+        .map(|_| ())
+        .map_err(IpcError::from)
+}
+
+/// Count of TEAM items still needing attention — unread agent messages plus
+/// unresolved decision cards (the T101 sidebar badge). Replaces the
+/// pending-only `count_pending_queries` for the badge so reading the channel
+/// actually clears chatter while open decisions persist.
+#[tauri::command]
+pub async fn count_team_unread(state: State<'_, AppState>) -> Result<u32, IpcError> {
+    im_repo::count_unread(state.storage.db())
+        .await
+        .map(|n| n as u32)
+        .map_err(IpcError::from)
+}
+
 /// Count of queries still awaiting a human answer (T101 — the sidebar TEAM
 /// badge). The full query lifecycle commands land with v0.6 (T095–T097); v0.5
 /// only needs this read.

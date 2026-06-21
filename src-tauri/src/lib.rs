@@ -419,7 +419,9 @@ pub fn run() {
             commands::im::post_im_message,
             commands::im::list_im_messages,
             commands::im::mark_im_message_read,
+            commands::im::mark_im_channel_read,
             commands::im::count_pending_queries,
+            commands::im::count_team_unread,
             // ── Agent presence / identity (T094) ─────────────────────────────
             commands::agents::get_agent_statuses,
             // ── Proactive queries (T096/T099) ────────────────────────────────

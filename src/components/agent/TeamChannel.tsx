@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 
 import { useAccounts } from "@/ipc/queries/accounts";
 import { useAgentStatuses } from "@/ipc/queries/agents";
-import { useImMessages } from "@/ipc/queries/im";
+import { useImMessages, useMarkTeamRead } from "@/ipc/queries/im";
 import { usePendingCounts } from "@/ipc/queries/drafts";
 import type { AgentStatusValue } from "@/ipc/agents";
 import type { ImMessage } from "@/ipc/im";
@@ -35,6 +35,20 @@ export default function TeamChannel() {
   const { data: statuses = [] } = useAgentStatuses();
   const { data: page, refetch } = useImMessages();
   const messages = useMemo(() => page?.items ?? [], [page]);
+
+  // Opening the channel marks it read, so the TEAM nav badge drops its unread
+  // half (open decision cards keep counting until answered/skipped). This also
+  // fires when a new unread agent message lands while the channel is on screen.
+  // Once every row is read `unreadCount` is 0 and the effect goes quiet, so the
+  // mark → invalidate → refetch path settles after one cycle (no loop).
+  const { mutate: markTeamRead } = useMarkTeamRead();
+  const unreadCount = useMemo(
+    () => messages.filter((m) => m.senderType === "agent" && m.readAt === null).length,
+    [messages],
+  );
+  useEffect(() => {
+    if (unreadCount > 0) markTeamRead();
+  }, [unreadCount, markTeamRead]);
 
   const [membersOpen, setMembersOpen] = useState(false);
   const streamRef = useRef<HTMLDivElement>(null);

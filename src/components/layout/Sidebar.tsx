@@ -7,11 +7,12 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAccounts } from "@/ipc/queries/accounts";
-import { useAgentStatuses } from "@/ipc/queries/agents";
-import { usePendingQueriesCount } from "@/ipc/queries/queries";
+import { useTeamUnreadCount } from "@/ipc/queries/im";
 import { accountColorClass, type AccountColorToken } from "@/lib/accountColor";
 import { cn } from "@/lib/cn";
 import { SIDEBAR_ITEMS } from "@/routes/config";
+
+import GetMailButton from "./GetMailButton";
 
 /** Active indicator: a red dot when active, an empty 7px spacer otherwise. */
 function NavDot({ active }: { active: boolean }) {
@@ -29,12 +30,12 @@ export default function Sidebar() {
   const { t } = useTranslation(["nav", "common", "team"]);
   const navigate = useNavigate();
 
-  // T101: red badge on the TEAM item — queries awaiting a decision.
-  const { data: pendingQueriesCount } = usePendingQueriesCount();
-  const queryCount = pendingQueriesCount ?? 0;
-  // Red badge on the AGENTS item — number of configured agents.
-  const { data: agentStatuses } = useAgentStatuses();
-  const agentCount = agentStatuses?.length ?? 0;
+  // T101: red badge on the TEAM item — unread agent messages plus unresolved
+  // decision cards. Opening the channel clears the unread half; open decisions
+  // persist until answered/skipped. AGENTS carries no badge: an agent count is
+  // not a notification, so a red dot there only ever read as noise.
+  const { data: teamUnread } = useTeamUnreadCount();
+  const teamCount = teamUnread ?? 0;
 
   // Account footer reads the primary account (falls back to the first one).
   const { data: accounts } = useAccounts();
@@ -43,9 +44,12 @@ export default function Sidebar() {
   return (
     <aside className="sidebar flex h-full w-[200px] shrink-0 flex-col border-divider bg-parchment px-5 pb-5 pt-7 [border-inline-end-width:1px]">
       <nav className="flex flex-1 flex-col overflow-y-auto">
-        <p className="mb-2 font-ui text-[9px] font-semibold uppercase tracking-[0.1em] text-p7">
-          {t("nav:nav_navigate")}
-        </p>
+        <div className="mb-2 flex items-center justify-between">
+          <p className="font-ui text-[9px] font-semibold uppercase tracking-[0.1em] text-p7">
+            {t("nav:nav_navigate")}
+          </p>
+          <GetMailButton />
+        </div>
 
         {SIDEBAR_ITEMS.map((item) => (
           <NavLink
@@ -60,17 +64,12 @@ export default function Sidebar() {
                 <span className={cn(LABEL, isActive ? "font-semibold text-p10" : "text-p8")}>
                   {t(`nav:${item.navKey}`)}
                 </span>
-                {item.badge === "team" && queryCount > 0 && (
-                  <span aria-label={t("team:team_badge_aria", { count: queryCount })} className={BADGE}>
-                    {queryCount > 9 ? "9+" : queryCount}
-                  </span>
-                )}
-                {item.badge === "agents" && agentCount > 0 && (
+                {item.badge === "team" && teamCount > 0 && (
                   <span
-                    aria-label={t("nav:sidebar_agents_badge", { count: agentCount })}
+                    aria-label={t("team:team_badge_aria", { count: teamCount })}
                     className={BADGE}
                   >
-                    {agentCount}
+                    {teamCount > 9 ? "9+" : teamCount}
                   </span>
                 )}
               </>
@@ -97,7 +96,7 @@ export default function Sidebar() {
           type="button"
           onClick={() => navigate("/profile")}
           title={t("common:profile_desc")}
-          className="sb-foot mt-auto flex items-center gap-2.5 border-divider pt-4 text-start transition-opacity hover:opacity-70 [border-block-start-width:1px]"
+          className="sb-foot mt-auto flex items-center gap-2.5 border-divider pt-4 text-start transition-opacity [border-block-start-width:1px] hover:opacity-70"
         >
           <span
             className={cn(
@@ -125,7 +124,12 @@ export default function Sidebar() {
             className="shrink-0 opacity-40"
           >
             <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2" />
-            <path d="M6 4v2.5l1.5 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            <path
+              d="M6 4v2.5l1.5 1.5"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+            />
           </svg>
         </button>
       )}
