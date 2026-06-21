@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "تعذّر تسجيل الدخول بهذه البيانات.",
+  "err_auth_oauth_failed": "لم يكتمل التفويض.",
+  "err_auth_keychain_denied": "تم رفض الوصول إلى Keychain النظام.",
+  "err_imap_connection_failed": "تعذّر الوصول إلى خادم البريد الآن.",
+  "err_imap_uid_validity_changed": "يحتاج صندوق البريد هذا إلى إعادة مزامنة كاملة.",
+  "err_smtp_send_failed": "تعذّر إرسال الرسالة.",
+  "err_smtp_rate_limited": "الإرسال سريع جدًا — سنخفّض السرعة.",
+  "err_db_constraint": "يتعارض هذا مع بيانات موجودة.",
+  "err_db_migration_failed": "تعذّر تحديث قاعدة البيانات المحلية.",
+  "err_ai_provider_unreachable": "مزوّد AI لديك لا يستجيب.",
+  "err_ai_rate_limited": "مزوّد AI لديك يحدّ من المعدّل.",
+  "err_ai_context_too_long": "السياق كبير جدًا على هذا النموذج.",
+  "err_gte_index_corrupt": "يحتاج فهرس البحث إلى إعادة البناء.",
+  "err_gte_reindex_in_progress": "إعادة البناء قيد التشغيل بالفعل.",
+  "err_fs_permission_denied": "ليس لدينا إذن للوصول إلى هذا الموقع.",
+  "err_fs_disk_full": "القرص ممتلئ.",
+  "err_validation": "يرجى التحقق من الحقل المميّز.",
+  "err_not_found": "لم يعد هذا العنصر موجودًا.",
+  "err_forbidden": "هذا الإجراء غير مسموح به.",
+  "err_internal": "حدث خطأ ما من جانبنا."
+}

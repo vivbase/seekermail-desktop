@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "Chúng tôi không thể đăng nhập với thông tin đó.",
+  "err_auth_oauth_failed": "Ủy quyền chưa hoàn tất.",
+  "err_auth_keychain_denied": "Quyền truy cập Keychain hệ thống bị từ chối.",
+  "err_imap_connection_failed": "Không thể kết nối máy chủ thư lúc này.",
+  "err_imap_uid_validity_changed": "Hộp thư này cần đồng bộ lại toàn bộ.",
+  "err_smtp_send_failed": "Tin nhắn không thể gửi được.",
+  "err_smtp_rate_limited": "Gửi quá nhanh — chúng tôi sẽ chậm lại.",
+  "err_db_constraint": "Dữ liệu này xung đột với dữ liệu hiện có.",
+  "err_db_migration_failed": "Không thể cập nhật cơ sở dữ liệu cục bộ.",
+  "err_ai_provider_unreachable": "Nhà cung cấp AI của bạn không phản hồi.",
+  "err_ai_rate_limited": "Nhà cung cấp AI đang giới hạn tốc độ yêu cầu.",
+  "err_ai_context_too_long": "Ngữ cảnh quá dài so với mô hình này.",
+  "err_gte_index_corrupt": "Chỉ mục tìm kiếm cần được xây dựng lại.",
+  "err_gte_reindex_in_progress": "Quá trình xây dựng lại đang chạy.",
+  "err_fs_permission_denied": "Chúng tôi không có quyền truy cập vị trí đó.",
+  "err_fs_disk_full": "Đĩa của bạn đã đầy.",
+  "err_validation": "Vui lòng kiểm tra trường được đánh dấu.",
+  "err_not_found": "Mục này không còn tồn tại.",
+  "err_forbidden": "Hành động này không được phép.",
+  "err_internal": "Đã xảy ra sự cố từ phía chúng tôi."
+}

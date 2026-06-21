@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "ড্যাশবোর্ড",
+  "title": "GTE নলেজ সূচক",
+  "sub": "1,842টি বার্তা সূচিবদ্ধ · সর্বশেষ সিঙ্ক 2 মিনিট আগে",
+  "status_engine": "ইঞ্জিন সক্রিয়",
+  "status_index": "সূচক {version}",
+  "status_syncing": "{count, plural, one {# অ্যাকাউন্ট সিঙ্ক হচ্ছে} other {# অ্যাকাউন্ট সিঙ্ক হচ্ছে}}",
+  "total_vectors": "মোট ভেক্টর: {n}",
+  "search_ph": "সব সূচিবদ্ধ ইমেইল জুড়ে সিম্যান্টিক অনুসন্ধান…",
+  "card_accounts": "অ্যাকাউন্ট বিভাজন",
+  "card_topics": "শীর্ষ বিষয়",
+  "view": "দেখুন →",
+  "results_recent": "সাম্প্রতিক নলেজ এন্ট্রি",
+  "results_query": "\"{query}\" এর অনুসন্ধান ফলাফল",
+  "searching": "অনুসন্ধান হচ্ছে…",
+  "rel_high": "উচ্চ মিল",
+  "rel_mid": "মাঝারি মিল",
+  "rel_low": "নিম্ন মিল",
+  "no_results": "\"{query}\" এর জন্য কোনো ফলাফল নেই"
+}

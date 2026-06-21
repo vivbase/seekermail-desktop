@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "ڈیش بورڈ",
+  "title": "GTE نالج انڈیکس",
+  "sub": "1,842 پیغامات انڈیکس شدہ · آخری ہم آہنگی 2 منٹ پہلے",
+  "status_engine": "انجن فعال",
+  "status_index": "انڈیکس {version}",
+  "status_syncing": "{count, plural, one {# اکاؤنٹ ہم آہنگ ہو رہا ہے} other {# اکاؤنٹس ہم آہنگ ہو رہے ہیں}}",
+  "total_vectors": "کل ویکٹرز: {n}",
+  "search_ph": "تمام انڈیکس شدہ ای میلز میں معنوی تلاش…",
+  "card_accounts": "اکاؤنٹ کی تفصیل",
+  "card_topics": "اہم موضوعات",
+  "view": "دیکھیں →",
+  "results_recent": "حالیہ نالج اندراجات",
+  "results_query": "\"{query}\" کے لیے تلاش کے نتائج",
+  "searching": "تلاش ہو رہی ہے…",
+  "rel_high": "زیادہ مطابقت",
+  "rel_mid": "درمیانی مطابقت",
+  "rel_low": "کم مطابقت",
+  "no_results": "\"{query}\" کے لیے کوئی نتیجہ نہیں"
+}

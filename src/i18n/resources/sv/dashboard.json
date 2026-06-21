@@ -1,0 +1,23 @@
+{
+  "title": "Instrumentpanel",
+  "stat_pending_lbl": "Väntande",
+  "stat_pending_sub": "kräver beslut",
+  "stat_unread_lbl": "Olästa",
+  "stat_unread_sub": "{count, plural, =0 {allt klart} one {i # konto} other {i # konton}}",
+  "stat_total_lbl": "Totalt",
+  "stat_total_sub": "{count, plural, one {i # konto} other {i # konton}}",
+  "stat_processed_lbl": "Behandlade idag",
+  "stat_processed_sub": "av AI-medarbetare",
+  "stat_view_all": "Visa alla →",
+  "stat_view_log": "Visa logg →",
+  "cold_title": "Komma igång",
+  "cold_dismiss": "Stäng",
+  "cold_note": "Din AI lär sig fortfarande din stil — under de första två veckorna ser du hur den tar över steg för steg. Att slutföra dessa påskyndar processen.",
+  "cold_task_connect": "Anslut ditt första konto",
+  "cold_task_drafts": "Granska 5 AI-utkast för att kalibrera din skrivstil",
+  "cold_task_contacts": "Svara 3 frekventa kontakter för att fylla din lista med betrodda avsändare",
+  "cold_task_search": "Prova en semantisk sökning i din e-post",
+  "cold_progress": "Förtroenderamp — full automatisering låses upp allteftersom du granskar fler utkast",
+  "report_link": "Visa daglig rapport →",
+  "hint": "Klicka på valfritt kort ovan för att utforska"
+}

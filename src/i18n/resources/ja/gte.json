@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "ダッシュボード",
+  "title": "GTE ナレッジインデックス",
+  "sub": "1,842 件のメッセージをインデックス済み · 最終同期 2 分前",
+  "status_engine": "エンジン稼働中",
+  "status_index": "インデックス {version}",
+  "status_syncing": "{count, plural, other {# 件のアカウントを同期中}}",
+  "total_vectors": "総ベクトル数: {n}",
+  "search_ph": "インデックス済みの全メールをセマンティック検索…",
+  "card_accounts": "アカウント別内訳",
+  "card_topics": "トップトピック",
+  "view": "表示 →",
+  "results_recent": "最近のナレッジエントリ",
+  "results_query": "「{query}」の検索結果",
+  "searching": "検索中…",
+  "rel_high": "高い一致",
+  "rel_mid": "中程度の一致",
+  "rel_low": "低い一致",
+  "no_results": "「{query}」の結果はありません"
+}

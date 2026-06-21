@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "登录信息不正确，请检查后重试。",
+  "err_auth_oauth_failed": "授权未完成。",
+  "err_auth_keychain_denied": "系统 Keychain 访问被拒绝。",
+  "err_imap_connection_failed": "当前无法连接邮件服务器。",
+  "err_imap_uid_validity_changed": "此邮箱需要重新完整同步。",
+  "err_smtp_send_failed": "邮件发送失败。",
+  "err_smtp_rate_limited": "发送频率过快——已自动降速。",
+  "err_db_constraint": "与现有数据冲突。",
+  "err_db_migration_failed": "本地数据库升级失败。",
+  "err_ai_provider_unreachable": "AI 服务商无响应。",
+  "err_ai_rate_limited": "AI 服务商已触发限速。",
+  "err_ai_context_too_long": "上下文内容超出当前模型的处理上限。",
+  "err_gte_index_corrupt": "搜索索引已损坏，需要重建。",
+  "err_gte_reindex_in_progress": "索引重建已在进行中。",
+  "err_fs_permission_denied": "没有该路径的访问权限。",
+  "err_fs_disk_full": "磁盘空间已满。",
+  "err_validation": "请检查标红的字段。",
+  "err_not_found": "该条目已不存在。",
+  "err_forbidden": "不允许执行此操作。",
+  "err_internal": "服务器出现内部错误。"
+}

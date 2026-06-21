@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "風險事件",
+  "audit_tab_label": "AI 活動",
+
+  "audit_total_events": "總事件數",
+  "audit_auto_sent": "自動傳送",
+  "audit_success_rate": "成功率",
+  "audit_tokens_used": "已使用 Token",
+
+  "audit_filter_account": "帳戶",
+  "audit_filter_event_type": "事件類型",
+  "audit_filter_date_range": "日期範圍",
+  "audit_filter_from": "從",
+  "audit_filter_to": "至",
+  "audit_clear_filters": "清除篩選",
+
+  "audit_col_id": "#",
+  "audit_col_account": "帳戶",
+  "audit_col_event": "事件",
+  "audit_col_subject": "主旨",
+  "audit_col_time": "時間",
+  "audit_col_tokens": "Token",
+  "audit_empty": "此範圍內無 AI 活動。",
+  "audit_loading": "載入 AI 活動中…",
+  "audit_showing_limit_hint": "顯示前 200 筆——請縮小篩選範圍。",
+
+  "audit_drawer_title": "決策詳情",
+  "audit_drawer_close": "關閉詳情面板",
+  "audit_drawer_event": "事件",
+  "audit_drawer_account": "帳戶",
+  "audit_drawer_subject": "主旨",
+  "audit_drawer_time": "記錄時間",
+  "audit_drawer_model": "AI 模型",
+  "audit_drawer_impact": "影響",
+  "audit_drawer_tokens_in": "輸入 Token",
+  "audit_drawer_tokens_out": "輸出 Token",
+  "audit_drawer_latency": "延遲",
+  "audit_drawer_refs": "知識參考",
+  "audit_drawer_draft": "草稿 ID",
+
+  "audit_report_mis_send": "回報誤傳",
+  "audit_mis_send_feedback_toast": "回饋已記錄——信任等級已複查。",
+
+  "audit_export": "匯出",
+  "audit_export_csv": "匯出為 CSV",
+  "audit_export_json": "匯出為 JSON",
+  "audit_export_success": "已匯出 {filename}",
+  "audit_export_failed_disk": "匯出失敗：磁碟空間已滿",
+  "audit_export_failed": "匯出失敗——請再試一次。",
+
+  "audit_e3_paused_banner": "Full Auto 暫停至 {date}",
+  "audit_e3_resume_early": "提前恢復 →"
+}

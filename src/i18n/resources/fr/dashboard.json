@@ -1,0 +1,23 @@
+{
+  "title": "Tableau de bord",
+  "stat_pending_lbl": "En attente",
+  "stat_pending_sub": "décision requise",
+  "stat_unread_lbl": "Non lus",
+  "stat_unread_sub": "{count, plural, =0 {tout lu} one {sur # compte} other {sur # comptes}}",
+  "stat_total_lbl": "Total",
+  "stat_total_sub": "{count, plural, one {sur # compte} other {sur # comptes}}",
+  "stat_processed_lbl": "Traités aujourd'hui",
+  "stat_processed_sub": "par les employés AI",
+  "stat_view_all": "Tout voir →",
+  "stat_view_log": "Voir le journal →",
+  "cold_title": "Pour commencer",
+  "cold_dismiss": "Ignorer",
+  "cold_note": "Votre AI apprend encore votre style — au cours des deux premières semaines, vous la verrez prendre le relais progressivement. Finaliser ces étapes accélère le processus.",
+  "cold_task_connect": "Connectez votre premier compte",
+  "cold_task_drafts": "Révisez 5 brouillons AI pour calibrer votre style d'écriture",
+  "cold_task_contacts": "Répondez à 3 contacts fréquents pour alimenter votre liste d'expéditeurs de confiance",
+  "cold_task_search": "Essayez une recherche sémantique dans votre courrier",
+  "cold_progress": "Montée en confiance — l'automatisation complète se déverrouille à mesure que vous révisez plus de brouillons",
+  "report_link": "Voir le rapport quotidien →",
+  "hint": "Cliquez sur une carte ci-dessus pour explorer"
+}

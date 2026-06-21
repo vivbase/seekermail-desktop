@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "Bảng điều khiển",
+  "title": "Chỉ mục tri thức GTE",
+  "sub": "1.842 tin nhắn đã lập chỉ mục · đồng bộ lần cuối 2 phút trước",
+  "status_engine": "Engine đang hoạt động",
+  "status_index": "Chỉ mục {version}",
+  "status_syncing": "{count, plural, other {# tài khoản đang đồng bộ}}",
+  "total_vectors": "Tổng vector: {n}",
+  "search_ph": "Tìm kiếm ngữ nghĩa trong tất cả email đã lập chỉ mục…",
+  "card_accounts": "Phân tích theo tài khoản",
+  "card_topics": "Chủ đề hàng đầu",
+  "view": "Xem →",
+  "results_recent": "Mục tri thức gần đây",
+  "results_query": "Kết quả tìm kiếm cho \"{query}\"",
+  "searching": "Đang tìm kiếm…",
+  "rel_high": "Khớp cao",
+  "rel_mid": "Khớp trung bình",
+  "rel_low": "Khớp thấp",
+  "no_results": "Không có kết quả cho \"{query}\""
+}

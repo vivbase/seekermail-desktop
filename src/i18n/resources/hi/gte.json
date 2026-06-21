@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "डैशबोर्ड",
+  "title": "GTE नॉलेज इंडेक्स",
+  "sub": "1,842 संदेश इंडेक्स किए गए · पिछला सिंक 2 मिनट पहले",
+  "status_engine": "इंजन सक्रिय",
+  "status_index": "इंडेक्स {version}",
+  "status_syncing": "{count, plural, one {# अकाउंट सिंक हो रहा है} other {# अकाउंट सिंक हो रहे हैं}}",
+  "total_vectors": "कुल वेक्टर: {n}",
+  "search_ph": "सभी इंडेक्स किए गए ईमेल में सिमेंटिक खोज…",
+  "card_accounts": "अकाउंट विवरण",
+  "card_topics": "शीर्ष विषय",
+  "view": "देखें →",
+  "results_recent": "हाल की नॉलेज प्रविष्टियाँ",
+  "results_query": "\"{query}\" के लिए खोज परिणाम",
+  "searching": "खोज हो रही है…",
+  "rel_high": "उच्च मिलान",
+  "rel_mid": "मध्यम मिलान",
+  "rel_low": "कम मिलान",
+  "no_results": "\"{query}\" के लिए कोई परिणाम नहीं"
+}

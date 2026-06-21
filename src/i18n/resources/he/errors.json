@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "לא הצלחנו להתחבר עם הפרטים האלה.",
+  "err_auth_oauth_failed": "ההרשאה לא הושלמה.",
+  "err_auth_keychain_denied": "הגישה ל-Keychain של המערכת נדחתה.",
+  "err_imap_connection_failed": "לא ניתן להגיע כעת לשרת הדואר.",
+  "err_imap_uid_validity_changed": "תיבת דואר זו דורשת סנכרון מחדש מלא.",
+  "err_smtp_send_failed": "לא ניתן היה לשלוח את ההודעה.",
+  "err_smtp_rate_limited": "שולח מהר מדי — נאט את הקצב.",
+  "err_db_constraint": "הדבר מתנגש עם נתונים קיימים.",
+  "err_db_migration_failed": "לא הצלחנו לעדכן את מסד הנתונים המקומי.",
+  "err_ai_provider_unreachable": "ספק ה-AI שלך אינו מגיב.",
+  "err_ai_rate_limited": "ספק ה-AI שלך מגביל את קצב הבקשות.",
+  "err_ai_context_too_long": "יש יותר מדי הקשר עבור מודל זה.",
+  "err_gte_index_corrupt": "אינדקס החיפוש דורש בנייה מחדש.",
+  "err_gte_reindex_in_progress": "בנייה מחדש כבר מתבצעת.",
+  "err_fs_permission_denied": "אין לנו הרשאה למיקום זה.",
+  "err_fs_disk_full": "הדיסק שלך מלא.",
+  "err_validation": "נא לבדוק את השדה המסומן.",
+  "err_not_found": "הפריט הזה כבר אינו קיים.",
+  "err_forbidden": "הפעולה הזו אינה מותרת.",
+  "err_internal": "משהו השתבש אצלנו."
+}

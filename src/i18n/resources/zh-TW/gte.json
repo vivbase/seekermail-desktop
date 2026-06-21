@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "儀表板",
+  "title": "GTE 知識索引",
+  "sub": "1,842 封郵件已建立索引 · 最後同步 2 分鐘前",
+  "status_engine": "引擎啟用中",
+  "status_index": "索引 {version}",
+  "status_syncing": "{count, plural, other {# 個帳戶同步中}}",
+  "total_vectors": "向量總數：{n}",
+  "search_ph": "在所有已建立索引的郵件中進行語意搜尋…",
+  "card_accounts": "帳戶分佈",
+  "card_topics": "熱門主題",
+  "view": "查看 →",
+  "results_recent": "最近知識條目",
+  "results_query": "「{query}」的搜尋結果",
+  "searching": "搜尋中…",
+  "rel_high": "高度符合",
+  "rel_mid": "中度符合",
+  "rel_low": "低度符合",
+  "no_results": "「{query}」無任何結果"
+}

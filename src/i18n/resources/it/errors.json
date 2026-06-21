@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "Impossibile accedere con queste credenziali.",
+  "err_auth_oauth_failed": "L'autorizzazione non è stata completata.",
+  "err_auth_keychain_denied": "Accesso al Keychain di sistema negato.",
+  "err_imap_connection_failed": "Impossibile raggiungere il server di posta al momento.",
+  "err_imap_uid_validity_changed": "Questa casella di posta richiede una risincronizzazione completa.",
+  "err_smtp_send_failed": "Il messaggio non è stato inviato.",
+  "err_smtp_rate_limited": "Invio troppo rapido — rallentiamo.",
+  "err_db_constraint": "Conflitto con dati esistenti.",
+  "err_db_migration_failed": "Impossibile aggiornare il database locale.",
+  "err_ai_provider_unreachable": "Il tuo provider AI non risponde.",
+  "err_ai_rate_limited": "Il tuo provider AI sta applicando un limite di frequenza.",
+  "err_ai_context_too_long": "Il contesto è troppo lungo per questo modello.",
+  "err_gte_index_corrupt": "L'indice di ricerca deve essere ricostruito.",
+  "err_gte_reindex_in_progress": "Una ricostruzione è già in corso.",
+  "err_fs_permission_denied": "Non abbiamo i permessi per accedere a quel percorso.",
+  "err_fs_disk_full": "Il disco è pieno.",
+  "err_validation": "Controlla il campo evidenziato.",
+  "err_not_found": "Quell'elemento non esiste più.",
+  "err_forbidden": "Azione non consentita.",
+  "err_internal": "Si è verificato un problema interno."
+}

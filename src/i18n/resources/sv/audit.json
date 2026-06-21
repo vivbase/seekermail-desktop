@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "Riskhändelser",
+  "audit_tab_label": "AI-aktivitet",
+
+  "audit_total_events": "Totala händelser",
+  "audit_auto_sent": "Automatiskt skickade",
+  "audit_success_rate": "Framgångsgrad",
+  "audit_tokens_used": "Tokens använda",
+
+  "audit_filter_account": "Konto",
+  "audit_filter_event_type": "Händelsetyp",
+  "audit_filter_date_range": "Datumintervall",
+  "audit_filter_from": "Från",
+  "audit_filter_to": "Till",
+  "audit_clear_filters": "Rensa filter",
+
+  "audit_col_id": "#",
+  "audit_col_account": "Konto",
+  "audit_col_event": "Händelse",
+  "audit_col_subject": "Ämne",
+  "audit_col_time": "Tid",
+  "audit_col_tokens": "Tokens",
+  "audit_empty": "Ingen AI-aktivitet i det här intervallet.",
+  "audit_loading": "Laddar AI-aktivitet…",
+  "audit_showing_limit_hint": "Visar de första 200 posterna — begränsa dina filter.",
+
+  "audit_drawer_title": "Beslutsdetalj",
+  "audit_drawer_close": "Stäng detaljpanel",
+  "audit_drawer_event": "Händelse",
+  "audit_drawer_account": "Konto",
+  "audit_drawer_subject": "Ämne",
+  "audit_drawer_time": "Registrerad",
+  "audit_drawer_model": "AI-modell",
+  "audit_drawer_impact": "Påverkan",
+  "audit_drawer_tokens_in": "Inmatade tokens",
+  "audit_drawer_tokens_out": "Utmatade tokens",
+  "audit_drawer_latency": "Svarstid",
+  "audit_drawer_refs": "Kunskapsreferenser",
+  "audit_drawer_draft": "Utkast-ID",
+
+  "audit_report_mis_send": "Rapportera felutskick",
+  "audit_mis_send_feedback_toast": "Återkoppling registrerad — förtroendenivå granskas.",
+
+  "audit_export": "Exportera",
+  "audit_export_csv": "Exportera som CSV",
+  "audit_export_json": "Exportera som JSON",
+  "audit_export_success": "Exporterade {filename}",
+  "audit_export_failed_disk": "Export misslyckades: disken är full",
+  "audit_export_failed": "Export misslyckades — försök igen.",
+
+  "audit_e3_paused_banner": "Helautomatisk är pausad till {date}",
+  "audit_e3_resume_early": "Återuppta tidigt →"
+}

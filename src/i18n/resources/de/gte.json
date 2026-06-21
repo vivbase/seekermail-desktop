@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "Dashboard",
+  "title": "GTE-Wissensindex",
+  "sub": "1.842 Nachrichten indiziert · letzte Synchronisierung vor 2 Min.",
+  "status_engine": "Engine aktiv",
+  "status_index": "Index {version}",
+  "status_syncing": "{count, plural, one {# Konto synchronisiert} other {# Konten synchronisieren}}",
+  "total_vectors": "Vektoren gesamt: {n}",
+  "search_ph": "Semantische Suche über alle indizierten Mails…",
+  "card_accounts": "Kontoaufschlüsselung",
+  "card_topics": "Top-Themen",
+  "view": "Anzeigen →",
+  "results_recent": "Aktuelle Wissenseinträge",
+  "results_query": "Suchergebnisse für \"{query}\"",
+  "searching": "Wird gesucht…",
+  "rel_high": "Starke Übereinstimmung",
+  "rel_mid": "Mittlere Übereinstimmung",
+  "rel_low": "Schwache Übereinstimmung",
+  "no_results": "Keine Ergebnisse für \"{query}\""
+}

@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "Bu bilgilerle oturum açılamadı.",
+  "err_auth_oauth_failed": "Yetkilendirme tamamlanamadı.",
+  "err_auth_keychain_denied": "Sistem Keychain erişimi reddedildi.",
+  "err_imap_connection_failed": "Şu anda posta sunucusuna ulaşılamıyor.",
+  "err_imap_uid_validity_changed": "Bu posta kutusunun tam yeniden senkronizasyona ihtiyacı var.",
+  "err_smtp_send_failed": "Mesaj gönderilemedi.",
+  "err_smtp_rate_limited": "Çok hızlı gönderim — hızımızı düşürüyoruz.",
+  "err_db_constraint": "Bu, mevcut verilerle çakışıyor.",
+  "err_db_migration_failed": "Yerel veritabanı güncellenemedi.",
+  "err_ai_provider_unreachable": "AI sağlayıcınız yanıt vermiyor.",
+  "err_ai_rate_limited": "AI sağlayıcınız hız sınırlaması uyguluyor.",
+  "err_ai_context_too_long": "Bu model için bağlam çok uzun.",
+  "err_gte_index_corrupt": "Arama indeksinin yeniden oluşturulması gerekiyor.",
+  "err_gte_reindex_in_progress": "Yeniden oluşturma zaten çalışıyor.",
+  "err_fs_permission_denied": "O konuma erişim iznimiz yok.",
+  "err_fs_disk_full": "Diskiniz dolu.",
+  "err_validation": "Lütfen işaretlenen alanı kontrol edin.",
+  "err_not_found": "Bu öğe artık mevcut değil.",
+  "err_forbidden": "Bu işleme izin verilmiyor.",
+  "err_internal": "Tarafımızda bir şeyler ters gitti."
+}

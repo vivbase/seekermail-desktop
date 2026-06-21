@@ -1,0 +1,23 @@
+{
+  "title": "Kontrol Paneli",
+  "stat_pending_lbl": "Bekleyen",
+  "stat_pending_sub": "karar gerekiyor",
+  "stat_unread_lbl": "Okunmamış",
+  "stat_unread_sub": "{count, plural, =0 {her şey tamamlandı} one {# hesap genelinde} other {# hesap genelinde}}",
+  "stat_total_lbl": "Toplam",
+  "stat_total_sub": "{count, plural, one {# hesap genelinde} other {# hesap genelinde}}",
+  "stat_processed_lbl": "Bugün işlendi",
+  "stat_processed_sub": "AI çalışanlar tarafından",
+  "stat_view_all": "Tümünü gör →",
+  "stat_view_log": "Günlüğü gör →",
+  "cold_title": "Başlangıç",
+  "cold_dismiss": "Kapat",
+  "cold_note": "AI'ınız hâlâ tarzınızı öğreniyor — ilk iki hafta içinde adım adım devralırken izleyeceksiniz. Bunları tamamlamak süreci hızlandırır.",
+  "cold_task_connect": "İlk hesabınızı bağlayın",
+  "cold_task_drafts": "Yazı tarzınızı ayarlamak için 5 AI taslağı inceleyin",
+  "cold_task_contacts": "Güvenilir gönderici listenizi oluşturmak için 3 sık iletişim kurduğunuz kişiye yanıt verin",
+  "cold_task_search": "Postalarınız genelinde bir semantik arama deneyin",
+  "cold_progress": "Güven artışı — daha fazla taslak inceledikçe tam otomasyon açılır",
+  "report_link": "Günlük raporu görüntüle →",
+  "hint": "Keşfetmek için yukarıdaki kartlara tıklayın"
+}

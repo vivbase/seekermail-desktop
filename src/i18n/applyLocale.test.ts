@@ -29,9 +29,20 @@ describe("applyLocale()", () => {
     expect(document.documentElement.className).toContain("script-latin");
   });
 
-  it("falls back to en copy for an untranslated locale (no bare keys)", async () => {
+  it("serves localized copy for a translated locale (fr), not a bare key", async () => {
     await i18n.changeLanguage("fr");
-    // fr has no resources yet → must fall back to the English value, not the key.
-    expect(i18n.t("nav_dashboard", { ns: "nav" })).toBe("Dashboard");
+    // fr is now fully translated → it must return localized copy, never the bare
+    // key, and never the English string.
+    const value = i18n.t("nav_dashboard", { ns: "nav" });
+    expect(value).not.toBe("nav_dashboard");
+    expect(value).not.toBe("Dashboard");
+  });
+
+  it("falls back to en for a key missing in the active locale (no bare keys)", async () => {
+    // A key present only in `en` must resolve to the English copy under any other
+    // locale, never surface as a raw key.
+    i18n.addResourceBundle("en", "nav", { __probe_en_only__: "Probe EN" }, true, true);
+    await i18n.changeLanguage("ja");
+    expect(i18n.t("__probe_en_only__", { ns: "nav" })).toBe("Probe EN");
   });
 });

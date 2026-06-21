@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "その情報ではサインインできませんでした。",
+  "err_auth_oauth_failed": "認証が完了しませんでした。",
+  "err_auth_keychain_denied": "システムの Keychain へのアクセスが拒否されました。",
+  "err_imap_connection_failed": "現在メールサーバーに接続できません。",
+  "err_imap_uid_validity_changed": "このメールボックスは完全な再同期が必要です。",
+  "err_smtp_send_failed": "メッセージを送信できませんでした。",
+  "err_smtp_rate_limited": "送信が速すぎます — 速度を落とします。",
+  "err_db_constraint": "既存のデータと競合します。",
+  "err_db_migration_failed": "ローカルデータベースを更新できませんでした。",
+  "err_ai_provider_unreachable": "AI プロバイダーが応答していません。",
+  "err_ai_rate_limited": "AI プロバイダーがレート制限を行っています。",
+  "err_ai_context_too_long": "このモデルにはコンテキストが多すぎます。",
+  "err_gte_index_corrupt": "検索インデックスの再構築が必要です。",
+  "err_gte_reindex_in_progress": "再構築はすでに実行中です。",
+  "err_fs_permission_denied": "その場所へのアクセス権限がありません。",
+  "err_fs_disk_full": "ディスクの空き容量がありません。",
+  "err_validation": "ハイライトされた項目を確認してください。",
+  "err_not_found": "その項目は存在しなくなりました。",
+  "err_forbidden": "その操作は許可されていません。",
+  "err_internal": "こちら側で問題が発生しました。"
+}

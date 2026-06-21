@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "Inicio",
+  "title": "Índice de conocimiento GTE",
+  "sub": "1.842 mensajes indexados · última sincronización hace 2 min",
+  "status_engine": "Motor activo",
+  "status_index": "Índice {version}",
+  "status_syncing": "{count, plural, one {# cuenta sincronizando} other {# cuentas sincronizando}}",
+  "total_vectors": "Total de vectores: {n}",
+  "search_ph": "Búsqueda semántica en todos los correos indexados…",
+  "card_accounts": "Desglose por cuenta",
+  "card_topics": "Temas principales",
+  "view": "Ver →",
+  "results_recent": "Entradas de conocimiento recientes",
+  "results_query": "Resultados de búsqueda para \"{query}\"",
+  "searching": "Buscando…",
+  "rel_high": "Coincidencia alta",
+  "rel_mid": "Coincidencia media",
+  "rel_low": "Coincidencia baja",
+  "no_results": "Sin resultados para \"{query}\""
+}

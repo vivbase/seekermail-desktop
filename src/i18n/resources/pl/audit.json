@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "Zdarzenia ryzyka",
+  "audit_tab_label": "Aktywność AI",
+
+  "audit_total_events": "Łączna liczba zdarzeń",
+  "audit_auto_sent": "Wysłane automatycznie",
+  "audit_success_rate": "Współczynnik sukcesu",
+  "audit_tokens_used": "Użyte tokeny",
+
+  "audit_filter_account": "Konto",
+  "audit_filter_event_type": "Typ zdarzenia",
+  "audit_filter_date_range": "Zakres dat",
+  "audit_filter_from": "Od",
+  "audit_filter_to": "Do",
+  "audit_clear_filters": "Wyczyść filtry",
+
+  "audit_col_id": "#",
+  "audit_col_account": "Konto",
+  "audit_col_event": "Zdarzenie",
+  "audit_col_subject": "Temat",
+  "audit_col_time": "Czas",
+  "audit_col_tokens": "Tokeny",
+  "audit_empty": "Brak aktywności AI w tym zakresie.",
+  "audit_loading": "Ładowanie aktywności AI…",
+  "audit_showing_limit_hint": "Wyświetlanie pierwszych 200 wpisów — zawęź filtry.",
+
+  "audit_drawer_title": "Szczegóły decyzji",
+  "audit_drawer_close": "Zamknij panel szczegółów",
+  "audit_drawer_event": "Zdarzenie",
+  "audit_drawer_account": "Konto",
+  "audit_drawer_subject": "Temat",
+  "audit_drawer_time": "Zarejestrowano o",
+  "audit_drawer_model": "Model AI",
+  "audit_drawer_impact": "Wpływ",
+  "audit_drawer_tokens_in": "Tokeny wejściowe",
+  "audit_drawer_tokens_out": "Tokeny wyjściowe",
+  "audit_drawer_latency": "Opóźnienie",
+  "audit_drawer_refs": "Odniesienia do wiedzy",
+  "audit_drawer_draft": "ID wersji roboczej",
+
+  "audit_report_mis_send": "Zgłoś błędne wysłanie",
+  "audit_mis_send_feedback_toast": "Opinia zarejestrowana — poziom zaufania zweryfikowany.",
+
+  "audit_export": "Eksportuj",
+  "audit_export_csv": "Eksportuj jako CSV",
+  "audit_export_json": "Eksportuj jako JSON",
+  "audit_export_success": "Wyeksportowano {filename}",
+  "audit_export_failed_disk": "Eksport nie powiódł się: dysk pełny",
+  "audit_export_failed": "Eksport nie powiódł się — spróbuj ponownie.",
+
+  "audit_e3_paused_banner": "Pełny automat wstrzymany do {date}",
+  "audit_e3_resume_early": "Wznów wcześniej →"
+}

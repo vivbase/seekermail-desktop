@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "대시보드",
+  "title": "GTE 지식 색인",
+  "sub": "1,842개 메시지 색인됨 · 마지막 동기화 2분 전",
+  "status_engine": "엔진 활성",
+  "status_index": "색인 {version}",
+  "status_syncing": "{count, plural, other {계정 #개 동기화 중}}",
+  "total_vectors": "전체 벡터: {n}",
+  "search_ph": "색인된 모든 이메일에 대한 시맨틱 검색…",
+  "card_accounts": "계정별 분류",
+  "card_topics": "주요 주제",
+  "view": "보기 →",
+  "results_recent": "최근 지식 항목",
+  "results_query": "\"{query}\" 검색 결과",
+  "searching": "검색 중…",
+  "rel_high": "높은 일치",
+  "rel_mid": "중간 일치",
+  "rel_low": "낮은 일치",
+  "no_results": "\"{query}\"에 대한 결과 없음"
+}

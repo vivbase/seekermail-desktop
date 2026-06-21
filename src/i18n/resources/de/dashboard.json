@@ -1,0 +1,23 @@
+{
+  "title": "Dashboard",
+  "stat_pending_lbl": "Ausstehend",
+  "stat_pending_sub": "Entscheidung erforderlich",
+  "stat_unread_lbl": "Ungelesen",
+  "stat_unread_sub": "{count, plural, =0 {alles erledigt} one {über # Konto} other {über # Konten}}",
+  "stat_total_lbl": "Gesamt",
+  "stat_total_sub": "{count, plural, one {über # Konto} other {über # Konten}}",
+  "stat_processed_lbl": "Heute bearbeitet",
+  "stat_processed_sub": "durch AI-Mitarbeiter",
+  "stat_view_all": "Alle anzeigen →",
+  "stat_view_log": "Protokoll anzeigen →",
+  "cold_title": "Erste Schritte",
+  "cold_dismiss": "Schließen",
+  "cold_note": "Ihre AI erlernt noch Ihren Stil – in den ersten zwei Wochen übernimmt sie schrittweise mehr. Diese Schritte beschleunigen den Prozess.",
+  "cold_task_connect": "Erstes Konto verbinden",
+  "cold_task_drafts": "5 AI-Entwürfe prüfen, um Ihren Schreibstil zu kalibrieren",
+  "cold_task_contacts": "3 häufigen Kontakten antworten, um Ihre Vertrauensliste zu starten",
+  "cold_task_search": "Eine semantische Suche in Ihren Mails ausprobieren",
+  "cold_progress": "Vertrauensaufbau – vollautomatischer Betrieb wird schrittweise mit mehr geprüften Entwürfen freigeschaltet",
+  "report_link": "Tagesbericht anzeigen →",
+  "hint": "Karte oben anklicken zum Erkunden"
+}

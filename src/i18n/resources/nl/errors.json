@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "Aanmelden met deze gegevens is mislukt.",
+  "err_auth_oauth_failed": "Autorisatie is niet voltooid.",
+  "err_auth_keychain_denied": "Toegang tot de systeemsleutelhanger is geweigerd.",
+  "err_imap_connection_failed": "De mailserver is momenteel niet bereikbaar.",
+  "err_imap_uid_validity_changed": "Deze mailbox vereist een volledige hersynchronisatie.",
+  "err_smtp_send_failed": "Het bericht kon niet worden verzonden.",
+  "err_smtp_rate_limited": "Te snel verzenden — we vertragen.",
+  "err_db_constraint": "Dit is in conflict met bestaande gegevens.",
+  "err_db_migration_failed": "De lokale database kon niet worden bijgewerkt.",
+  "err_ai_provider_unreachable": "Uw AI-provider reageert niet.",
+  "err_ai_rate_limited": "Uw AI-provider past snelheidsbeperking toe.",
+  "err_ai_context_too_long": "De context is te groot voor dit model.",
+  "err_gte_index_corrupt": "De zoekindex moet opnieuw worden opgebouwd.",
+  "err_gte_reindex_in_progress": "Er wordt al een herindexering uitgevoerd.",
+  "err_fs_permission_denied": "We hebben geen toegangsrechten voor die locatie.",
+  "err_fs_disk_full": "Uw schijf is vol.",
+  "err_validation": "Controleer het gemarkeerde veld.",
+  "err_not_found": "Dit item bestaat niet meer.",
+  "err_forbidden": "Deze actie is niet toegestaan.",
+  "err_internal": "Er is een fout opgetreden aan onze kant."
+}

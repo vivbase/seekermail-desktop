@@ -1,0 +1,23 @@
+{
+  "title": "대시보드",
+  "stat_pending_lbl": "대기 중",
+  "stat_pending_sub": "결정 필요",
+  "stat_unread_lbl": "읽지 않음",
+  "stat_unread_sub": "{count, plural, =0 {모두 확인함} other {계정 #개 전체}}",
+  "stat_total_lbl": "전체",
+  "stat_total_sub": "{count, plural, other {계정 #개 전체}}",
+  "stat_processed_lbl": "오늘 처리됨",
+  "stat_processed_sub": "AI 직원이 처리",
+  "stat_view_all": "모두 보기 →",
+  "stat_view_log": "로그 보기 →",
+  "cold_title": "시작하기",
+  "cold_dismiss": "닫기",
+  "cold_note": "AI가 아직 사용자의 스타일을 학습하고 있습니다 — 처음 2주 동안 AI가 단계별로 업무를 넘겨받는 것을 보게 됩니다. 이 항목들을 완료하면 속도가 빨라집니다.",
+  "cold_task_connect": "첫 계정 연결",
+  "cold_task_drafts": "AI 초안 5개를 검토하여 작성 스타일 보정",
+  "cold_task_contacts": "자주 연락하는 사람 3명에게 회신하여 신뢰하는 발신자 목록 구성",
+  "cold_task_search": "메일 전체에 시맨틱 검색 한 번 사용해 보기",
+  "cold_progress": "신뢰 단계 — 더 많은 초안을 검토하면 완전 자동화가 활성화됩니다",
+  "report_link": "일일 보고서 보기 →",
+  "hint": "위의 카드를 클릭하여 살펴보세요"
+}

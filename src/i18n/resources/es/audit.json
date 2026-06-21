@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "Eventos de riesgo",
+  "audit_tab_label": "Actividad de IA",
+
+  "audit_total_events": "Total de eventos",
+  "audit_auto_sent": "Enviados automáticamente",
+  "audit_success_rate": "Tasa de éxito",
+  "audit_tokens_used": "Tokens utilizados",
+
+  "audit_filter_account": "Cuenta",
+  "audit_filter_event_type": "Tipo de evento",
+  "audit_filter_date_range": "Intervalo de fechas",
+  "audit_filter_from": "Desde",
+  "audit_filter_to": "Hasta",
+  "audit_clear_filters": "Limpiar filtros",
+
+  "audit_col_id": "#",
+  "audit_col_account": "Cuenta",
+  "audit_col_event": "Evento",
+  "audit_col_subject": "Asunto",
+  "audit_col_time": "Hora",
+  "audit_col_tokens": "Tokens",
+  "audit_empty": "Sin actividad de IA en este intervalo.",
+  "audit_loading": "Cargando actividad de IA…",
+  "audit_showing_limit_hint": "Mostrando las primeras 200 entradas — ajusta los filtros.",
+
+  "audit_drawer_title": "Detalle de decisión",
+  "audit_drawer_close": "Cerrar panel de detalle",
+  "audit_drawer_event": "Evento",
+  "audit_drawer_account": "Cuenta",
+  "audit_drawer_subject": "Asunto",
+  "audit_drawer_time": "Registrado el",
+  "audit_drawer_model": "Modelo de IA",
+  "audit_drawer_impact": "Impacto",
+  "audit_drawer_tokens_in": "Tokens de entrada",
+  "audit_drawer_tokens_out": "Tokens de salida",
+  "audit_drawer_latency": "Latencia",
+  "audit_drawer_refs": "Referencias de conocimiento",
+  "audit_drawer_draft": "ID de borrador",
+
+  "audit_report_mis_send": "Reportar envío incorrecto",
+  "audit_mis_send_feedback_toast": "Comentario registrado — nivel de confianza revisado.",
+
+  "audit_export": "Exportar",
+  "audit_export_csv": "Exportar como CSV",
+  "audit_export_json": "Exportar como JSON",
+  "audit_export_success": "Exportado {filename}",
+  "audit_export_failed_disk": "Exportación fallida: disco lleno",
+  "audit_export_failed": "Exportación fallida — inténtalo de nuevo.",
+
+  "audit_e3_paused_banner": "Full Auto está pausado hasta el {date}",
+  "audit_e3_resume_early": "Reanudar antes →"
+}

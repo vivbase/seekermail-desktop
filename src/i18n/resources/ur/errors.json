@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "ہم ان تفصیلات کے ساتھ سائن ان نہیں کر سکے۔",
+  "err_auth_oauth_failed": "OAuth منظوری مکمل نہیں ہوئی۔",
+  "err_auth_keychain_denied": "آپ کے سسٹم Keychain تک رسائی مسترد کر دی گئی۔",
+  "err_imap_connection_failed": "اس وقت میل سرور تک رسائی ممکن نہیں۔",
+  "err_imap_uid_validity_changed": "اس میل باکس کو مکمل دوبارہ ہم آہنگی درکار ہے۔",
+  "err_smtp_send_failed": "پیغام نہیں بھیجا جا سکا۔",
+  "err_smtp_rate_limited": "بہت تیزی سے بھیجا جا رہا ہے — ہم رفتار کم کریں گے۔",
+  "err_db_constraint": "یہ موجودہ ڈیٹا سے متصادم ہے۔",
+  "err_db_migration_failed": "ہم مقامی ڈیٹابیس کو اپ ڈیٹ نہیں کر سکے۔",
+  "err_ai_provider_unreachable": "آپ کا AI فراہم کنندہ جواب نہیں دے رہا۔",
+  "err_ai_rate_limited": "آپ کا AI فراہم کنندہ شرح محدود کر رہا ہے۔",
+  "err_ai_context_too_long": "اس ماڈل کے لیے سیاق و سباق بہت زیادہ ہے۔",
+  "err_gte_index_corrupt": "تلاش انڈیکس کو دوبارہ بنانے کی ضرورت ہے۔",
+  "err_gte_reindex_in_progress": "ایک دوبارہ تعمیر پہلے سے جاری ہے۔",
+  "err_fs_permission_denied": "ہمارے پاس اس مقام کی اجازت نہیں ہے۔",
+  "err_fs_disk_full": "آپ کی ڈسک بھری ہوئی ہے۔",
+  "err_validation": "براہ کرم نمایاں کردہ خانہ دیکھیں۔",
+  "err_not_found": "یہ آئٹم اب موجود نہیں ہے۔",
+  "err_forbidden": "اس عمل کی اجازت نہیں ہے۔",
+  "err_internal": "ہماری طرف سے کچھ غلط ہو گیا۔"
+}

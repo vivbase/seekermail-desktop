@@ -1,0 +1,23 @@
+{
+  "title": "Dashboard",
+  "stat_pending_lbl": "In behandeling",
+  "stat_pending_sub": "beslissing nodig",
+  "stat_unread_lbl": "Ongelezen",
+  "stat_unread_sub": "{count, plural, =0 {helemaal bij} one {verdeeld over # account} other {verdeeld over # accounts}}",
+  "stat_total_lbl": "Totaal",
+  "stat_total_sub": "{count, plural, one {verdeeld over # account} other {verdeeld over # accounts}}",
+  "stat_processed_lbl": "Vandaag verwerkt",
+  "stat_processed_sub": "door AI-medewerkers",
+  "stat_view_all": "Alles bekijken →",
+  "stat_view_log": "Logboek bekijken →",
+  "cold_title": "Aan de slag",
+  "cold_dismiss": "Sluiten",
+  "cold_note": "Uw AI leert uw stijl nog — in de eerste twee weken ziet u het stap voor stap overnemen. Deze stappen versnellen dat proces.",
+  "cold_task_connect": "Uw eerste account verbinden",
+  "cold_task_drafts": "5 AI-concepten beoordelen om uw schrijfstijl te kalibreren",
+  "cold_task_contacts": "3 frequente contacten beantwoorden om uw vertrouwde-afzenderlijst aan te vullen",
+  "cold_task_search": "Één semantisch zoekactie uitvoeren in uw mail",
+  "cold_progress": "Vertrouwensopbouw — volledige automatisering wordt ontgrendeld naarmate u meer concepten beoordeelt",
+  "report_link": "Dagelijks rapport bekijken →",
+  "hint": "Klik op een kaart hierboven om te verkennen"
+}

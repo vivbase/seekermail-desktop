@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "Не удалось войти с указанными данными.",
+  "err_auth_oauth_failed": "Авторизация не завершена.",
+  "err_auth_keychain_denied": "Доступ к системной Keychain запрещён.",
+  "err_imap_connection_failed": "Почтовый сервер сейчас недоступен.",
+  "err_imap_uid_validity_changed": "Этот почтовый ящик требует полной синхронизации.",
+  "err_smtp_send_failed": "Сообщение не удалось отправить.",
+  "err_smtp_rate_limited": "Слишком быстрая отправка — снижаем темп.",
+  "err_db_constraint": "Конфликт с существующими данными.",
+  "err_db_migration_failed": "Не удалось обновить локальную базу данных.",
+  "err_ai_provider_unreachable": "Провайдер AI не отвечает.",
+  "err_ai_rate_limited": "Провайдер AI применяет ограничение частоты запросов.",
+  "err_ai_context_too_long": "Слишком большой контекст для этой модели.",
+  "err_gte_index_corrupt": "Поисковый индекс требует пересборки.",
+  "err_gte_reindex_in_progress": "Пересборка уже выполняется.",
+  "err_fs_permission_denied": "Нет доступа к указанному расположению.",
+  "err_fs_disk_full": "Диск заполнен.",
+  "err_validation": "Проверьте выделенное поле.",
+  "err_not_found": "Этот элемент больше не существует.",
+  "err_forbidden": "Это действие недопустимо.",
+  "err_internal": "На нашей стороне что-то пошло не так."
+}

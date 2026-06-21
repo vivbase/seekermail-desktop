@@ -1,0 +1,23 @@
+{
+  "title": "仪表盘",
+  "stat_pending_lbl": "待处理",
+  "stat_pending_sub": "需要决策",
+  "stat_unread_lbl": "未读",
+  "stat_unread_sub": "{count, plural, =0 {全部已读} other {跨 # 个账户}}",
+  "stat_total_lbl": "总计",
+  "stat_total_sub": "{count, plural, other {跨 # 个账户}}",
+  "stat_processed_lbl": "今日已处理",
+  "stat_processed_sub": "由 AI 员工处理",
+  "stat_view_all": "查看全部 →",
+  "stat_view_log": "查看日志 →",
+  "cold_title": "快速上手",
+  "cold_dismiss": "关闭",
+  "cold_note": "您的 AI 仍在学习您的风格——在最初两周内您将看到它逐步接管。完成以下任务可加快进度。",
+  "cold_task_connect": "连接您的第一个账户",
+  "cold_task_drafts": "审核 5 份 AI 草稿以校准您的写作风格",
+  "cold_task_contacts": "回复 3 位常用联系人以建立信任发件人列表",
+  "cold_task_search": "尝试一次跨邮件的语义搜索",
+  "cold_progress": "信任进度——审核更多草稿后解锁全自动",
+  "report_link": "查看每日报告 →",
+  "hint": "点击上方任意卡片进行探索"
+}

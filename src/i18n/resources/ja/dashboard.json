@@ -1,0 +1,23 @@
+{
+  "title": "ダッシュボード",
+  "stat_pending_lbl": "保留中",
+  "stat_pending_sub": "判断が必要",
+  "stat_unread_lbl": "未読",
+  "stat_unread_sub": "{count, plural, =0 {すべて確認済み} other {# 件のアカウントを横断}}",
+  "stat_total_lbl": "合計",
+  "stat_total_sub": "{count, plural, other {# 件のアカウントを横断}}",
+  "stat_processed_lbl": "今日の処理件数",
+  "stat_processed_sub": "AI 従業員による",
+  "stat_view_all": "すべて表示 →",
+  "stat_view_log": "ログを表示 →",
+  "cold_title": "はじめに",
+  "cold_dismiss": "閉じる",
+  "cold_note": "AI はまだあなたの文体を学習中です — 最初の 2 週間で、AI が段階的に引き継いでいく様子を確認できます。これらを完了すると学習が加速します。",
+  "cold_task_connect": "最初のアカウントを接続",
+  "cold_task_drafts": "AI 下書きを 5 件レビューして文体を調整",
+  "cold_task_contacts": "頻繁な連絡先 3 件に返信して信頼できる送信者リストの土台を作る",
+  "cold_task_search": "メールを横断するセマンティック検索を 1 回試す",
+  "cold_progress": "信頼ランプ — 下書きをレビューするほど完全自動化が解放されます",
+  "report_link": "日次レポートを表示 →",
+  "hint": "上のカードをクリックして探索しましょう"
+}

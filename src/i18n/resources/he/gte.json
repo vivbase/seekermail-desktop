@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "לוח בקרה",
+  "title": "אינדקס הידע של GTE",
+  "sub": "1,842 הודעות מאונדקסות · סנכרון אחרון לפני 2 דקות",
+  "status_engine": "המנוע פעיל",
+  "status_index": "אינדקס {version}",
+  "status_syncing": "{count, plural, one {חשבון אחד מסתנכרן} two {# חשבונות מסתנכרנים} many {# חשבונות מסתנכרנים} other {# חשבונות מסתנכרנים}}",
+  "total_vectors": "סך הווקטורים: {n}",
+  "search_ph": "חיפוש סמנטי בכל הדואר המאונדקס…",
+  "card_accounts": "פילוח לפי חשבון",
+  "card_topics": "נושאים מובילים",
+  "view": "הצג →",
+  "results_recent": "ערכי ידע אחרונים",
+  "results_query": "תוצאות חיפוש עבור {query}",
+  "searching": "מחפש…",
+  "rel_high": "התאמה גבוהה",
+  "rel_mid": "התאמה בינונית",
+  "rel_low": "התאמה נמוכה",
+  "no_results": "אין תוצאות עבור {query}"
+}

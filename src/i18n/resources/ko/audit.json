@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "위험 이벤트",
+  "audit_tab_label": "AI 활동",
+
+  "audit_total_events": "전체 이벤트",
+  "audit_auto_sent": "자동 전송됨",
+  "audit_success_rate": "성공률",
+  "audit_tokens_used": "사용된 토큰",
+
+  "audit_filter_account": "계정",
+  "audit_filter_event_type": "이벤트 유형",
+  "audit_filter_date_range": "날짜 범위",
+  "audit_filter_from": "시작",
+  "audit_filter_to": "종료",
+  "audit_clear_filters": "필터 지우기",
+
+  "audit_col_id": "#",
+  "audit_col_account": "계정",
+  "audit_col_event": "이벤트",
+  "audit_col_subject": "제목",
+  "audit_col_time": "시간",
+  "audit_col_tokens": "토큰",
+  "audit_empty": "이 범위에 AI 활동이 없습니다.",
+  "audit_loading": "AI 활동 불러오는 중…",
+  "audit_showing_limit_hint": "처음 200개 항목을 표시합니다 — 필터를 좁히세요.",
+
+  "audit_drawer_title": "결정 세부 정보",
+  "audit_drawer_close": "세부 정보 패널 닫기",
+  "audit_drawer_event": "이벤트",
+  "audit_drawer_account": "계정",
+  "audit_drawer_subject": "제목",
+  "audit_drawer_time": "기록 시각",
+  "audit_drawer_model": "AI 모델",
+  "audit_drawer_impact": "영향",
+  "audit_drawer_tokens_in": "입력 토큰",
+  "audit_drawer_tokens_out": "출력 토큰",
+  "audit_drawer_latency": "지연 시간",
+  "audit_drawer_refs": "지식 참조",
+  "audit_drawer_draft": "초안 ID",
+
+  "audit_report_mis_send": "오발송 신고",
+  "audit_mis_send_feedback_toast": "피드백이 기록되었습니다 — 신뢰 수준이 검토되었습니다.",
+
+  "audit_export": "내보내기",
+  "audit_export_csv": "CSV로 내보내기",
+  "audit_export_json": "JSON으로 내보내기",
+  "audit_export_success": "{filename} 내보냄",
+  "audit_export_failed_disk": "내보내기 실패: 디스크가 가득 참",
+  "audit_export_failed": "내보내기 실패 — 다시 시도해 주세요.",
+
+  "audit_e3_paused_banner": "완전 자동이 {date}까지 일시 중지됨",
+  "audit_e3_resume_early": "일찍 재개 →"
+}

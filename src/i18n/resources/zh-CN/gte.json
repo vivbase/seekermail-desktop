@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "仪表盘",
+  "title": "GTE 知识索引",
+  "sub": "已索引 1,842 封邮件 · 2 分钟前同步",
+  "status_engine": "引擎运行中",
+  "status_index": "索引 {version}",
+  "status_syncing": "{count, plural, other {# 个账户同步中}}",
+  "total_vectors": "向量总数：{n}",
+  "search_ph": "在所有已索引邮件中进行语义搜索…",
+  "card_accounts": "账户分布",
+  "card_topics": "热门主题",
+  "view": "查看 →",
+  "results_recent": "最近知识条目",
+  "results_query": "「{query}」的搜索结果",
+  "searching": "搜索中…",
+  "rel_high": "高度匹配",
+  "rel_mid": "中度匹配",
+  "rel_low": "弱匹配",
+  "no_results": "「{query}」无搜索结果"
+}

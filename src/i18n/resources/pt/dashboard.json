@@ -1,0 +1,23 @@
+{
+  "title": "Painel",
+  "stat_pending_lbl": "Pendentes",
+  "stat_pending_sub": "necessitam de decisão",
+  "stat_unread_lbl": "Não lidas",
+  "stat_unread_sub": "{count, plural, =0 {tudo em dia} one {em # conta} other {em # contas}}",
+  "stat_total_lbl": "Total",
+  "stat_total_sub": "{count, plural, one {em # conta} other {em # contas}}",
+  "stat_processed_lbl": "Processadas hoje",
+  "stat_processed_sub": "pelos colaboradores AI",
+  "stat_view_all": "Ver todas →",
+  "stat_view_log": "Ver registo →",
+  "cold_title": "Primeiros passos",
+  "cold_dismiss": "Dispensar",
+  "cold_note": "A sua AI ainda está a aprender o seu estilo — nas primeiras duas semanas verá como vai assumindo o controlo passo a passo. Completar estas tarefas acelera o processo.",
+  "cold_task_connect": "Ligar a sua primeira conta",
+  "cold_task_drafts": "Rever 5 rascunhos AI para calibrar o seu estilo de escrita",
+  "cold_task_contacts": "Responder a 3 contactos frequentes para criar a sua lista de remetentes de confiança",
+  "cold_task_search": "Experimentar uma pesquisa semântica no seu correio",
+  "cold_progress": "Ramp de confiança — a automação total fica disponível à medida que revê mais rascunhos",
+  "report_link": "Ver relatório diário →",
+  "hint": "Clique em qualquer cartão acima para explorar"
+}

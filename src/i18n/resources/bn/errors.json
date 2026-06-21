@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "ওই তথ্য দিয়ে সাইন ইন করা গেল না।",
+  "err_auth_oauth_failed": "অনুমোদন সম্পূর্ণ হয়নি।",
+  "err_auth_keychain_denied": "আপনার সিস্টেম Keychain-এ প্রবেশ প্রত্যাখ্যাত হয়েছে।",
+  "err_imap_connection_failed": "এই মুহূর্তে মেইল সার্ভারে পৌঁছানো যাচ্ছে না।",
+  "err_imap_uid_validity_changed": "এই মেইলবক্সের একটি সম্পূর্ণ রিসিঙ্ক প্রয়োজন।",
+  "err_smtp_send_failed": "বার্তাটি পাঠানো গেল না।",
+  "err_smtp_rate_limited": "অত্যন্ত দ্রুত পাঠানো হচ্ছে — আমরা গতি কমিয়ে দেব।",
+  "err_db_constraint": "এটি বিদ্যমান ডেটার সাথে সংঘর্ষ করছে।",
+  "err_db_migration_failed": "স্থানীয় ডেটাবেস আপডেট করা গেল না।",
+  "err_ai_provider_unreachable": "আপনার AI প্রোভাইডার সাড়া দিচ্ছে না।",
+  "err_ai_rate_limited": "আপনার AI প্রোভাইডার অনুরোধের হার সীমিত করছে।",
+  "err_ai_context_too_long": "এই মডেলের জন্য প্রসঙ্গ খুব বেশি।",
+  "err_gte_index_corrupt": "অনুসন্ধান সূচকটি পুনর্নির্মাণ প্রয়োজন।",
+  "err_gte_reindex_in_progress": "একটি পুনর্নির্মাণ ইতিমধ্যেই চলছে।",
+  "err_fs_permission_denied": "ওই অবস্থানে আমাদের অনুমতি নেই।",
+  "err_fs_disk_full": "আপনার ডিস্ক পূর্ণ।",
+  "err_validation": "চিহ্নিত ক্ষেত্রটি যাচাই করুন।",
+  "err_not_found": "এই আইটেমটি আর নেই।",
+  "err_forbidden": "এই ক্রিয়াটি অনুমোদিত নয়।",
+  "err_internal": "আমাদের দিক থেকে কিছু একটা সমস্যা হয়েছে।"
+}

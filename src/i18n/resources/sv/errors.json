@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "Vi kunde inte logga in med de uppgifterna.",
+  "err_auth_oauth_failed": "Auktoriseringen slutfördes inte.",
+  "err_auth_keychain_denied": "Åtkomst till systemets Keychain nekades.",
+  "err_imap_connection_failed": "Kan inte nå e-postservern just nu.",
+  "err_imap_uid_validity_changed": "Den här postlådan behöver en fullständig omsynkronisering.",
+  "err_smtp_send_failed": "Meddelandet kunde inte skickas.",
+  "err_smtp_rate_limited": "Skickar för snabbt — vi saktar ned.",
+  "err_db_constraint": "Det konfliktar med befintliga data.",
+  "err_db_migration_failed": "Vi kunde inte uppdatera den lokala databasen.",
+  "err_ai_provider_unreachable": "Din AI-leverantör svarar inte.",
+  "err_ai_rate_limited": "Din AI-leverantör begränsar hastigheten.",
+  "err_ai_context_too_long": "Det finns för mycket kontext för den här modellen.",
+  "err_gte_index_corrupt": "Sökindexet behöver byggas om.",
+  "err_gte_reindex_in_progress": "En ombyggnad pågår redan.",
+  "err_fs_permission_denied": "Vi saknar behörighet till den platsen.",
+  "err_fs_disk_full": "Disken är full.",
+  "err_validation": "Kontrollera det markerade fältet.",
+  "err_not_found": "Det objektet finns inte längre.",
+  "err_forbidden": "Den åtgärden är inte tillåten.",
+  "err_internal": "Något gick fel på vår sida."
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Dashboard",
+  "stat_pending_lbl": "In attesa",
+  "stat_pending_sub": "richiede una decisione",
+  "stat_unread_lbl": "Non letti",
+  "stat_unread_sub": "{count, plural, =0 {tutto letto} one {su # account} other {su # account}}",
+  "stat_total_lbl": "Totale",
+  "stat_total_sub": "{count, plural, one {su # account} other {su # account}}",
+  "stat_processed_lbl": "Elaborati oggi",
+  "stat_processed_sub": "dai dipendenti AI",
+  "stat_view_all": "Visualizza tutti →",
+  "stat_view_log": "Visualizza registro →",
+  "cold_title": "Per iniziare",
+  "cold_dismiss": "Chiudi",
+  "cold_note": "La tua AI sta ancora imparando il tuo stile — nelle prime due settimane la vedrai prendere il controllo passo dopo passo. Completare queste attività accelera il processo.",
+  "cold_task_connect": "Collega il tuo primo account",
+  "cold_task_drafts": "Rivedi 5 bozze AI per calibrare il tuo stile di scrittura",
+  "cold_task_contacts": "Rispondi a 3 contatti frequenti per popolare la lista dei mittenti attendibili",
+  "cold_task_search": "Prova una ricerca semantica sulla tua posta",
+  "cold_progress": "Rampa di fiducia — l'automazione completa si sblocca man mano che rivedi più bozze",
+  "report_link": "Visualizza report giornaliero →",
+  "hint": "Clicca su qualsiasi scheda in alto per esplorare"
+}

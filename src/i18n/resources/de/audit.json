@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "Risikoereignisse",
+  "audit_tab_label": "AI-Aktivität",
+
+  "audit_total_events": "Ereignisse gesamt",
+  "audit_auto_sent": "Automatisch gesendet",
+  "audit_success_rate": "Erfolgsrate",
+  "audit_tokens_used": "Verwendete Token",
+
+  "audit_filter_account": "Konto",
+  "audit_filter_event_type": "Ereignistyp",
+  "audit_filter_date_range": "Zeitraum",
+  "audit_filter_from": "Von",
+  "audit_filter_to": "Bis",
+  "audit_clear_filters": "Filter zurücksetzen",
+
+  "audit_col_id": "#",
+  "audit_col_account": "Konto",
+  "audit_col_event": "Ereignis",
+  "audit_col_subject": "Betreff",
+  "audit_col_time": "Zeit",
+  "audit_col_tokens": "Token",
+  "audit_empty": "Keine AI-Aktivität in diesem Zeitraum.",
+  "audit_loading": "AI-Aktivität wird geladen…",
+  "audit_showing_limit_hint": "Erste 200 Einträge werden angezeigt – Filter eingrenzen.",
+
+  "audit_drawer_title": "Entscheidungsdetail",
+  "audit_drawer_close": "Detailbereich schließen",
+  "audit_drawer_event": "Ereignis",
+  "audit_drawer_account": "Konto",
+  "audit_drawer_subject": "Betreff",
+  "audit_drawer_time": "Aufgezeichnet am",
+  "audit_drawer_model": "AI-Modell",
+  "audit_drawer_impact": "Auswirkung",
+  "audit_drawer_tokens_in": "Eingabe-Token",
+  "audit_drawer_tokens_out": "Ausgabe-Token",
+  "audit_drawer_latency": "Latenz",
+  "audit_drawer_refs": "Wissensreferenzen",
+  "audit_drawer_draft": "Entwurf-ID",
+
+  "audit_report_mis_send": "Fehlsendung melden",
+  "audit_mis_send_feedback_toast": "Feedback vermerkt – Vertrauensstufe wird überprüft.",
+
+  "audit_export": "Exportieren",
+  "audit_export_csv": "Als CSV exportieren",
+  "audit_export_json": "Als JSON exportieren",
+  "audit_export_success": "{filename} exportiert",
+  "audit_export_failed_disk": "Export fehlgeschlagen: Datenträger voll",
+  "audit_export_failed": "Export fehlgeschlagen – bitte versuchen Sie es erneut.",
+
+  "audit_e3_paused_banner": "Vollautomatisch pausiert bis {date}",
+  "audit_e3_resume_early": "Vorzeitig fortsetzen →"
+}

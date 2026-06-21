@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "Sự kiện rủi ro",
+  "audit_tab_label": "Hoạt động AI",
+
+  "audit_total_events": "Tổng sự kiện",
+  "audit_auto_sent": "Tự động gửi",
+  "audit_success_rate": "Tỷ lệ thành công",
+  "audit_tokens_used": "Token đã dùng",
+
+  "audit_filter_account": "Tài khoản",
+  "audit_filter_event_type": "Loại sự kiện",
+  "audit_filter_date_range": "Khoảng ngày",
+  "audit_filter_from": "Từ",
+  "audit_filter_to": "Đến",
+  "audit_clear_filters": "Xóa bộ lọc",
+
+  "audit_col_id": "#",
+  "audit_col_account": "Tài khoản",
+  "audit_col_event": "Sự kiện",
+  "audit_col_subject": "Chủ đề",
+  "audit_col_time": "Thời gian",
+  "audit_col_tokens": "Token",
+  "audit_empty": "Không có hoạt động AI trong khoảng này.",
+  "audit_loading": "Đang tải hoạt động AI…",
+  "audit_showing_limit_hint": "Hiển thị 200 mục đầu tiên — thu hẹp bộ lọc.",
+
+  "audit_drawer_title": "Chi tiết quyết định",
+  "audit_drawer_close": "Đóng bảng chi tiết",
+  "audit_drawer_event": "Sự kiện",
+  "audit_drawer_account": "Tài khoản",
+  "audit_drawer_subject": "Chủ đề",
+  "audit_drawer_time": "Ghi lúc",
+  "audit_drawer_model": "Mô hình AI",
+  "audit_drawer_impact": "Tác động",
+  "audit_drawer_tokens_in": "Token đầu vào",
+  "audit_drawer_tokens_out": "Token đầu ra",
+  "audit_drawer_latency": "Độ trễ",
+  "audit_drawer_refs": "Tham chiếu tri thức",
+  "audit_drawer_draft": "ID bản nháp",
+
+  "audit_report_mis_send": "Báo cáo gửi nhầm",
+  "audit_mis_send_feedback_toast": "Đã ghi phản hồi — đang xem xét mức độ tin cậy.",
+
+  "audit_export": "Xuất",
+  "audit_export_csv": "Xuất dạng CSV",
+  "audit_export_json": "Xuất dạng JSON",
+  "audit_export_success": "Đã xuất {filename}",
+  "audit_export_failed_disk": "Xuất thất bại: đĩa đầy",
+  "audit_export_failed": "Xuất thất bại — vui lòng thử lại.",
+
+  "audit_e3_paused_banner": "Full Auto đã tạm dừng đến {date}",
+  "audit_e3_resume_early": "Tiếp tục sớm →"
+}

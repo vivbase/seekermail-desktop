@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "אירועי סיכון",
+  "audit_tab_label": "פעילות AI",
+
+  "audit_total_events": "סך האירועים",
+  "audit_auto_sent": "נשלחו אוטומטית",
+  "audit_success_rate": "שיעור הצלחה",
+  "audit_tokens_used": "טוקנים בשימוש",
+
+  "audit_filter_account": "חשבון",
+  "audit_filter_event_type": "סוג אירוע",
+  "audit_filter_date_range": "טווח תאריכים",
+  "audit_filter_from": "מתאריך",
+  "audit_filter_to": "עד תאריך",
+  "audit_clear_filters": "נקה מסננים",
+
+  "audit_col_id": "#",
+  "audit_col_account": "חשבון",
+  "audit_col_event": "אירוע",
+  "audit_col_subject": "נושא",
+  "audit_col_time": "זמן",
+  "audit_col_tokens": "טוקנים",
+  "audit_empty": "אין פעילות AI בטווח זה.",
+  "audit_loading": "טוען פעילות AI…",
+  "audit_showing_limit_hint": "מציג את 200 הרשומות הראשונות — צמצם את המסננים שלך.",
+
+  "audit_drawer_title": "פירוט החלטה",
+  "audit_drawer_close": "סגור את לוח הפירוט",
+  "audit_drawer_event": "אירוע",
+  "audit_drawer_account": "חשבון",
+  "audit_drawer_subject": "נושא",
+  "audit_drawer_time": "נרשם בתאריך",
+  "audit_drawer_model": "מודל AI",
+  "audit_drawer_impact": "השפעה",
+  "audit_drawer_tokens_in": "טוקנים בקלט",
+  "audit_drawer_tokens_out": "טוקנים בפלט",
+  "audit_drawer_latency": "השהיה",
+  "audit_drawer_refs": "הפניות ידע",
+  "audit_drawer_draft": "מזהה טיוטה",
+
+  "audit_report_mis_send": "דווח על שליחה שגויה",
+  "audit_mis_send_feedback_toast": "המשוב נרשם — רמת האמון נבדקה.",
+
+  "audit_export": "ייצוא",
+  "audit_export_csv": "ייצא כ-CSV",
+  "audit_export_json": "ייצא כ-JSON",
+  "audit_export_success": "{filename} יוצא",
+  "audit_export_failed_disk": "הייצוא נכשל: הדיסק מלא",
+  "audit_export_failed": "הייצוא נכשל — נסה שוב.",
+
+  "audit_e3_paused_banner": "Full Auto מושהה עד {date}",
+  "audit_e3_resume_early": "חדש מוקדם →"
+}

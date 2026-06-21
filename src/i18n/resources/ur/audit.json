@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "خطرے کے واقعات",
+  "audit_tab_label": "AI سرگرمی",
+
+  "audit_total_events": "کل واقعات",
+  "audit_auto_sent": "خودکار بھیجے گئے",
+  "audit_success_rate": "کامیابی کی شرح",
+  "audit_tokens_used": "استعمال شدہ ٹوکنز",
+
+  "audit_filter_account": "اکاؤنٹ",
+  "audit_filter_event_type": "واقعے کی قسم",
+  "audit_filter_date_range": "تاریخ کا دائرہ",
+  "audit_filter_from": "منجانب",
+  "audit_filter_to": "بنام",
+  "audit_clear_filters": "فلٹرز صاف کریں",
+
+  "audit_col_id": "#",
+  "audit_col_account": "اکاؤنٹ",
+  "audit_col_event": "واقعہ",
+  "audit_col_subject": "موضوع",
+  "audit_col_time": "وقت",
+  "audit_col_tokens": "ٹوکنز",
+  "audit_empty": "اس دائرے میں کوئی AI سرگرمی نہیں۔",
+  "audit_loading": "AI سرگرمی لوڈ ہو رہی ہے…",
+  "audit_showing_limit_hint": "پہلے 200 اندراجات دکھائے جا رہے ہیں — اپنے فلٹرز تنگ کریں۔",
+
+  "audit_drawer_title": "فیصلے کی تفصیل",
+  "audit_drawer_close": "تفصیل پینل بند کریں",
+  "audit_drawer_event": "واقعہ",
+  "audit_drawer_account": "اکاؤنٹ",
+  "audit_drawer_subject": "موضوع",
+  "audit_drawer_time": "ریکارڈ کا وقت",
+  "audit_drawer_model": "AI ماڈل",
+  "audit_drawer_impact": "اثر",
+  "audit_drawer_tokens_in": "ان پٹ ٹوکنز",
+  "audit_drawer_tokens_out": "آؤٹ پٹ ٹوکنز",
+  "audit_drawer_latency": "تاخیر",
+  "audit_drawer_refs": "نالج حوالہ جات",
+  "audit_drawer_draft": "مسودہ ID",
+
+  "audit_report_mis_send": "غلط بھیجنے کی اطلاع دیں",
+  "audit_mis_send_feedback_toast": "فیڈ بیک ریکارڈ ہو گیا — اعتماد کی سطح کا جائزہ لیا گیا۔",
+
+  "audit_export": "برآمد کریں",
+  "audit_export_csv": "CSV کے طور پر برآمد کریں",
+  "audit_export_json": "JSON کے طور پر برآمد کریں",
+  "audit_export_success": "{filename} برآمد ہو گیا",
+  "audit_export_failed_disk": "برآمد ناکام: ڈسک بھری ہوئی",
+  "audit_export_failed": "برآمد ناکام — براہ کرم دوبارہ کوشش کریں۔",
+
+  "audit_e3_paused_banner": "Full Auto {date} تک رکا ہوا ہے",
+  "audit_e3_resume_early": "جلدی دوبارہ شروع کریں →"
+}

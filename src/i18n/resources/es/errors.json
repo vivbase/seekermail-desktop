@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "No se pudo iniciar sesión con esos datos.",
+  "err_auth_oauth_failed": "La autorización no se completó.",
+  "err_auth_keychain_denied": "Se denegó el acceso al Keychain del sistema.",
+  "err_imap_connection_failed": "No se puede contactar con el servidor de correo ahora.",
+  "err_imap_uid_validity_changed": "Este buzón necesita una resincronización completa.",
+  "err_smtp_send_failed": "No se pudo enviar el mensaje.",
+  "err_smtp_rate_limited": "Enviando demasiado rápido — reduciremos la velocidad.",
+  "err_db_constraint": "Eso entra en conflicto con los datos existentes.",
+  "err_db_migration_failed": "No se pudo actualizar la base de datos local.",
+  "err_ai_provider_unreachable": "Tu proveedor de IA no responde.",
+  "err_ai_rate_limited": "Tu proveedor de IA está limitando las solicitudes.",
+  "err_ai_context_too_long": "Hay demasiado contexto para este modelo.",
+  "err_gte_index_corrupt": "El índice de búsqueda necesita reconstruirse.",
+  "err_gte_reindex_in_progress": "Ya hay una reconstrucción en curso.",
+  "err_fs_permission_denied": "No tenemos permiso para acceder a esa ubicación.",
+  "err_fs_disk_full": "El disco está lleno.",
+  "err_validation": "Revisa el campo indicado.",
+  "err_not_found": "Ese elemento ya no existe.",
+  "err_forbidden": "Esa acción no está permitida.",
+  "err_internal": "Algo salió mal de nuestra parte."
+}

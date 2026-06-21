@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "जोखिम घटनाएँ",
+  "audit_tab_label": "AI गतिविधि",
+
+  "audit_total_events": "कुल घटनाएँ",
+  "audit_auto_sent": "स्वतः भेजे गए",
+  "audit_success_rate": "सफलता दर",
+  "audit_tokens_used": "उपयोग किए गए टोकन",
+
+  "audit_filter_account": "अकाउंट",
+  "audit_filter_event_type": "घटना प्रकार",
+  "audit_filter_date_range": "तिथि सीमा",
+  "audit_filter_from": "से",
+  "audit_filter_to": "तक",
+  "audit_clear_filters": "फ़िल्टर साफ़ करें",
+
+  "audit_col_id": "#",
+  "audit_col_account": "अकाउंट",
+  "audit_col_event": "घटना",
+  "audit_col_subject": "विषय",
+  "audit_col_time": "समय",
+  "audit_col_tokens": "टोकन",
+  "audit_empty": "इस सीमा में कोई AI गतिविधि नहीं।",
+  "audit_loading": "AI गतिविधि लोड हो रही है…",
+  "audit_showing_limit_hint": "पहली 200 प्रविष्टियाँ दिखा रहे हैं — अपने फ़िल्टर सीमित करें।",
+
+  "audit_drawer_title": "निर्णय विवरण",
+  "audit_drawer_close": "विवरण पैनल बंद करें",
+  "audit_drawer_event": "घटना",
+  "audit_drawer_account": "अकाउंट",
+  "audit_drawer_subject": "विषय",
+  "audit_drawer_time": "रिकॉर्ड किया गया",
+  "audit_drawer_model": "AI मॉडल",
+  "audit_drawer_impact": "प्रभाव",
+  "audit_drawer_tokens_in": "इनपुट टोकन",
+  "audit_drawer_tokens_out": "आउटपुट टोकन",
+  "audit_drawer_latency": "विलंबता",
+  "audit_drawer_refs": "नॉलेज संदर्भ",
+  "audit_drawer_draft": "ड्राफ़्ट ID",
+
+  "audit_report_mis_send": "ग़लत भेजने की रिपोर्ट करें",
+  "audit_mis_send_feedback_toast": "प्रतिक्रिया दर्ज की गई — विश्वास स्तर की समीक्षा की गई।",
+
+  "audit_export": "निर्यात",
+  "audit_export_csv": "CSV के रूप में निर्यात करें",
+  "audit_export_json": "JSON के रूप में निर्यात करें",
+  "audit_export_success": "{filename} निर्यात हुआ",
+  "audit_export_failed_disk": "निर्यात विफल: डिस्क भरी है",
+  "audit_export_failed": "निर्यात विफल — कृपया फिर कोशिश करें।",
+
+  "audit_e3_paused_banner": "Full Auto {date} तक रोका गया है",
+  "audit_e3_resume_early": "जल्दी फिर से शुरू करें →"
+}

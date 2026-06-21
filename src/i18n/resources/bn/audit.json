@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "ঝুঁকি ঘটনা",
+  "audit_tab_label": "AI কার্যকলাপ",
+
+  "audit_total_events": "মোট ঘটনা",
+  "audit_auto_sent": "স্বয়ংক্রিয়ভাবে প্রেরিত",
+  "audit_success_rate": "সাফল্যের হার",
+  "audit_tokens_used": "ব্যবহৃত টোকেন",
+
+  "audit_filter_account": "অ্যাকাউন্ট",
+  "audit_filter_event_type": "ঘটনার ধরন",
+  "audit_filter_date_range": "তারিখ পরিসর",
+  "audit_filter_from": "থেকে",
+  "audit_filter_to": "পর্যন্ত",
+  "audit_clear_filters": "ফিল্টার সাফ করুন",
+
+  "audit_col_id": "#",
+  "audit_col_account": "অ্যাকাউন্ট",
+  "audit_col_event": "ঘটনা",
+  "audit_col_subject": "বিষয়",
+  "audit_col_time": "সময়",
+  "audit_col_tokens": "টোকেন",
+  "audit_empty": "এই পরিসরে কোনো AI কার্যকলাপ নেই।",
+  "audit_loading": "AI কার্যকলাপ লোড হচ্ছে…",
+  "audit_showing_limit_hint": "প্রথম 200টি এন্ট্রি দেখানো হচ্ছে — আপনার ফিল্টার সংকীর্ণ করুন।",
+
+  "audit_drawer_title": "সিদ্ধান্তের বিবরণ",
+  "audit_drawer_close": "বিবরণ প্যানেল বন্ধ করুন",
+  "audit_drawer_event": "ঘটনা",
+  "audit_drawer_account": "অ্যাকাউন্ট",
+  "audit_drawer_subject": "বিষয়",
+  "audit_drawer_time": "রেকর্ড করার সময়",
+  "audit_drawer_model": "AI মডেল",
+  "audit_drawer_impact": "প্রভাব",
+  "audit_drawer_tokens_in": "ইনপুট টোকেন",
+  "audit_drawer_tokens_out": "আউটপুট টোকেন",
+  "audit_drawer_latency": "লেটেন্সি",
+  "audit_drawer_refs": "নলেজ রেফারেন্স",
+  "audit_drawer_draft": "খসড়া ID",
+
+  "audit_report_mis_send": "ভুল প্রেরণ রিপোর্ট করুন",
+  "audit_mis_send_feedback_toast": "ফিডব্যাক রেকর্ড হয়েছে — ট্রাস্ট স্তর পর্যালোচনা করা হয়েছে।",
+
+  "audit_export": "এক্সপোর্ট",
+  "audit_export_csv": "CSV হিসেবে এক্সপোর্ট করুন",
+  "audit_export_json": "JSON হিসেবে এক্সপোর্ট করুন",
+  "audit_export_success": "{filename} এক্সপোর্ট হয়েছে",
+  "audit_export_failed_disk": "এক্সপোর্ট ব্যর্থ: ডিস্ক পূর্ণ",
+  "audit_export_failed": "এক্সপোর্ট ব্যর্থ — অনুগ্রহ করে আবার চেষ্টা করুন।",
+
+  "audit_e3_paused_banner": "Full Auto {date} পর্যন্ত বিরতিতে আছে",
+  "audit_e3_resume_early": "আগেভাগে চালু করুন →"
+}

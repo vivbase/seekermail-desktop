@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "無法以此資訊登入。",
+  "err_auth_oauth_failed": "授權未完成。",
+  "err_auth_keychain_denied": "存取系統 Keychain 的權限遭拒。",
+  "err_imap_connection_failed": "目前無法連線至郵件伺服器。",
+  "err_imap_uid_validity_changed": "此信箱需要完整重新同步。",
+  "err_smtp_send_failed": "郵件無法傳送。",
+  "err_smtp_rate_limited": "傳送過於頻繁——已自動降速。",
+  "err_db_constraint": "與現有資料發生衝突。",
+  "err_db_migration_failed": "無法更新本機資料庫。",
+  "err_ai_provider_unreachable": "您的 AI 提供者沒有回應。",
+  "err_ai_rate_limited": "您的 AI 提供者正在限速。",
+  "err_ai_context_too_long": "此模型的上下文過長。",
+  "err_gte_index_corrupt": "搜尋索引需要重新建立。",
+  "err_gte_reindex_in_progress": "已有重新建立索引作業正在進行中。",
+  "err_fs_permission_denied": "沒有權限存取此位置。",
+  "err_fs_disk_full": "磁碟空間已滿。",
+  "err_validation": "請檢查標示的欄位。",
+  "err_not_found": "該項目已不存在。",
+  "err_forbidden": "不允許執行此操作。",
+  "err_internal": "我們這端發生了錯誤。"
+}

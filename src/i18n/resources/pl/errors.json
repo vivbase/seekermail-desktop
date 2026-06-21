@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "Nie udało się zalogować przy użyciu tych danych.",
+  "err_auth_oauth_failed": "Autoryzacja nie została ukończona.",
+  "err_auth_keychain_denied": "Odmówiono dostępu do systemowego Keychain.",
+  "err_imap_connection_failed": "Nie można teraz połączyć się z serwerem poczty.",
+  "err_imap_uid_validity_changed": "Skrzynka wymaga pełnej ponownej synchronizacji.",
+  "err_smtp_send_failed": "Nie udało się wysłać wiadomości.",
+  "err_smtp_rate_limited": "Wysyłanie zbyt szybkie — zwolnimy tempo.",
+  "err_db_constraint": "Konflikt z istniejącymi danymi.",
+  "err_db_migration_failed": "Nie udało się zaktualizować lokalnej bazy danych.",
+  "err_ai_provider_unreachable": "Dostawca AI nie odpowiada.",
+  "err_ai_rate_limited": "Dostawca AI stosuje ograniczenie liczby żądań.",
+  "err_ai_context_too_long": "Kontekst jest zbyt duży dla tego modelu.",
+  "err_gte_index_corrupt": "Indeks wyszukiwania wymaga przebudowania.",
+  "err_gte_reindex_in_progress": "Przebudowanie jest już w toku.",
+  "err_fs_permission_denied": "Brak uprawnień do tej lokalizacji.",
+  "err_fs_disk_full": "Dysk jest pełny.",
+  "err_validation": "Sprawdź wyróżnione pole.",
+  "err_not_found": "Ten element już nie istnieje.",
+  "err_forbidden": "Ta akcja jest niedozwolona.",
+  "err_internal": "Coś poszło nie tak po naszej stronie."
+}

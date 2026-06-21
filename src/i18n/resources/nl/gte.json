@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "Dashboard",
+  "title": "GTE-kennisindex",
+  "sub": "1.842 berichten geïndexeerd · laatste synchronisatie 2 min geleden",
+  "status_engine": "Engine actief",
+  "status_index": "Index {version}",
+  "status_syncing": "{count, plural, one {# account synchroniseert} other {# accounts synchroniseren}}",
+  "total_vectors": "Totale vectoren: {n}",
+  "search_ph": "Semantisch zoeken in alle geïndexeerde e-mails…",
+  "card_accounts": "Accountverdeling",
+  "card_topics": "Toponderwerpen",
+  "view": "Bekijken →",
+  "results_recent": "Recente kennisitems",
+  "results_query": "Zoekresultaten voor \"{query}\"",
+  "searching": "Zoeken…",
+  "rel_high": "Hoge overeenkomst",
+  "rel_mid": "Gemiddelde overeenkomst",
+  "rel_low": "Lage overeenkomst",
+  "no_results": "Geen resultaten voor \"{query}\""
+}

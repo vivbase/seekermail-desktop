@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "Instrumentpanel",
+  "title": "GTE Kunskapsindex",
+  "sub": "1 842 meddelanden indexerade · senast synkad för 2 min sedan",
+  "status_engine": "Motor aktiv",
+  "status_index": "Index {version}",
+  "status_syncing": "{count, plural, one {# konto synkroniseras} other {# konton synkroniseras}}",
+  "total_vectors": "Totala vektorer: {n}",
+  "search_ph": "Semantisk sökning i alla indexerade e-postmeddelanden…",
+  "card_accounts": "Kontouppdelning",
+  "card_topics": "Toppämnen",
+  "view": "Visa →",
+  "results_recent": "Senaste kunskapsposter",
+  "results_query": "Sökresultat för \"{query}\"",
+  "searching": "Söker…",
+  "rel_high": "Hög träff",
+  "rel_mid": "Medelhög träff",
+  "rel_low": "Låg träff",
+  "no_results": "Inga resultat för \"{query}\""
+}

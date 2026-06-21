@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "リスクイベント",
+  "audit_tab_label": "AI アクティビティ",
+
+  "audit_total_events": "総イベント数",
+  "audit_auto_sent": "自動送信",
+  "audit_success_rate": "成功率",
+  "audit_tokens_used": "使用トークン数",
+
+  "audit_filter_account": "アカウント",
+  "audit_filter_event_type": "イベントタイプ",
+  "audit_filter_date_range": "期間",
+  "audit_filter_from": "開始",
+  "audit_filter_to": "終了",
+  "audit_clear_filters": "フィルタをクリア",
+
+  "audit_col_id": "#",
+  "audit_col_account": "アカウント",
+  "audit_col_event": "イベント",
+  "audit_col_subject": "件名",
+  "audit_col_time": "時刻",
+  "audit_col_tokens": "トークン",
+  "audit_empty": "この期間に AI アクティビティはありません。",
+  "audit_loading": "AI アクティビティを読み込み中…",
+  "audit_showing_limit_hint": "先頭 200 件を表示しています — フィルタを絞ってください。",
+
+  "audit_drawer_title": "判断の詳細",
+  "audit_drawer_close": "詳細パネルを閉じる",
+  "audit_drawer_event": "イベント",
+  "audit_drawer_account": "アカウント",
+  "audit_drawer_subject": "件名",
+  "audit_drawer_time": "記録日時",
+  "audit_drawer_model": "AI モデル",
+  "audit_drawer_impact": "影響",
+  "audit_drawer_tokens_in": "入力トークン",
+  "audit_drawer_tokens_out": "出力トークン",
+  "audit_drawer_latency": "レイテンシ",
+  "audit_drawer_refs": "ナレッジ参照",
+  "audit_drawer_draft": "下書き ID",
+
+  "audit_report_mis_send": "誤送信を報告",
+  "audit_mis_send_feedback_toast": "フィードバックを記録しました — 信頼レベルを見直しました。",
+
+  "audit_export": "エクスポート",
+  "audit_export_csv": "CSV としてエクスポート",
+  "audit_export_json": "JSON としてエクスポート",
+  "audit_export_success": "{filename} をエクスポートしました",
+  "audit_export_failed_disk": "エクスポートに失敗しました: ディスクの空き容量がありません",
+  "audit_export_failed": "エクスポートに失敗しました — もう一度お試しください。",
+
+  "audit_e3_paused_banner": "完全自動は {date} まで一時停止中です",
+  "audit_e3_resume_early": "早めに再開 →"
+}

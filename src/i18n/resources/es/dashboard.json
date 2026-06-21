@@ -1,0 +1,23 @@
+{
+  "title": "Inicio",
+  "stat_pending_lbl": "Pendiente",
+  "stat_pending_sub": "necesita decisión",
+  "stat_unread_lbl": "Sin leer",
+  "stat_unread_sub": "{count, plural, =0 {todo al día} one {en # cuenta} other {en # cuentas}}",
+  "stat_total_lbl": "Total",
+  "stat_total_sub": "{count, plural, one {en # cuenta} other {en # cuentas}}",
+  "stat_processed_lbl": "Procesado hoy",
+  "stat_processed_sub": "por empleados de IA",
+  "stat_view_all": "Ver todos →",
+  "stat_view_log": "Ver registro →",
+  "cold_title": "Primeros pasos",
+  "cold_dismiss": "Descartar",
+  "cold_note": "Tu IA todavía está aprendiendo tu estilo — durante las primeras dos semanas la verás ir tomando el control paso a paso. Completar estas tareas lo acelera.",
+  "cold_task_connect": "Conecta tu primera cuenta",
+  "cold_task_drafts": "Revisa 5 borradores de IA para calibrar tu estilo de escritura",
+  "cold_task_contacts": "Responde a 3 contactos frecuentes para inicializar tu lista de remitentes de confianza",
+  "cold_task_search": "Prueba una búsqueda semántica en tu correo",
+  "cold_progress": "Progreso de confianza — la automatización completa se desbloquea a medida que revisas más borradores",
+  "report_link": "Ver informe diario →",
+  "hint": "Haz clic en cualquier tarjeta para explorar"
+}

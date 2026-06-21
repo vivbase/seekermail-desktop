@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "Eventi di rischio",
+  "audit_tab_label": "Attività AI",
+
+  "audit_total_events": "Totale eventi",
+  "audit_auto_sent": "Inviate automaticamente",
+  "audit_success_rate": "Tasso di successo",
+  "audit_tokens_used": "Token utilizzati",
+
+  "audit_filter_account": "Account",
+  "audit_filter_event_type": "Tipo di evento",
+  "audit_filter_date_range": "Intervallo di date",
+  "audit_filter_from": "Da",
+  "audit_filter_to": "A",
+  "audit_clear_filters": "Cancella filtri",
+
+  "audit_col_id": "#",
+  "audit_col_account": "Account",
+  "audit_col_event": "Evento",
+  "audit_col_subject": "Oggetto",
+  "audit_col_time": "Ora",
+  "audit_col_tokens": "Token",
+  "audit_empty": "Nessuna attività AI in questo intervallo.",
+  "audit_loading": "Caricamento attività AI…",
+  "audit_showing_limit_hint": "Visualizzate le prime 200 voci — restringi i filtri.",
+
+  "audit_drawer_title": "Dettaglio decisione",
+  "audit_drawer_close": "Chiudi pannello dettaglio",
+  "audit_drawer_event": "Evento",
+  "audit_drawer_account": "Account",
+  "audit_drawer_subject": "Oggetto",
+  "audit_drawer_time": "Registrato il",
+  "audit_drawer_model": "Modello AI",
+  "audit_drawer_impact": "Impatto",
+  "audit_drawer_tokens_in": "Token in ingresso",
+  "audit_drawer_tokens_out": "Token in uscita",
+  "audit_drawer_latency": "Latenza",
+  "audit_drawer_refs": "Riferimenti alla conoscenza",
+  "audit_drawer_draft": "ID bozza",
+
+  "audit_report_mis_send": "Segnala invio erroneo",
+  "audit_mis_send_feedback_toast": "Feedback registrato — livello di fiducia rivisto.",
+
+  "audit_export": "Esporta",
+  "audit_export_csv": "Esporta come CSV",
+  "audit_export_json": "Esporta come JSON",
+  "audit_export_success": "Esportato {filename}",
+  "audit_export_failed_disk": "Esportazione fallita: disco pieno",
+  "audit_export_failed": "Esportazione fallita — riprova.",
+
+  "audit_e3_paused_banner": "L'automatico completo è in pausa fino al {date}",
+  "audit_e3_resume_early": "Riprendi prima →"
+}

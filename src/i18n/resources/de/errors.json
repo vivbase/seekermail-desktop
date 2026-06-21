@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "Die Anmeldung mit diesen Daten ist fehlgeschlagen.",
+  "err_auth_oauth_failed": "Die Autorisierung wurde nicht abgeschlossen.",
+  "err_auth_keychain_denied": "Zugriff auf den System-Keychain wurde verweigert.",
+  "err_imap_connection_failed": "Der Mailserver ist derzeit nicht erreichbar.",
+  "err_imap_uid_validity_changed": "Dieses Postfach erfordert eine vollständige Neusynchronisierung.",
+  "err_smtp_send_failed": "Die Nachricht konnte nicht gesendet werden.",
+  "err_smtp_rate_limited": "Zu schnelles Senden – wird automatisch gedrosselt.",
+  "err_db_constraint": "Das steht im Konflikt mit vorhandenen Daten.",
+  "err_db_migration_failed": "Die lokale Datenbank konnte nicht aktualisiert werden.",
+  "err_ai_provider_unreachable": "Ihr AI-Anbieter antwortet nicht.",
+  "err_ai_rate_limited": "Ihr AI-Anbieter begrenzt die Anfragen.",
+  "err_ai_context_too_long": "Zu viel Kontext für dieses Modell.",
+  "err_gte_index_corrupt": "Der Suchindex muss neu aufgebaut werden.",
+  "err_gte_reindex_in_progress": "Ein Neuaufbau läuft bereits.",
+  "err_fs_permission_denied": "Kein Zugriff auf diesen Speicherort.",
+  "err_fs_disk_full": "Ihr Datenträger ist voll.",
+  "err_validation": "Bitte überprüfen Sie das markierte Feld.",
+  "err_not_found": "Dieses Element existiert nicht mehr.",
+  "err_forbidden": "Diese Aktion ist nicht zulässig.",
+  "err_internal": "Auf unserer Seite ist etwas schiefgelaufen."
+}

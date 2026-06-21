@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "Não foi possível iniciar sessão com estas credenciais.",
+  "err_auth_oauth_failed": "A autorização não foi concluída.",
+  "err_auth_keychain_denied": "O acesso ao Keychain do sistema foi negado.",
+  "err_imap_connection_failed": "Não é possível alcançar o servidor de correio neste momento.",
+  "err_imap_uid_validity_changed": "Esta caixa de correio precisa de uma ressincronização completa.",
+  "err_smtp_send_failed": "Não foi possível enviar a mensagem.",
+  "err_smtp_rate_limited": "A enviar demasiado depressa — vamos abrandar.",
+  "err_db_constraint": "Existe um conflito com dados existentes.",
+  "err_db_migration_failed": "Não foi possível actualizar a base de dados local.",
+  "err_ai_provider_unreachable": "O seu fornecedor de AI não está a responder.",
+  "err_ai_rate_limited": "O fornecedor de AI está a limitar o ritmo de pedidos.",
+  "err_ai_context_too_long": "O contexto é demasiado extenso para este modelo.",
+  "err_gte_index_corrupt": "O índice de pesquisa precisa de ser reconstruído.",
+  "err_gte_reindex_in_progress": "Já está em curso uma reconstrução do índice.",
+  "err_fs_permission_denied": "Não temos permissão para aceder a essa localização.",
+  "err_fs_disk_full": "O disco está cheio.",
+  "err_validation": "Por favor, verifique o campo assinalado.",
+  "err_not_found": "Este item já não existe.",
+  "err_forbidden": "Esta acção não é permitida.",
+  "err_internal": "Ocorreu um erro do nosso lado."
+}

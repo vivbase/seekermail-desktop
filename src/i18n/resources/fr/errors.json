@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "Connexion impossible avec ces identifiants.",
+  "err_auth_oauth_failed": "L'autorisation n'a pas abouti.",
+  "err_auth_keychain_denied": "L'accès au Keychain système a été refusé.",
+  "err_imap_connection_failed": "Impossible de joindre le serveur de messagerie.",
+  "err_imap_uid_validity_changed": "Cette boîte aux lettres nécessite une resynchronisation complète.",
+  "err_smtp_send_failed": "Le message n'a pas pu être envoyé.",
+  "err_smtp_rate_limited": "Envoi trop rapide — nous allons ralentir.",
+  "err_db_constraint": "Cela entre en conflit avec des données existantes.",
+  "err_db_migration_failed": "Impossible de mettre à jour la base de données locale.",
+  "err_ai_provider_unreachable": "Votre fournisseur AI ne répond pas.",
+  "err_ai_rate_limited": "Votre fournisseur AI applique une limitation de débit.",
+  "err_ai_context_too_long": "Le contexte est trop long pour ce modèle.",
+  "err_gte_index_corrupt": "L'index de recherche doit être reconstruit.",
+  "err_gte_reindex_in_progress": "Une reconstruction est déjà en cours.",
+  "err_fs_permission_denied": "Nous n'avons pas l'autorisation d'accéder à cet emplacement.",
+  "err_fs_disk_full": "Votre disque est plein.",
+  "err_validation": "Veuillez vérifier le champ mis en évidence.",
+  "err_not_found": "Cet élément n'existe plus.",
+  "err_forbidden": "Cette action n'est pas autorisée.",
+  "err_internal": "Une erreur s'est produite de notre côté."
+}

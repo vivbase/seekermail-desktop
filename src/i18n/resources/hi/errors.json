@@ -1,0 +1,22 @@
+{
+  "err_auth_invalid_credentials": "इन विवरणों से साइन इन नहीं हो सका।",
+  "err_auth_oauth_failed": "अधिकृतीकरण पूरा नहीं हुआ।",
+  "err_auth_keychain_denied": "आपके सिस्टम Keychain तक एक्सेस अस्वीकृत हुई।",
+  "err_imap_connection_failed": "अभी मेल सर्वर तक नहीं पहुँचा जा सका।",
+  "err_imap_uid_validity_changed": "इस मेलबॉक्स को पूरा रीसिंक चाहिए।",
+  "err_smtp_send_failed": "संदेश नहीं भेजा जा सका।",
+  "err_smtp_rate_limited": "बहुत तेज़ी से भेजा जा रहा है — हम धीमा कर देंगे।",
+  "err_db_constraint": "यह मौजूदा डेटा से टकराता है।",
+  "err_db_migration_failed": "लोकल डेटाबेस अपडेट नहीं हो सका।",
+  "err_ai_provider_unreachable": "आपका AI प्रोवाइडर जवाब नहीं दे रहा।",
+  "err_ai_rate_limited": "आपका AI प्रोवाइडर रेट-लिमिट कर रहा है।",
+  "err_ai_context_too_long": "इस मॉडल के लिए बहुत अधिक संदर्भ है।",
+  "err_gte_index_corrupt": "खोज इंडेक्स को फिर से बनाना ज़रूरी है।",
+  "err_gte_reindex_in_progress": "एक रीबिल्ड पहले से चल रहा है।",
+  "err_fs_permission_denied": "हमारे पास उस स्थान की अनुमति नहीं है।",
+  "err_fs_disk_full": "आपकी डिस्क भर गई है।",
+  "err_validation": "कृपया हाइलाइट किए गए फ़ील्ड की जाँच करें।",
+  "err_not_found": "वह आइटम अब मौजूद नहीं है।",
+  "err_forbidden": "वह कार्रवाई अनुमत नहीं है।",
+  "err_internal": "हमारी ओर से कुछ गड़बड़ हो गई।"
+}

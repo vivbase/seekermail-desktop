@@ -1,0 +1,23 @@
+{
+  "title": "Bảng điều khiển",
+  "stat_pending_lbl": "Đang chờ",
+  "stat_pending_sub": "cần quyết định",
+  "stat_unread_lbl": "Chưa đọc",
+  "stat_unread_sub": "{count, plural, =0 {tất cả đã xử lý xong} other {trên # tài khoản}}",
+  "stat_total_lbl": "Tổng cộng",
+  "stat_total_sub": "{count, plural, other {trên # tài khoản}}",
+  "stat_processed_lbl": "Đã xử lý hôm nay",
+  "stat_processed_sub": "bởi nhân viên AI",
+  "stat_view_all": "Xem tất cả →",
+  "stat_view_log": "Xem nhật ký →",
+  "cold_title": "Bắt đầu",
+  "cold_dismiss": "Bỏ qua",
+  "cold_note": "AI của bạn vẫn đang học phong cách của bạn — trong hai tuần đầu bạn sẽ thấy nó tiếp quản dần dần. Hoàn thành những việc này sẽ tăng tốc quá trình.",
+  "cold_task_connect": "Kết nối tài khoản đầu tiên",
+  "cold_task_drafts": "Duyệt 5 bản nháp AI để hiệu chỉnh phong cách viết",
+  "cold_task_contacts": "Trả lời 3 liên hệ thường xuyên để thiết lập danh sách người gửi tin cậy",
+  "cold_task_search": "Thử một lần tìm kiếm ngữ nghĩa trong thư",
+  "cold_progress": "Ramp tin cậy — tự động hóa đầy đủ mở khóa khi bạn duyệt thêm bản nháp",
+  "report_link": "Xem báo cáo hàng ngày →",
+  "hint": "Nhấn vào bất kỳ thẻ nào ở trên để khám phá"
+}

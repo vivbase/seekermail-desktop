@@ -1,0 +1,53 @@
+{
+  "audit_tab_risk": "События рисков",
+  "audit_tab_label": "Активность AI",
+
+  "audit_total_events": "Всего событий",
+  "audit_auto_sent": "Отправлено автоматически",
+  "audit_success_rate": "Успешность",
+  "audit_tokens_used": "Использовано токенов",
+
+  "audit_filter_account": "Аккаунт",
+  "audit_filter_event_type": "Тип события",
+  "audit_filter_date_range": "Период",
+  "audit_filter_from": "С",
+  "audit_filter_to": "По",
+  "audit_clear_filters": "Сбросить фильтры",
+
+  "audit_col_id": "#",
+  "audit_col_account": "Аккаунт",
+  "audit_col_event": "Событие",
+  "audit_col_subject": "Тема",
+  "audit_col_time": "Время",
+  "audit_col_tokens": "Токены",
+  "audit_empty": "За этот период активности AI нет.",
+  "audit_loading": "Загрузка активности AI…",
+  "audit_showing_limit_hint": "Показаны первые 200 записей — уточните фильтры.",
+
+  "audit_drawer_title": "Детали решения",
+  "audit_drawer_close": "Закрыть панель деталей",
+  "audit_drawer_event": "Событие",
+  "audit_drawer_account": "Аккаунт",
+  "audit_drawer_subject": "Тема",
+  "audit_drawer_time": "Записано",
+  "audit_drawer_model": "Модель AI",
+  "audit_drawer_impact": "Результат",
+  "audit_drawer_tokens_in": "Входящие токены",
+  "audit_drawer_tokens_out": "Исходящие токены",
+  "audit_drawer_latency": "Задержка",
+  "audit_drawer_refs": "Ссылки на знания",
+  "audit_drawer_draft": "ID черновика",
+
+  "audit_report_mis_send": "Сообщить об ошибочной отправке",
+  "audit_mis_send_feedback_toast": "Отзыв записан — уровень доверия пересмотрен.",
+
+  "audit_export": "Экспортировать",
+  "audit_export_csv": "Экспорт в CSV",
+  "audit_export_json": "Экспорт в JSON",
+  "audit_export_success": "Экспортировано в {filename}",
+  "audit_export_failed_disk": "Экспорт не удался: диск заполнен",
+  "audit_export_failed": "Экспорт не удался — попробуйте снова.",
+
+  "audit_e3_paused_banner": "Полный автомат приостановлен до {date}",
+  "audit_e3_resume_early": "Возобновить раньше →"
+}

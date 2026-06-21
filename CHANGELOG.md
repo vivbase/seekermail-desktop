@@ -23,6 +23,22 @@ network_error`, 0 mails) even with a configured account.
 
 ### Added
 
+- **feat(i18n): ship all 21 locales — the UI is now fully localized (10 §2).** Previously only
+  `en` resources existed, so every non-English locale fell back to English (the "English-only,
+  1 of 21" gap from knowledge base `docs/analysis/37`). This adds `src/i18n/resources/<locale>/`
+  for the other **20 locales** (`zh-CN zh-TW ja ko vi ar es pt fr de he hi bn ur it nl pl ru tr sv`),
+  each mirroring all **20 namespaces** = **1,261 keys/locale** (25,220 translated strings). `index.ts`
+  now assembles the resource tree from **`import.meta.glob('./resources/*/*.json', { eager: true })`**
+  instead of hard-coding `en`, so the app bundles every locale (offline / local-first — no network
+  backend, consistent with the unused `i18next-http-backend` seam) and adding a locale is just dropping
+  its folder in. Switching language now renders translated copy and flips `dir`/`script` (RTL for
+  `ar`/`he`/`ur`) via the existing `applyLocale`. ICU MessageFormat plural branches use each language's
+  CLDR categories (e.g. `one/few/many/other` for `ru`/`pl`; `zero…other` for `ar`; `other`-only for
+  `zh`/`ja`/`ko`/`vi`), `{…}` placeholders and product names (SeekerMail, GTE, Agent-IM, AI, …) are
+  preserved, and every locale was validated for key-parity, placeholder-parity and ICU well-formedness
+  against `en` (`tsc --noEmit` + the i18n vitest suite pass). Note: these are high-quality machine
+  translations that still need **native-speaker QA** before each locale is marked release-ready per
+  `docs/dev/10 §9`. Closes ENG-02 (`docs/analysis/38`).
 - **feat(settings): surface the global AI master switch (F5 §4.5).** Settings → AI Providers
   gains an **AI Master Switch** that disables every AI capability across all accounts for
   **24 hours / 48 hours / indefinitely**, or resumes it immediately. It drives the dedicated

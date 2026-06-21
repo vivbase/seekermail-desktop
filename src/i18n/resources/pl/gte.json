@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "Panel",
+  "title": "Indeks wiedzy GTE",
+  "sub": "1 842 wiadomości zindeksowanych · ostatnia synchronizacja 2 min temu",
+  "status_engine": "Silnik aktywny",
+  "status_index": "Indeks {version}",
+  "status_syncing": "{count, plural, one {# konto synchronizowane} few {# konta synchronizowane} many {# kont synchronizowanych} other {# konta synchronizowanego}}",
+  "total_vectors": "Łącznie wektorów: {n}",
+  "search_ph": "Wyszukiwanie semantyczne we wszystkich zindeksowanych e-mailach…",
+  "card_accounts": "Podział według konta",
+  "card_topics": "Główne tematy",
+  "view": "Wyświetl →",
+  "results_recent": "Ostatnie wpisy wiedzy",
+  "results_query": "Wyniki wyszukiwania dla „{query}”",
+  "searching": "Wyszukiwanie…",
+  "rel_high": "Wysokie dopasowanie",
+  "rel_mid": "Średnie dopasowanie",
+  "rel_low": "Niskie dopasowanie",
+  "no_results": "Brak wyników dla „{query}”"
+}

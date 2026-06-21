@@ -1,0 +1,23 @@
+{
+  "title": "Panel",
+  "stat_pending_lbl": "Oczekujące",
+  "stat_pending_sub": "wymaga decyzji",
+  "stat_unread_lbl": "Nieprzeczytane",
+  "stat_unread_sub": "{count, plural, =0 {wszystko przeczytane} one {z # konta} few {z # kont} many {z # kont} other {z # konta}}",
+  "stat_total_lbl": "Łącznie",
+  "stat_total_sub": "{count, plural, one {z # konta} few {z # kont} many {z # kont} other {z # konta}}",
+  "stat_processed_lbl": "Przetworzone dziś",
+  "stat_processed_sub": "przez pracowników AI",
+  "stat_view_all": "Zobacz wszystkie →",
+  "stat_view_log": "Zobacz dziennik →",
+  "cold_title": "Pierwsze kroki",
+  "cold_dismiss": "Odrzuć",
+  "cold_note": "Twoje AI wciąż uczy się Twojego stylu — przez pierwsze dwa tygodnie zobaczysz, jak stopniowo przejmuje kolejne zadania. Ukończenie tych kroków przyspiesza ten proces.",
+  "cold_task_connect": "Podłącz pierwsze konto",
+  "cold_task_drafts": "Sprawdź 5 wersji roboczych AI, aby skalibrować styl pisania",
+  "cold_task_contacts": "Odpowiedz do 3 częstych kontaktów, aby zbudować listę zaufanych nadawców",
+  "cold_task_search": "Wypróbuj jedno semantyczne wyszukiwanie w poczcie",
+  "cold_progress": "Rampa zaufania — pełna automatyzacja odblokuje się w miarę zatwierdzania kolejnych wersji roboczych",
+  "report_link": "Zobacz dzienny raport →",
+  "hint": "Kliknij dowolną kartę powyżej, aby odkrywać"
+}

@@ -1,0 +1,23 @@
+{
+  "title": "לוח בקרה",
+  "stat_pending_lbl": "ממתינים",
+  "stat_pending_sub": "דורש החלטה",
+  "stat_unread_lbl": "לא נקראו",
+  "stat_unread_sub": "{count, plural, =0 {הכול מטופל} one {בחשבון אחד} two {ב-# חשבונות} many {ב-# חשבונות} other {ב-# חשבונות}}",
+  "stat_total_lbl": "סך הכול",
+  "stat_total_sub": "{count, plural, one {בחשבון אחד} two {ב-# חשבונות} many {ב-# חשבונות} other {ב-# חשבונות}}",
+  "stat_processed_lbl": "טופלו היום",
+  "stat_processed_sub": "על ידי עובדי AI",
+  "stat_view_all": "הצג הכול →",
+  "stat_view_log": "הצג יומן →",
+  "cold_title": "תחילת העבודה",
+  "cold_dismiss": "התעלם",
+  "cold_note": "ה-AI שלך עדיין לומד את הסגנון שלך — במהלך השבועיים הראשונים תראה אותו משתלט שלב אחר שלב. השלמת אלה תאיץ זאת.",
+  "cold_task_connect": "חבר את החשבון הראשון שלך",
+  "cold_task_drafts": "בדוק 5 טיוטות AI כדי לכייל את סגנון הכתיבה שלך",
+  "cold_task_contacts": "השב ל-3 אנשי קשר תכופים כדי לזרוע את רשימת השולחים המהימנים שלך",
+  "cold_task_search": "נסה חיפוש סמנטי אחד בכל הדואר שלך",
+  "cold_progress": "מדרג אמון — אוטומציה מלאה נפתחת ככל שאתה בודק יותר טיוטות",
+  "report_link": "הצג דוח יומי →",
+  "hint": "לחץ על כל כרטיס למעלה כדי לחקור"
+}

@@ -1,0 +1,20 @@
+{
+  "back_dashboard": "Kontrol Paneli",
+  "title": "GTE Bilgi İndeksi",
+  "sub": "1.842 mesaj indekslendi · son senkronizasyon 2 dk önce",
+  "status_engine": "Motor Etkin",
+  "status_index": "İndeks {version}",
+  "status_syncing": "{count, plural, one {# hesap senkronize ediliyor} other {# hesap senkronize ediliyor}}",
+  "total_vectors": "Toplam vektör: {n}",
+  "search_ph": "Tüm indekslenmiş e-postalarda semantik arama…",
+  "card_accounts": "Hesap Dağılımı",
+  "card_topics": "Öne Çıkan Konular",
+  "view": "Görüntüle →",
+  "results_recent": "Son Bilgi Girdileri",
+  "results_query": "\"{query}\" için arama sonuçları",
+  "searching": "Aranıyor…",
+  "rel_high": "Yüksek eşleşme",
+  "rel_mid": "Orta eşleşme",
+  "rel_low": "Düşük eşleşme",
+  "no_results": "\"{query}\" için sonuç bulunamadı"
+}
