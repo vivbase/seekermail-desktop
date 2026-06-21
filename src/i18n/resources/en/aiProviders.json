@@ -105,5 +105,15 @@
   "ai_automation_e3_desc": "AI sends replies automatically.",
   "ai_automation_e3_confirm_title": "Enable Full Auto Mode?",
   "ai_automation_e3_confirm": "Full Auto mode will send emails without your review for this account.",
-  "ai_automation_e3_confirm_btn": "Enable Full Auto"
+  "ai_automation_e3_confirm_btn": "Enable Full Auto",
+  "ai_master_switch_label": "AI Master Switch",
+  "ai_master_switch_desc": "Temporarily disable every AI capability across all accounts. While disabled, no provider is ever called — drafting, analysis, sensitivity checks, and auto-send all pause until you turn AI back on.",
+  "ai_master_switch_active": "AI is active across all accounts",
+  "ai_master_switch_pause_24h": "Pause for 24 hours",
+  "ai_master_switch_pause_48h": "Pause for 48 hours",
+  "ai_master_switch_disable_permanent": "Disable indefinitely",
+  "ai_master_switch_paused_hours": "AI paused — about {hours, plural, one {# hour} other {# hours}} left",
+  "ai_master_switch_disabled_permanent": "AI is disabled indefinitely",
+  "ai_master_switch_resume": "Resume AI now",
+  "ai_master_switch_working": "Working…"
 }

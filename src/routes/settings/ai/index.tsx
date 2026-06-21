@@ -12,6 +12,7 @@ import { useAccounts } from "@/ipc/queries/accounts";
 import { useConfiguredProviders } from "@/ipc/queries/aiProviders";
 import AddCloudProviderSheet, { cloudTypeFor } from "./AddCloudProviderSheet";
 import AddLocalProviderSheet from "./AddLocalProviderSheet";
+import AiMasterSwitchSection from "./AiMasterSwitchSection";
 import AuthLevelSection from "./AuthLevelSection";
 import ProviderListItem from "./ProviderListItem";
 
@@ -119,6 +120,9 @@ export default function AiProvidersPage() {
 
       {/* Per-account authorization levels (T086, F_E3 §4.1) */}
       <AuthLevelSection />
+
+      {/* Global AI master switch (T067, F_F5 §4.5) — app-wide kill switch */}
+      <AiMasterSwitchSection />
 
       {sheet?.kind === "cloud" && (
         <AddCloudProviderSheet

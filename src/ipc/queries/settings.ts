@@ -113,6 +113,60 @@ export function useSetE3PausedUntil() {
   });
 }
 
+// ── Global AI master switch (T067, F_F5 §4.5) ─────────────────────────────────
+
+/**
+ * `app_settings` key honored by the F5 fallback router (commands::ai
+ * ::set_ai_disabled): while the stored unix timestamp is in the future, EVERY
+ * AI call is downgraded with reason `user_disabled`. Distinct from the E3 pause
+ * above — that only demotes full-auto send; this disables all AI capabilities.
+ */
+export const AI_DISABLE_UNTIL_KEY = "ai.disable_until";
+
+/** Preset disable windows (F_F5 §4.5: 24 h / 48 h / permanent). */
+export const AI_DISABLE_24H_SECS = 24 * 3600;
+export const AI_DISABLE_48H_SECS = 48 * 3600;
+
+/**
+ * "Permanent" is modeled as a far-future deadline (2100-01-01 UTC) rather than a
+ * separate flag, so the existing timestamp reader needs no new shape. Any
+ * deadline at or beyond {@link AI_DISABLE_PERMANENT_MIN} is shown as permanent
+ * instead of a countdown.
+ */
+export const AI_DISABLE_PERMANENT_UNTIL = 4_102_444_800;
+export const AI_DISABLE_PERMANENT_MIN = 4_000_000_000;
+
+/** True when a deadline represents the "permanent" choice, not a timed window. */
+export function isPermanentDisable(untilUnix: number): boolean {
+  return untilUnix >= AI_DISABLE_PERMANENT_MIN;
+}
+
+/**
+ * The global AI-disable deadline (unix seconds; 0 = AI active). Refetches once a
+ * minute so the settings status and its countdown stay roughly current.
+ */
+export function useAiDisabledUntil() {
+  return useQuery({
+    queryKey: settingKeys.detail(AI_DISABLE_UNTIL_KEY),
+    queryFn: async () => parseUnixSetting(await ipc("get_setting", { key: AI_DISABLE_UNTIL_KEY })),
+    refetchInterval: 60_000,
+  });
+}
+
+/**
+ * Set or clear the global AI-disable deadline through the dedicated F5 command
+ * (`set_ai_disabled`): pass a unix-seconds deadline to disable, or `null` to
+ * restore AI immediately.
+ */
+export function useSetAiDisabled() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (untilUnix: number | null) => ipc("set_ai_disabled", { until: untilUnix }),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: settingKeys.detail(AI_DISABLE_UNTIL_KEY) }),
+  });
+}
+
 // ── Theme (T050) ──────────────────────────────────────────────────────────────
 
 /** The persisted theme preference; defaults to "system" until set. */
