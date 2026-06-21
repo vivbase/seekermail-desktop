@@ -27,12 +27,7 @@ const MODEL_REPO = "BAAI/bge-m3";
 // loads the data file by the basename referenced inside model.onnx, so it must sit
 // next to model.onnx in resources/. (Fetching only the graph yields a model that
 // fails to load at inference time.)
-const ASSETS = [
-  "onnx/model.onnx",
-  "onnx/model.onnx_data",
-  "tokenizer.json",
-  "config.json",
-];
+const ASSETS = ["onnx/model.onnx", "onnx/model.onnx_data", "tokenizer.json", "config.json"];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RESOURCES_DIR = path.resolve(__dirname, "../src-tauri/resources");

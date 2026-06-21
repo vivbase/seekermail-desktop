@@ -97,7 +97,9 @@ export default function ChannelTopbar({
               ))}
             </span>
           )}
-          <span className="font-ui text-xs uppercase tracking-wider text-p9">{t("team_members")}</span>
+          <span className="font-ui text-xs uppercase tracking-wider text-p9">
+            {t("team_members")}
+          </span>
         </button>
       </div>
     </header>

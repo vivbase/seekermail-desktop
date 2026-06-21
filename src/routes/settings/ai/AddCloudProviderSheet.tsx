@@ -1,7 +1,9 @@
 // Cloud-provider add/edit wizard (T068, F_F1 §3–§4.4). A side sheet with a
-// four-step flow: type → credentials → connection test → model + accounts.
+// three-step flow: type → credentials → model + accounts. Clicking Continue on
+// the credentials step runs the connection probe inline and only advances when
+// the provider verifies, so there is no separate manual "test" step.
 // Completed steps stay mounted so earlier fields remain editable; changing any
-// connection field invalidates a previous test result.
+// connection field invalidates a previous test result and snaps back to credentials.
 //
 // Key protection (ADR-0004, F_F1 §4.2): the API key lives only in local form
 // state on its way to `update_account_ai_settings` (which writes it to the
@@ -242,10 +244,11 @@ export default function AddCloudProviderSheet({
   const baseUrlRequired = CLOUD_PRESETS[cloudType].baseUrlRequired;
   const verified = verify.data?.ok === true;
 
-  /** Any change to the connection inputs invalidates an earlier test result. */
+  /** Any change to the connection inputs invalidates an earlier test result and
+   *  snaps back to the credentials step so the probe re-runs on the next Continue. */
   const onConnectionFieldChange = () => {
     if (verify.data || verify.isError) verify.reset();
-    if (step > 3) setStep(3);
+    if (step > 2) setStep(2);
   };
 
   /** Switching provider type prefills the vendor's base URL and resets the
@@ -320,13 +323,28 @@ export default function AddCloudProviderSheet({
     return true;
   };
 
-  const runTest = () => {
-    verify.mutate({
-      provider: wireProviderFor(cloudType),
-      model: model.trim(),
-      apiKey: apiKey.trim() || null,
-      baseUrl: baseUrl.trim() || null,
-    });
+  /** Advance the wizard. On the credentials step (2) this validates the inputs,
+   *  runs the connection probe inline, and only advances once the provider
+   *  verifies — folding the old manual "Test connection" button into Continue.
+   *  A failed probe keeps the user on the credentials step with an inline reason. */
+  const handleContinue = async () => {
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
+    if (!validateDetails()) return;
+    try {
+      const result = await verify.mutateAsync({
+        provider: wireProviderFor(cloudType),
+        model: model.trim(),
+        apiKey: apiKey.trim() || null,
+        baseUrl: baseUrl.trim() || null,
+      });
+      if (result.ok) setStep(3);
+    } catch {
+      // The verify hook resolves failures in-band (ok:false); a thrown error is
+      // unexpected transport trouble and surfaces via `verify.isError` below.
+    }
   };
 
   const toggleAccount = (id: string) => {
@@ -372,8 +390,11 @@ export default function AddCloudProviderSheet({
     }
   };
 
-  const failure =
-    verify.data && !verify.data.ok ? verifyFailureKey(verify.data.errorMessage) : null;
+  const failure: { key: string; values?: { message: string } } | null = verify.isError
+    ? { key: "ai_test_fail_generic", values: { message: "" } }
+    : verify.data && !verify.data.ok
+      ? verifyFailureKey(verify.data.errorMessage)
+      : null;
 
   return (
     <div
@@ -510,43 +531,16 @@ export default function AddCloudProviderSheet({
           </fieldset>
         )}
 
-        {/* Step 3 — connection test */}
+        {/* Step 3 — model confirmation + accounts (reached only once verified) */}
         {step >= 3 && (
-          <div className="mt-5">
-            <p className="section-label">{t("ai_test_step_label")}</p>
-            <div className="mt-2 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={runTest}
-                disabled={verify.isPending}
-                className="rounded-chip border border-divider px-3 py-1.5 font-ui text-xs uppercase tracking-wider text-p9 transition-colors hover:bg-p4 disabled:opacity-40"
-              >
-                {t("ai_test_connection")}
-              </button>
-              {verify.isPending && (
-                <p role="status" className="font-body text-sm text-p8">
-                  {t("ai_test_running")}
-                </p>
-              )}
-              {verified && (
-                <p role="status" className="font-body text-sm text-green">
-                  ✓ {t("ai_test_success")}
-                  {verify.data?.modelName ? ` — ${verify.data.modelName}` : ""}
-                </p>
-              )}
-            </div>
-            {failure && (
-              <p role="alert" className="mt-2 font-body text-sm text-red">
-                {t(failure.key, failure.values)}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Step 4 — model confirmation + accounts */}
-        {step >= 4 && (
           <fieldset className="mt-5">
             <legend className="section-label">{t("ai_select_models")}</legend>
+            {verified && (
+              <p role="status" className="mt-2 font-body text-sm text-green">
+                ✓ {t("ai_test_success")}
+                {verify.data?.modelName ? ` — ${verify.data.modelName}` : ""}
+              </p>
+            )}
             <p className="mt-2 font-body text-sm text-p9">
               {t("ai_model_label")}: <span className="font-mono text-p10">{model}</span>
             </p>
@@ -578,6 +572,18 @@ export default function AddCloudProviderSheet({
           </p>
         )}
 
+        {/* Inline connection-probe status for the Continue-driven test (step 2). */}
+        {verify.isPending && (
+          <p role="status" className="mt-3 font-body text-sm text-p8">
+            {t("ai_test_running")}
+          </p>
+        )}
+        {failure && (
+          <p role="alert" className="mt-3 font-body text-sm text-red">
+            {t(failure.key, failure.values)}
+          </p>
+        )}
+
         {/* Wizard navigation */}
         <div className="mt-6 flex justify-end gap-2">
           <button
@@ -596,20 +602,17 @@ export default function AddCloudProviderSheet({
               {t("ai_step_back")}
             </button>
           )}
-          {step < 4 && (
+          {step < 3 && (
             <button
               type="button"
-              disabled={step === 3 && !verified}
-              onClick={() => {
-                if (step === 2 && !validateDetails()) return;
-                setStep(step + 1);
-              }}
+              disabled={step === 2 && verify.isPending}
+              onClick={() => void handleContinue()}
               className="rounded-chip bg-p9 px-3 py-1.5 font-ui text-xs uppercase tracking-wider text-white transition-colors hover:bg-p10 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {t("ai_step_next")}
             </button>
           )}
-          {step === 4 && (
+          {step === 3 && (
             <button
               type="button"
               onClick={() => void save()}

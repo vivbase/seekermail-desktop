@@ -279,15 +279,38 @@ impl<'a> AccountRepo<'a> {
     /// Delete an account row. `ON DELETE CASCADE` removes threads/mails/etc. The
     /// "last account" guard lives in the service, above this call.
     pub async fn delete(&self, id: &str) -> AppResult<()> {
-        let res = sqlx::query("DELETE FROM accounts WHERE id = ?")
-            .bind(id)
-            .execute(self.db.pool())
-            .await
-            .map_err(map_sqlx_err)?;
-        if res.rows_affected() == 0 {
+        let affected = match self.exec_delete(id).await {
+            Ok(rows) => rows,
+            Err(_first) => {
+                // A corrupt FTS shadow index (`SQLITE_CORRUPT_VTAB`, code 267) makes
+                // the cascading `DELETE` on `mails` fail with "database disk image is
+                // malformed". The cheap startup `'integrity-check'` can pass while
+                // this delete-trigger path still fails, so a plain heal is not
+                // enough here — force a full FTS rebuild (escalating to drop+recreate)
+                // and retry once, so removing an account can never be permanently
+                // blocked by a derived-index corruption.
+                tracing::warn!(
+                    account_id = id,
+                    "account delete failed; repairing FTS and retrying"
+                );
+                self.db.repair_fts_indexes_forced().await?;
+                self.exec_delete(id).await.map_err(map_sqlx_err)?
+            }
+        };
+        if affected == 0 {
             return Err(AppError::NotFound);
         }
         Ok(())
+    }
+
+    /// One `DELETE FROM accounts` attempt; returns the rows affected so [`Self::delete`]
+    /// can distinguish "not found" (0 rows) from a DB error worth healing + retrying.
+    async fn exec_delete(&self, id: &str) -> Result<u64, sqlx::Error> {
+        let res = sqlx::query("DELETE FROM accounts WHERE id = ?")
+            .bind(id)
+            .execute(self.db.pool())
+            .await?;
+        Ok(res.rows_affected())
     }
 
     /// Promote one account to primary in a single transaction (T091, F_I1 §4):
@@ -549,6 +572,69 @@ mod tests {
                 .await
                 .unwrap();
         assert_eq!(sc, 0, "sync_state cascaded away");
+    }
+
+    #[tokio::test]
+    async fn delete_recovers_from_corrupt_attachments_fts() {
+        // Regression for the "can't remove mailbox" bug: a corrupt FTS5 shadow
+        // index makes the cascading account delete fail with "database disk image
+        // is malformed" (SQLITE_CORRUPT_VTAB, code 267). The corruption can pass
+        // `PRAGMA integrity_check` yet still abort the delete-trigger write, so the
+        // delete must FORCE an FTS rebuild (not gate it on the integrity check that
+        // misses this) and retry. We reproduce the exact real-world profile by
+        // corrupting the FTS5 structure record (rowid 1 of the shadow `_data` table).
+        let db = db().await;
+        let repo = AccountRepo::new(&db);
+        repo.create(&sample("a1", "a@x.com")).await.unwrap();
+
+        // A mail with an indexed attachment, so `attachments_fts` has content and
+        // the account-delete cascade fires `attachments_fts_after_delete`.
+        sqlx::query(
+            "INSERT INTO mails (id, account_id, message_id, from_email, to_addrs, date_sent, \
+             date_received, body_text, created_at, updated_at) \
+             VALUES ('m1','a1','<1@x>','s@x.y','[]',1,1,'see attached',0,0)",
+        )
+        .execute(db.pool())
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO attachments (id, mail_id, account_id, filename, content_type, \
+             size_bytes, created_at) \
+             VALUES ('at1','m1','a1','invoice.pdf','application/pdf',1024,0)",
+        )
+        .execute(db.pool())
+        .await
+        .unwrap();
+        // Fire the index trigger so the attachment lands in `attachments_fts`.
+        sqlx::query(
+            "UPDATE attachments SET extraction_status='indexed', \
+             extracted_text='quarterly budget invoice totals enclosed' WHERE id='at1'",
+        )
+        .execute(db.pool())
+        .await
+        .unwrap();
+
+        // Corrupt the FTS5 structure record. This mirrors the real failure: a write
+        // that fires the FTS delete trigger now hits a malformed shadow page.
+        sqlx::query(
+            "UPDATE attachments_fts_data SET block = randomblob(length(block)) WHERE id = 1",
+        )
+        .execute(db.pool())
+        .await
+        .unwrap();
+        // The cheap check the old self-heal relied on stays clean — which is exactly
+        // why removing the mailbox was permanently blocked before the fix.
+        let (chk,): (String,) = sqlx::query_as("PRAGMA integrity_check")
+            .fetch_one(db.pool())
+            .await
+            .unwrap();
+        assert_eq!(chk, "ok", "integrity_check is blind to this FTS corruption");
+
+        // The fix: the delete forces a full FTS rebuild and then succeeds.
+        repo.delete("a1")
+            .await
+            .expect("delete recovers from corrupt attachments_fts");
+        assert!(matches!(repo.get("a1").await, Err(AppError::NotFound)));
     }
 
     #[tokio::test]

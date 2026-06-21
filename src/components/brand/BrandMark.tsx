@@ -46,10 +46,26 @@ export default function BrandMark({ size = 40, title, className }: BrandMarkProp
       <circle cx="50" cy="50" r="41.5" stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
 
       {/* Cardinal sparkles — alternating terra / amber */}
-      <path d="M24,25 L25.2,26.8 L27,28 L25.2,29.2 L24,31 L22.8,29.2 L21,28 L22.8,26.8 Z" style={TERRA} opacity="0.85" />
-      <path d="M78,29.6 L78.96,31.04 L80.4,32 L78.96,32.96 L78,34.4 L77.04,32.96 L75.6,32 L77.04,31.04 Z" style={AMBER} opacity="0.85" />
-      <path d="M72,66 L72.8,67.2 L74,68 L72.8,68.8 L72,70 L71.2,68.8 L70,68 L71.2,67.2 Z" style={TERRA} opacity="0.85" />
-      <path d="M28,61.6 L28.96,63.04 L30.4,64 L28.96,64.96 L28,66.4 L27.04,64.96 L25.6,64 L27.04,63.04 Z" style={AMBER} opacity="0.85" />
+      <path
+        d="M24,25 L25.2,26.8 L27,28 L25.2,29.2 L24,31 L22.8,29.2 L21,28 L22.8,26.8 Z"
+        style={TERRA}
+        opacity="0.85"
+      />
+      <path
+        d="M78,29.6 L78.96,31.04 L80.4,32 L78.96,32.96 L78,34.4 L77.04,32.96 L75.6,32 L77.04,31.04 Z"
+        style={AMBER}
+        opacity="0.85"
+      />
+      <path
+        d="M72,66 L72.8,67.2 L74,68 L72.8,68.8 L72,70 L71.2,68.8 L70,68 L71.2,67.2 Z"
+        style={TERRA}
+        opacity="0.85"
+      />
+      <path
+        d="M28,61.6 L28.96,63.04 L30.4,64 L28.96,64.96 L28,66.4 L27.04,64.96 L25.6,64 L27.04,63.04 Z"
+        style={AMBER}
+        opacity="0.85"
+      />
 
       {/* Exhaust flame */}
       <path d="M45,70 C46,80 50,90 50,90 C50,90 54,80 55,70 Z" style={AMBER} />
@@ -68,7 +84,15 @@ export default function BrandMark({ size = 40, title, className }: BrandMarkProp
       <circle cx="50" cy="42" r="2.6" style={SLATE} />
 
       {/* Hull divider */}
-      <line x1="38.5" y1="54" x2="61.5" y2="54" stroke="currentColor" strokeWidth="1.4" opacity="0.6" />
+      <line
+        x1="38.5"
+        y1="54"
+        x2="61.5"
+        y2="54"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        opacity="0.6"
+      />
     </svg>
   );
 }

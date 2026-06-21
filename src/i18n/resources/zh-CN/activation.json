@@ -16,14 +16,13 @@
   "ready_eyebrow": "AI 已连接",
   "ready_title": "从半自动开始",
   "ready_body": "选择智能体可以自主完成多少工作。我们建议从半自动开始:智能体起草每一封回复,但在你批准之前不会发送任何邮件。你在逐步建立信任的同时始终掌握主动权,随时可以在设置中更改。",
-  "mode_full": "全自动",
-  "mode_full_desc": "智能体自行发送回复,无需审核。",
+  "mode_group_label": "AI 回复模式",
   "mode_semi": "半自动",
   "mode_semi_desc": "智能体起草,发送前由你批准。",
   "mode_semi_badge": "推荐",
   "mode_manual": "仅手动",
   "mode_manual_desc": "智能体仅提供建议——由你撰写并发送。",
-  "cta_activate_semi": "以半自动激活",
+  "cta_activate": "以{mode}激活",
   "cta_choose_later": "稍后再选",
   "activating": "正在激活…"
 }

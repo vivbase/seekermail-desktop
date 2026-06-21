@@ -1,8 +1,10 @@
-// Local-provider add/edit wizard (T068, F_F2 §3–§4.3). Four-step flow:
+// Local-provider add/edit wizard (T068, F_F2 §3–§4.3). Three-step flow:
 // discover (auto-scan + manual URL) → model list (size / quantization
-// metadata, multi-select) → connection test → accounts + save. Local
-// providers hold no credentials: nothing here ever touches the key path, and
-// mail content never leaves the device (dev/06 §1, ADR-0004).
+// metadata, multi-select) → accounts + save. Clicking Continue on the model
+// step runs the connection probe inline and only advances once it verifies, so
+// there is no separate manual "test" step. Local providers hold no credentials:
+// nothing here ever touches the key path, and mail content never leaves the
+// device (dev/06 §1, ADR-0004).
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Account } from "@shared/bindings";
@@ -70,8 +72,11 @@ export default function AddLocalProviderSheet({
   // First selected model is the account default (F_F2 §4.4 hint in the UI).
   const primaryModel = selectedModels[0] ?? "";
   const verified = verify.data?.ok === true;
-  const failure =
-    verify.data && !verify.data.ok ? verifyFailureKey(verify.data.errorMessage) : null;
+  const failure: { key: string; values?: { message: string } } | null = verify.isError
+    ? { key: "ai_test_fail_generic", values: { message: "" } }
+    : verify.data && !verify.data.ok
+      ? verifyFailureKey(verify.data.errorMessage)
+      : null;
 
   /** A new endpoint invalidates the model list and any test result. */
   const chooseEndpoint = (url: string) => {
@@ -97,18 +102,38 @@ export default function AddLocalProviderSheet({
 
   const toggleModel = (name: string) => {
     verify.reset();
+    if (step > 2) setStep(2);
     setSelectedModels((prev) =>
       prev.includes(name) ? prev.filter((m) => m !== name) : [...prev, name],
     );
   };
 
-  const runTest = () => {
-    verify.mutate({
-      provider: "ollama",
-      model: primaryModel,
-      apiKey: null,
-      baseUrl: baseUrl.trim() || null,
-    });
+  /** Advance the wizard. On the model step (2) this requires a model, runs the
+   *  connection probe inline, and only advances once the endpoint verifies —
+   *  folding the old manual "Test connection" button into Continue. A failed
+   *  probe keeps the user on the model step with an inline reason. */
+  const handleContinue = async () => {
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
+    if (selectedModels.length === 0) {
+      setFieldError(t("ai_local_model_required"));
+      return;
+    }
+    setFieldError(null);
+    try {
+      const result = await verify.mutateAsync({
+        provider: "ollama",
+        model: primaryModel,
+        apiKey: null,
+        baseUrl: baseUrl.trim() || null,
+      });
+      if (result.ok) setStep(3);
+    } catch {
+      // The verify hook resolves failures in-band (ok:false); a thrown error is
+      // unexpected transport trouble and surfaces via `failure` below.
+    }
   };
 
   const toggleAccount = (id: string) => {
@@ -309,43 +334,16 @@ export default function AddLocalProviderSheet({
           </div>
         )}
 
-        {/* Step 3 — connection test */}
+        {/* Step 3 — accounts (reached only once the endpoint verifies) */}
         {step >= 3 && (
-          <div className="mt-5">
-            <p className="section-label">{t("ai_test_step_label")}</p>
-            <div className="mt-2 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={runTest}
-                disabled={verify.isPending || !primaryModel}
-                className="rounded-chip border border-divider px-3 py-1.5 font-ui text-xs uppercase tracking-wider text-p9 transition-colors hover:bg-p4 disabled:opacity-40"
-              >
-                {t("ai_test_connection")}
-              </button>
-              {verify.isPending && (
-                <p role="status" className="font-body text-sm text-p8">
-                  {t("ai_test_running")}
-                </p>
-              )}
-              {verified && (
-                <p role="status" className="font-body text-sm text-green">
-                  ✓ {t("ai_test_success")}
-                  {verify.data?.modelName ? ` — ${verify.data.modelName}` : ""}
-                </p>
-              )}
-            </div>
-            {failure && (
-              <p role="alert" className="mt-2 font-body text-sm text-red">
-                {t(failure.key, failure.values)}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Step 4 — accounts */}
-        {step >= 4 && (
           <fieldset className="mt-5">
             <legend className="section-label">{t("ai_accounts_label")}</legend>
+            {verified && (
+              <p role="status" className="mt-2 font-body text-sm text-green">
+                ✓ {t("ai_test_success")}
+                {verify.data?.modelName ? ` — ${verify.data.modelName}` : ""}
+              </p>
+            )}
             <div className="mt-2 space-y-1">
               {accounts.map((account) => (
                 <label key={account.id} className="flex items-center gap-2 py-1">
@@ -373,6 +371,18 @@ export default function AddLocalProviderSheet({
           </p>
         )}
 
+        {/* Inline connection-probe status for the Continue-driven test (step 2). */}
+        {verify.isPending && (
+          <p role="status" className="mt-3 font-body text-sm text-p8">
+            {t("ai_test_running")}
+          </p>
+        )}
+        {failure && (
+          <p role="alert" className="mt-3 font-body text-sm text-red">
+            {t(failure.key, failure.values)}
+          </p>
+        )}
+
         {/* Wizard navigation */}
         <div className="mt-6 flex justify-end gap-2">
           <button
@@ -391,28 +401,20 @@ export default function AddLocalProviderSheet({
               {t("ai_step_back")}
             </button>
           )}
-          {step < 4 && (
+          {step < 3 && (
             <button
               type="button"
               disabled={
                 (step === 1 && !baseUrl) ||
-                (step === 2 && selectedModels.length === 0) ||
-                (step === 3 && !verified)
+                (step === 2 && (verify.isPending || selectedModels.length === 0))
               }
-              onClick={() => {
-                if (step === 2 && selectedModels.length === 0) {
-                  setFieldError(t("ai_local_model_required"));
-                  return;
-                }
-                setFieldError(null);
-                setStep(step + 1);
-              }}
+              onClick={() => void handleContinue()}
               className="rounded-chip bg-p9 px-3 py-1.5 font-ui text-xs uppercase tracking-wider text-white transition-colors hover:bg-p10 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {t("ai_step_next")}
             </button>
           )}
-          {step === 4 && (
+          {step === 3 && (
             <button
               type="button"
               onClick={() => void save()}

@@ -16,14 +16,13 @@
   "ready_eyebrow": "AI connected",
   "ready_title": "Start in Semi-Auto",
   "ready_body": "Choose how much your agents can do on their own. We recommend starting in Semi-Auto: your agent drafts every reply, but nothing sends until you approve it. You stay in control while you learn to trust it, and you can change this any time in Settings.",
-  "mode_full": "Full Auto",
-  "mode_full_desc": "Agent sends replies on its own, no review.",
+  "mode_group_label": "AI Reply Mode",
   "mode_semi": "Semi-Auto",
   "mode_semi_desc": "Agent drafts, you approve before anything sends.",
   "mode_semi_badge": "Recommended",
   "mode_manual": "Manual Only",
   "mode_manual_desc": "Agent suggests only — you write and send.",
-  "cta_activate_semi": "Activate in Semi-Auto",
+  "cta_activate": "Activate in {mode}",
   "cta_choose_later": "I'll choose later",
   "activating": "Activating…"
 }

@@ -126,7 +126,11 @@ export default function Dashboard() {
       >
         <div className="pg-title">{t("title")}</div>
         <div className="lang-picker-wrap">
-          <button className="lang-btn" onClick={() => setLangOpen((o) => !o)} aria-label="Change language">
+          <button
+            className="lang-btn"
+            onClick={() => setLangOpen((o) => !o)}
+            aria-label="Change language"
+          >
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
               <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.2" />
               <path
@@ -138,17 +142,22 @@ export default function Dashboard() {
             </svg>
             <span>{current.label}</span>
             <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-              <path d="M1.5 2.5l2.5 3 2.5-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <path
+                d="M1.5 2.5l2.5 3 2.5-3"
+                stroke="currentColor"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
-          <div className={`lang-dropdown${langOpen ? " open" : ""}`}>
+          <div className={`lang-dropdown${langOpen ? "open" : ""}`}>
             {LANG_GROUPS.map((g) => (
               <div key={g.hdr}>
                 <div className="lang-group-hdr">{g.hdr}</div>
                 {g.opts.map((o) => (
                   <div
                     key={o.code}
-                    className={`lang-opt${o.code === i18n.language ? " active" : ""}`}
+                    className={`lang-opt${o.code === i18n.language ? "active" : ""}`}
                     onClick={() => setLang(o.code)}
                   >
                     <span className="lang-opt-name">{o.name}</span>

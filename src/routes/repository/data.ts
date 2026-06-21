@@ -43,7 +43,11 @@ export const KNOWLEDGE: KnowledgeItem[] = [
       "AI identified non-compete clause as exceeding standard scope; drafted negotiation reply recommending rejection",
     lastUsedEmail: "Q3 Contract Renewal",
     lastUsedTime: "Today 09:31",
-    meta: { source: "boss@corp.com", thread: "Q3 Service Contract Renewal", indexed: "Today 09:14" },
+    meta: {
+      source: "boss@corp.com",
+      thread: "Q3 Service Contract Renewal",
+      indexed: "Today 09:14",
+    },
   },
   {
     id: 2,
@@ -62,7 +66,11 @@ export const KNOWLEDGE: KnowledgeItem[] = [
       "Detected @vendor.io ≠ @vendor.com — triggered T4 risk alert and paused automatic processing",
     lastUsedEmail: "Payment Request #4471",
     lastUsedTime: "Today 10:22",
-    meta: { source: "ap@vendor.com", thread: "Payment Confirmation Thread", indexed: "Today 10:22" },
+    meta: {
+      source: "ap@vendor.com",
+      thread: "Payment Confirmation Thread",
+      indexed: "Today 10:22",
+    },
   },
   {
     id: 3,
@@ -119,7 +127,11 @@ export const KNOWLEDGE: KnowledgeItem[] = [
       "AI generated a structured compliance progress reply when processing annual compliance reminder email",
     lastUsedEmail: "Annual Compliance Reminder",
     lastUsedTime: "Yesterday 14:20",
-    meta: { source: "compliance@internal", thread: "Annual Compliance Plan", indexed: "2026-04-01" },
+    meta: {
+      source: "compliance@internal",
+      thread: "Annual Compliance Plan",
+      indexed: "2026-04-01",
+    },
   },
   {
     id: 6,
@@ -173,7 +185,8 @@ export const KNOWLEDGE: KnowledgeItem[] = [
     date: "2026-04-05",
     usedCount: 1,
     impact: "context",
-    lastUsedFor: "Provided background on Q2 vendor selection decision to support new procurement RFQ",
+    lastUsedFor:
+      "Provided background on Q2 vendor selection decision to support new procurement RFQ",
     lastUsedEmail: "Q2 Procurement Planning",
     lastUsedTime: "3 days ago",
     meta: { source: "personal@me.com", thread: "Meeting Minutes Archive", indexed: "2026-04-05" },
@@ -234,7 +247,11 @@ export const KNOWLEDGE: KnowledgeItem[] = [
       "Found no registered domain change in Vendor Inc. credentials — supported classifying the payment request as high-risk",
     lastUsedEmail: "Payment Request #4471",
     lastUsedTime: "Today 10:22",
-    meta: { source: "procurement@co.com", thread: "Vendor Records Management", indexed: "2026-04-10" },
+    meta: {
+      source: "procurement@co.com",
+      thread: "Vendor Records Management",
+      indexed: "2026-04-10",
+    },
   },
   {
     id: 12,
@@ -325,7 +342,14 @@ export interface AcctBreakdownRow {
 export const ACCT_BREAKDOWN: AcctBreakdownRow[] = [
   { lbl: "Legal Account", addr: "legal@co.com", color: "var(--terra)", n: 27800, max: 48200 },
   { lbl: "Work Account", addr: "work@co.com", color: "var(--slate)", n: 48200, max: 48200 },
-  { lbl: "Personal", addr: "personal@me.com", color: "var(--sage)", n: 15450, max: 48200, tc: "var(--p10)" },
+  {
+    lbl: "Personal",
+    addr: "personal@me.com",
+    color: "var(--sage)",
+    n: 15450,
+    max: 48200,
+    tc: "var(--p10)",
+  },
 ];
 
 export interface TopicChartRow {
@@ -352,7 +376,12 @@ export interface SuggestItem {
 
 export const SUGGEST_PEOPLE: SuggestItem[] = [
   { icon: "👤", text: "boss@corp.com", sub: "23 emails", query: "boss@corp.com" },
-  { icon: "👤", text: "AP Finance · ap@vendor.com", sub: "14 payments", query: "AP Finance vendor" },
+  {
+    icon: "👤",
+    text: "AP Finance · ap@vendor.com",
+    sub: "14 payments",
+    query: "AP Finance vendor",
+  },
   { icon: "👤", text: "Recruiter Jane", sub: "talentco.com", query: "Recruiter Jane" },
 ];
 

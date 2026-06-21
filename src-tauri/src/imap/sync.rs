@@ -31,7 +31,40 @@ pub async fn poll_once(state: &AppState, account_id: &str) -> AppResult<u32> {
     let ss_repo = SyncStateRepo::new(state.storage.db());
     let prev = ss_repo.get(account_id).await.ok();
     let prev_validity = prev.as_ref().and_then(|s| s.inbox_uid_validity);
-    let uid_next = prev.as_ref().and_then(|s| s.inbox_uid_next).unwrap_or(1);
+    let prev_uid_next = prev.as_ref().and_then(|s| s.inbox_uid_next);
+
+    // 3a. First sync of a brand-new account → establish the incremental baseline at
+    //     the mailbox's *current* high-water mark and fetch nothing here. The poll
+    //     then only ever handles mail that arrives from now on; everything already
+    //     on the server is the history backfill's job (T022), and the two never
+    //     overlap on the UID axis (F_A4 §6: "the incremental poll's start point is
+    //     set to the current latest UID at account-add time"). A `sync_state` row
+    //     with neither a cursor nor a recorded UIDVALIDITY is the unambiguous
+    //     "never synced" state — the create-time seed leaves both NULL. A
+    //     UIDVALIDITY reset, by contrast, clears only the cursor and keeps a
+    //     validity (see `flag_uid_validity_change`), so it still falls through to
+    //     the full re-scan below. Without this baseline the cursor would default to
+    //     1 and every "first" poll would re-scan the whole mailbox (`UID 1:*`,
+    //     violating §7.3); on a large mailbox that never finishes inside the
+    //     per-poll budget, so the cursor never advances and genuinely new mail (the
+    //     highest UIDs, fetched last) is never reached.
+    if prev_uid_next.is_none() && prev_validity.is_none() {
+        ss_repo
+            .update_after_poll(
+                account_id,
+                SyncOutcome {
+                    inbox_uid_validity: Some(status.uid_validity),
+                    inbox_uid_next: Some(status.uid_next.max(1)),
+                    new_mails: 0,
+                },
+            )
+            .await?;
+        AccountRepo::new(state.storage.db())
+            .set_last_synced(account_id, now_unix())
+            .await?;
+        state.events.sync_complete(account_id, 0);
+        return Ok(0);
+    }
 
     // 4. UIDVALIDITY change → mark for full resync, let backfill handle it.
     if let Some(prev_v) = prev_validity {
@@ -54,6 +87,7 @@ pub async fn poll_once(state: &AppState, account_id: &str) -> AppResult<u32> {
     //    hold. Keep the server's true high-water mark for the cursor (step 7), but
     //    fetch bodies only for UIDs not yet persisted (T022 §3, F_A4 §4.6) — so a
     //    poll with no new mail re-downloads nothing.
+    let uid_next = prev_uid_next.unwrap_or(1);
     let found = session.search_uids_from(uid_next).await?;
     let server_max_uid = found.iter().copied().max();
     let mut uids = Vec::with_capacity(found.len());
@@ -234,5 +268,59 @@ mod tests {
         // Cursor advances to the server high-water mark (max(5,6) + 1), not the
         // filtered max — proving dedup cannot make the cursor regress.
         assert_eq!(ss.get(account_id).await.unwrap().inbox_uid_next, Some(7));
+    }
+
+    /// A brand-new account's very first poll must NOT re-scan the whole mailbox.
+    /// Per F_A4 §6 the incremental cursor is seeded to the mailbox's current
+    /// high-water mark and existing history is left to the backfill — so this poll
+    /// queues nothing and just records the baseline (`inbox_uid_next` = mailbox
+    /// UIDNEXT, `inbox_uid_validity` = mailbox UIDVALIDITY). Without the baseline
+    /// the cursor would default to 1 and the poll would pull every existing
+    /// message (here UIDs 95/96/97), re-downloading history on every "first" poll.
+    #[tokio::test]
+    async fn first_poll_seeds_baseline_without_refetching_history() {
+        use crate::net::fakes::{net_with_imap, FakeImapFactory, FakeMailbox};
+
+        let account_id = "5f2d6a1e-0000-4000-8000-0000000000ac";
+        // Non-empty mailbox: UIDVALIDITY 42, UIDNEXT 100, three existing messages
+        // all below the high-water mark (history the backfill owns, not the poll).
+        let mailbox = FakeMailbox::new()
+            .with_inbox(42, 100, 3)
+            .with_uids([95, 96, 97])
+            .with_body(95, b"raw-95".to_vec())
+            .with_body(96, b"raw-96".to_vec())
+            .with_body(97, b"raw-97".to_vec());
+        let (state, _rx) =
+            AppState::test_state_with_net(net_with_imap(FakeImapFactory::new(mailbox))).await;
+
+        sqlx::query(
+            "INSERT INTO accounts (id, email, display_name, provider, imap_host, color_token, \
+                 badge_label, created_at, updated_at) \
+             VALUES (?, 'a@x.com', 'A', 'imap', 'imap.example.com', 'slate', 'A', 0, 0)",
+        )
+        .bind(account_id)
+        .execute(state.storage.db().pool())
+        .await
+        .unwrap();
+
+        // Fresh sync_state: NULL cursor AND NULL validity — the "never synced" state.
+        let ss = SyncStateRepo::new(state.storage.db());
+        ss.ensure(account_id).await.unwrap();
+
+        // First poll establishes the baseline and queues nothing (would be 3 if it
+        // re-scanned from UID 1).
+        let queued = poll_once(&state, account_id).await.unwrap();
+        assert_eq!(queued, 0, "first poll must not pull existing history");
+
+        // Cursor seeded to the mailbox high-water mark; validity recorded.
+        let s = ss.get(account_id).await.unwrap();
+        assert_eq!(s.inbox_uid_next, Some(100));
+        assert_eq!(s.inbox_uid_validity, Some(42));
+
+        // A second poll now searches forward only (UID 100:*) and still finds
+        // nothing — the three history messages stay the backfill's responsibility.
+        let queued2 = poll_once(&state, account_id).await.unwrap();
+        assert_eq!(queued2, 0);
+        assert_eq!(ss.get(account_id).await.unwrap().inbox_uid_next, Some(100));
     }
 }

@@ -107,15 +107,14 @@ describe("AddCloudProviderSheet — connection test rendering", () => {
     renderWithProviders(
       <AddCloudProviderSheet accounts={[WORK_ACCOUNT]} onClose={vi.fn()} onSaved={vi.fn()} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" })); // step 1 → 2
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-bad-key" } });
     fireEvent.change(screen.getByLabelText("Model"), { target: { value: "claude-sonnet-4-6" } });
+    // Continue runs the inline probe; the auth rejection keeps us on the details step.
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-
-    fireEvent.click(screen.getByRole("button", { name: "Test Connection" }));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Invalid API key."));
-    // A failed probe cannot be advanced past.
-    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
+    // A failed probe does not advance — the accounts/save step never appears.
+    expect(screen.queryByRole("button", { name: "Save Provider" })).not.toBeInTheDocument();
   });
 
   it("shows the unreachable copy for a network failure", async () => {
@@ -127,12 +126,11 @@ describe("AddCloudProviderSheet — connection test rendering", () => {
     renderWithProviders(
       <AddCloudProviderSheet accounts={[WORK_ACCOUNT]} onClose={vi.fn()} onSaved={vi.fn()} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" })); // step 1 → 2
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-test-key" } });
     fireEvent.change(screen.getByLabelText("Model"), { target: { value: "claude-sonnet-4-6" } });
+    // Continue runs the inline probe; the network failure keeps us on the details step.
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-
-    fireEvent.click(screen.getByRole("button", { name: "Test Connection" }));
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent("Could not reach the provider endpoint."),
     );
@@ -159,11 +157,12 @@ describe("AddCloudProviderSheet — model picker", () => {
 
     fireEvent.change(select, { target: { value: "claude-zeta-9" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    // Advancing to the connection-test step means the model selection took.
-    expect(screen.getByRole("button", { name: "Test Connection" })).toBeInTheDocument();
+    // The inline probe verifies (default mock) and advances to the accounts step,
+    // proving the live-fetched model selection took.
+    expect(await screen.findByRole("button", { name: "Save Provider" })).toBeInTheDocument();
   });
 
-  it("reveals a free-text input when Custom is chosen", () => {
+  it("reveals a free-text input when Custom is chosen", async () => {
     renderWithProviders(
       <AddCloudProviderSheet accounts={[WORK_ACCOUNT]} onClose={vi.fn()} onSaved={vi.fn()} />,
     );
@@ -174,7 +173,9 @@ describe("AddCloudProviderSheet — model picker", () => {
     const custom = screen.getByLabelText("Custom model ID");
     fireEvent.change(custom, { target: { value: "gpt-5.5-2026-04-23" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(screen.getByRole("button", { name: "Test Connection" })).toBeInTheDocument();
+    // The custom id satisfies validation, the inline probe verifies, and the
+    // wizard advances to the accounts step.
+    expect(await screen.findByRole("button", { name: "Save Provider" })).toBeInTheDocument();
   });
 
   it("prefills the vendor base URL and model shortlist when a preset is chosen", () => {
@@ -207,17 +208,11 @@ describe("AddCloudProviderSheet — save", () => {
     const keyInput = screen.getByLabelText("API Key");
     fireEvent.change(keyInput, { target: { value: "sk-transient-test" } });
     fireEvent.change(screen.getByLabelText("Model"), { target: { value: "claude-sonnet-4-6" } });
+    // Continue runs the inline probe (default mock verifies ok) and advances.
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
-    // Step 3: the default mock verifies in-band ok.
-    fireEvent.click(screen.getByRole("button", { name: "Test Connection" }));
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Continue" })).not.toBeDisabled(),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-
-    // Step 4: save to the (pre-selected) account.
-    fireEvent.click(screen.getByRole("button", { name: "Save Provider" }));
+    // Step 3: save to the (pre-selected) account.
+    fireEvent.click(await screen.findByRole("button", { name: "Save Provider" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
 
     const updateCall = ipcSpy.mock.calls.find((c) => c[0] === "update_account_ai_settings");
@@ -249,21 +244,15 @@ describe("AddLocalProviderSheet — discovery flow", () => {
     fireEvent.click(endpoint);
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
-    // Step 2: load models from the daemon, pick one.
+    // Step 2: load models from the daemon, pick one; Continue runs the inline
+    // probe (default mock verifies ok) and advances to the accounts step.
     fireEvent.click(screen.getByRole("button", { name: "Load Models" }));
     const model = await screen.findByRole("checkbox", { name: /llama3:8b/ });
     fireEvent.click(model);
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
-    // Step 3: in-band verify (default mock ok).
-    fireEvent.click(screen.getByRole("button", { name: "Test Connection" }));
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Continue" })).not.toBeDisabled(),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-
-    // Step 4: save.
-    fireEvent.click(screen.getByRole("button", { name: "Save Provider" }));
+    // Step 3: save.
+    fireEvent.click(await screen.findByRole("button", { name: "Save Provider" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
 
     const updateCall = ipcSpy.mock.calls.find((c) => c[0] === "update_account_ai_settings");

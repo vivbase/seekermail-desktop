@@ -65,6 +65,20 @@ network_error`, 0 mails) even with a configured account.
 
 ### Changed
 
+- **fix(ai): the first-run AI-activation prompt no longer offers Full Auto, and Semi-Auto / Manual Only are now actually selectable.**
+  The "Start in Semi-Auto" step (`src/components/ai/AiActivationPrompt.tsx`) previously rendered the three reply tiers as
+  inert, non-clickable rows and hard-coded activation to Semi-Auto — so Full Auto and Manual Only looked like choices but
+  ignored clicks. The step is now a real radio group offering only **Semi-Auto (recommended, default)** and **Manual Only**;
+  the activate button follows the selection and writes the picked `authLevel` (2 / 1). **Full Auto is withheld at first run**
+  because it is already locked until an account has ≥ 50 approved drafts (F_E3 §4.1, `AuthLevelSection`), so day-one users
+  could never have applied it anyway; it stays available, lock-gated, under Settings → AI Reply Mode. i18n keys `mode_full*`
+  removed and `cta_activate_semi` → interpolated `cta_activate` in `en` + `zh-CN`. Knowledge base: `docs/analysis/30`,
+  `docs/product/AI_MODES_DESIGN.md` §7.4. / 首次运行的 AI 激活浮层不再提供"全自动",且"半自动 / 仅手动"现在真正可点选。
+  原"从半自动开始"步骤把三档回复模式渲染成无法点击的死行、并把激活写死为半自动——全自动与仅手动看着像选项却点不动。现改为真正的
+  单选组,只提供**半自动(推荐、默认)**与**仅手动**;激活按钮跟随所选项并写入对应 `authLevel`(2 / 1)。**全自动在首启隐藏**:
+  它本就要等账户累计 ≥ 50 封已批准草稿才解锁(F_E3 §4.1,`AuthLevelSection`),新用户当天根本无法启用;全自动仍保留在
+  设置 → AI Reply Mode(继续受解锁门槛约束)。i18n 移除 `mode_full*`,`cta_activate_semi` 改为可插值的 `cta_activate`
+  (`en` + `zh-CN`)。知识库:`docs/analysis/30`、`docs/product/AI_MODES_DESIGN.md` §7.4。
 - **fix(team): the sidebar TEAM badge now tracks real read/unread state instead of a static-looking count.**
   The TEAM nav badge previously showed `count_pending_queries` — the number of open _decision_ cards —
   so reading the channel never changed it; and the AGENTS nav badge simply showed the _number of

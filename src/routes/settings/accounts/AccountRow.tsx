@@ -1,10 +1,10 @@
 // One account row + expandable panel (T017). Color badge, four-state indicator,
 // sync range / history progress / disk usage, and row actions. IPC via hooks.
 //
-// A6 decoupled model: a mailbox is just a data source. "Disconnect" removes only
-// this mailbox (the last one included — no more "can't remove your only account"
-// dead-end). Signing out of the SeekerMail ID is a separate action on the ID card,
-// independent of mailboxes.
+// A6 decoupled model: a mailbox is just a data source. "Remove" deletes only this
+// mailbox and its local copy (the last one included — no more "can't remove your
+// only account" dead-end). Signing out of the SeekerMail ID is a separate action on
+// the ID card, independent of mailboxes.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Account } from "@shared/bindings";
@@ -20,6 +20,7 @@ import {
 } from "@/ipc/queries/accounts";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ProgressBar from "@/components/ui/ProgressBar";
+import { showToast } from "@/components/ui/Toast";
 import EditAccountSheet from "./EditAccountSheet";
 
 type AccountStatus = "active" | "disabled" | "auth_failed" | "sync_error";
@@ -127,7 +128,7 @@ export default function AccountRow({ account }: AccountRowProps) {
         />
       )}
 
-      {/* A6 decoupled: disconnecting a mailbox removes only that data source — the
+      {/* A6 decoupled: removing a mailbox deletes only that data source — the
           last one included. The SeekerMail ID (if any) is unaffected. */}
       <ConfirmDialog
         open={confirmDisconnect}
@@ -135,9 +136,19 @@ export default function AccountRow({ account }: AccountRowProps) {
         body={t("acct_signout_mbx_body", { name: account.displayName, email: account.email })}
         destructive
         confirmLabel={t("acct_signout")}
+        pending={del.isPending}
+        pendingLabel={t("acct_removing")}
         onConfirm={() => {
-          del.mutate(account.id);
-          setConfirmDisconnect(false);
+          // Drive the dialog off the mutation result instead of closing optimistically:
+          // close + confirm on success, surface a toast on failure (the dialog stays
+          // open so the user can retry — the backend self-heals a corrupt FTS index).
+          del.mutate(account.id, {
+            onSuccess: () => {
+              setConfirmDisconnect(false);
+              showToast(t("acct_remove_done", { name: account.displayName }));
+            },
+            onError: () => showToast(t("acct_remove_failed")),
+          });
         }}
         onCancel={() => setConfirmDisconnect(false)}
       />

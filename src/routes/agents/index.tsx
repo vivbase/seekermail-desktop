@@ -85,7 +85,10 @@ export default function Agents() {
 
   const visible = sorted.filter((a) => {
     if (filter !== "all" && statusBucket(statusById[a.id], a.isActive) !== filter) return false;
-    if (search.trim() && !`${a.displayName} ${a.email}`.toLowerCase().includes(search.toLowerCase()))
+    if (
+      search.trim() &&
+      !`${a.displayName} ${a.email}`.toLowerCase().includes(search.toLowerCase())
+    )
       return false;
     return true;
   });
@@ -103,7 +106,9 @@ export default function Agents() {
       <header className="shrink-0 border-b border-divider px-6 py-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="font-display text-3xl italic text-p10">{t("agents:agents_page_title")}</h1>
+            <h1 className="font-display text-3xl italic text-p10">
+              {t("agents:agents_page_title")}
+            </h1>
             <p className="mt-1 font-ui text-[11px] uppercase tracking-[0.06em] text-p8">
               {t("agents:agents_roster_subtitle", {
                 accounts: sorted.length,
@@ -133,7 +138,10 @@ export default function Agents() {
               onClick={() => tile.key !== "queries" && setFilter(tile.key)}
               className="rounded-card border border-divider bg-surface p-4 text-start shadow-card transition-colors hover:bg-p2"
             >
-              <div className="font-mono text-2xl" style={tile.color ? { color: tile.color } : undefined}>
+              <div
+                className="font-mono text-2xl"
+                style={tile.color ? { color: tile.color } : undefined}
+              >
                 {tile.n}
               </div>
               <div className="mt-1 font-ui text-[10px] uppercase tracking-wider text-p8">
@@ -178,7 +186,10 @@ export default function Agents() {
             const qc = queryCountById[account.id] ?? 0;
             const expanded = expandedId === account.id;
             return (
-              <div key={account.id} className="rounded-card border border-divider bg-surface shadow-card">
+              <div
+                key={account.id}
+                className="rounded-card border border-divider bg-surface shadow-card"
+              >
                 <div className="flex flex-wrap items-center gap-3 p-4">
                   <span
                     aria-hidden
@@ -191,20 +202,28 @@ export default function Agents() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
-                      <span className="truncate font-body text-sm text-p10">{account.displayName}</span>
+                      <span className="truncate font-body text-sm text-p10">
+                        {account.displayName}
+                      </span>
                       {account.isPrimary && (
                         <span className="text-amber" title={t("agents:primary_account_badge")}>
                           ★
                         </span>
                       )}
                     </span>
-                    <span className="block truncate font-mono text-xs text-p8">{account.email}</span>
+                    <span className="block truncate font-mono text-xs text-p8">
+                      {account.email}
+                    </span>
                   </div>
                   <span className="shrink-0 rounded-chip bg-p4 px-2 py-0.5 font-ui text-[9px] uppercase tracking-wider text-p9">
                     {t(`agents:${AUTH_LABEL[account.authLevel] ?? "agents_auth_manual"}`)}
                   </span>
                   <span className="flex shrink-0 items-center gap-1.5">
-                    <span aria-hidden className="h-2 w-2 rounded-avatar" style={{ background: DOT[bucket] }} />
+                    <span
+                      aria-hidden
+                      className="h-2 w-2 rounded-avatar"
+                      style={{ background: DOT[bucket] }}
+                    />
                     <span className="font-ui text-[10px] uppercase tracking-wider text-p8">
                       {t(`agents:agents_status_${bucket}`)}
                     </span>

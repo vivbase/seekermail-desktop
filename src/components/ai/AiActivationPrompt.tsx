@@ -2,8 +2,8 @@
 // dismissible nudge — NOT a blocking gate — when an account exists but no AI
 // provider is configured. Configuring AI is optional: the user can close it
 // from any step (✕, "Maybe later", or the backdrop) and keep using the app.
-// When they do connect, it reuses the real provider wizards and then offers to
-// start the agents in Semi-Auto before closing.
+// When they do connect, it reuses the real provider wizards and then lets them
+// start the agents in Semi-Auto (default) or Manual Only before closing.
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -16,8 +16,12 @@ import { useActivationStore } from "@/stores/activation";
 import AddCloudProviderSheet from "@/routes/settings/ai/AddCloudProviderSheet";
 import AddLocalProviderSheet from "@/routes/settings/ai/AddLocalProviderSheet";
 
-/** Semi-Auto reply tier (dev/01 §account_ai_settings; mirrors AuthLevel = 2). */
+// First-run reply tiers offered to a brand-new account. Full Auto (AuthLevel 3)
+// is intentionally NOT offered here: it stays locked until the account has
+// >= 50 approved drafts (F_E3 §4.1), so day-one users pick Semi-Auto or Manual.
+/** Reply tiers (dev/01 §account_ai_settings; mirrors AuthLevel). */
 const SEMI_AUTO: number = 2;
+const MANUAL_ONLY: number = 1;
 
 type Phase = "gate" | "ready";
 type SheetKind = "cloud" | "local" | null;
@@ -37,6 +41,8 @@ export default function AiActivationPrompt() {
   const [phase, setPhase] = useState<Phase>("gate");
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [activating, setActivating] = useState(false);
+  // Selected reply tier for the "ready" step; defaults to the recommended Semi-Auto.
+  const [mode, setMode] = useState<number>(SEMI_AUTO);
 
   useEffect(() => {
     if (ready && needsActivation) setVisible(true);
@@ -55,7 +61,7 @@ export default function AiActivationPrompt() {
     setPhase("ready");
   };
 
-  const activateSemiAuto = async () => {
+  const activateSelected = async () => {
     setActivating(true);
     const connected = (providers ?? [])
       .filter((p) => p.provider !== "none")
@@ -65,7 +71,7 @@ export default function AiActivationPrompt() {
       for (const accountId of ids) {
         await updateAi.mutateAsync({
           accountId,
-          params: { ...EMPTY_AI_SETTINGS_PATCH, authLevel: SEMI_AUTO },
+          params: { ...EMPTY_AI_SETTINGS_PATCH, authLevel: mode },
         });
       }
     } finally {
@@ -142,25 +148,34 @@ export default function AiActivationPrompt() {
             <h1 className="mt-2 font-display text-3xl italic text-p10">{t("ready_title")}</h1>
             <p className="mt-3 font-body text-sm leading-relaxed text-p8">{t("ready_body")}</p>
 
-            <ul className="mt-6 space-y-2">
-              <ModeRow name={t("mode_full")} desc={t("mode_full_desc")} />
+            <div role="radiogroup" aria-label={t("mode_group_label")} className="mt-6 space-y-2">
               <ModeRow
                 name={t("mode_semi")}
                 desc={t("mode_semi_desc")}
                 badge={t("mode_semi_badge")}
-                highlighted
+                selected={mode === SEMI_AUTO}
+                onSelect={() => setMode(SEMI_AUTO)}
               />
-              <ModeRow name={t("mode_manual")} desc={t("mode_manual_desc")} />
-            </ul>
+              <ModeRow
+                name={t("mode_manual")}
+                desc={t("mode_manual_desc")}
+                selected={mode === MANUAL_ONLY}
+                onSelect={() => setMode(MANUAL_ONLY)}
+              />
+            </div>
 
             <div className="mt-6 flex flex-col gap-2">
               <button
                 type="button"
-                onClick={() => void activateSemiAuto()}
+                onClick={() => void activateSelected()}
                 disabled={activating}
                 className={cn(primaryBtn, "disabled:cursor-not-allowed disabled:opacity-50")}
               >
-                {activating ? t("activating") : t("cta_activate_semi")}
+                {activating
+                  ? t("activating")
+                  : t("cta_activate", {
+                      mode: t(mode === SEMI_AUTO ? "mode_semi" : "mode_manual"),
+                    })}
               </button>
               <button type="button" onClick={close} className={mutedBtn}>
                 {t("cta_choose_later")}
@@ -238,29 +253,47 @@ function ModeRow({
   name,
   desc,
   badge,
-  highlighted = false,
+  selected,
+  onSelect,
 }: {
   name: string;
   desc: string;
   badge?: string;
-  highlighted?: boolean;
+  selected: boolean;
+  onSelect: () => void;
 }) {
   return (
-    <li
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onSelect}
       className={cn(
-        "rounded-chip border px-4 py-3",
-        highlighted ? "border-p9 bg-p4" : "border-divider",
+        "flex w-full items-center gap-3 rounded-chip border px-4 py-3 text-start transition-colors",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-p9",
+        selected ? "border-p9 bg-p4" : "hover:bg-p4/60 border-divider",
       )}
     >
-      <div className="flex items-center gap-2">
-        <span className="font-ui text-sm font-semibold text-p10">{name}</span>
-        {badge && (
-          <span className="rounded-chip bg-green px-2 py-0.5 font-ui text-[10px] font-semibold uppercase tracking-wider text-white">
-            {badge}
-          </span>
+      <span
+        aria-hidden
+        className={cn(
+          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+          selected ? "border-p9" : "border-p6",
         )}
-      </div>
-      <p className="mt-0.5 font-body text-xs text-p8">{desc}</p>
-    </li>
+      >
+        {selected && <span className="h-2 w-2 rounded-full bg-p9" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="font-ui text-sm font-semibold text-p10">{name}</span>
+          {badge && (
+            <span className="rounded-chip bg-green px-2 py-0.5 font-ui text-[10px] font-semibold uppercase tracking-wider text-white">
+              {badge}
+            </span>
+          )}
+        </span>
+        <span className="mt-0.5 block font-body text-xs text-p8">{desc}</span>
+      </span>
+    </button>
   );
 }

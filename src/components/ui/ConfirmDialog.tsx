@@ -12,6 +12,11 @@ interface ConfirmDialogProps {
   destructive?: boolean;
   /** Hide the confirm button (e.g. "you can't delete your only account"). */
   confirmDisabled?: boolean;
+  /** True while the confirm action is in flight: locks both buttons and the
+   *  backdrop, and swaps the confirm label for `pendingLabel`. */
+  pending?: boolean;
+  /** Label shown on the confirm button while `pending` (e.g. "Removing…"). */
+  pendingLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -23,6 +28,8 @@ export default function ConfirmDialog({
   confirmLabel,
   destructive = false,
   confirmDisabled = false,
+  pending = false,
+  pendingLabel,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -32,7 +39,7 @@ export default function ConfirmDialog({
   return (
     <div
       className="bg-p10/40 fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={onCancel}
+      onClick={pending ? undefined : onCancel}
       role="presentation"
     >
       <div
@@ -47,7 +54,8 @@ export default function ConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-chip px-3 py-1.5 font-ui text-xs uppercase tracking-wider text-p8 hover:bg-p4"
+            disabled={pending}
+            className="rounded-chip px-3 py-1.5 font-ui text-xs uppercase tracking-wider text-p8 hover:bg-p4 disabled:pointer-events-none disabled:opacity-50"
           >
             {t("action_cancel")}
           </button>
@@ -55,11 +63,14 @@ export default function ConfirmDialog({
             <button
               type="button"
               onClick={onConfirm}
-              className={`rounded-chip px-3 py-1.5 font-ui text-xs uppercase tracking-wider text-white ${
+              disabled={pending}
+              className={`rounded-chip px-3 py-1.5 font-ui text-xs uppercase tracking-wider text-white disabled:opacity-60 ${
                 destructive ? "bg-red" : "bg-p9"
               }`}
             >
-              {confirmLabel ?? t("action_confirm")}
+              {pending
+                ? (pendingLabel ?? confirmLabel ?? t("action_confirm"))
+                : (confirmLabel ?? t("action_confirm"))}
             </button>
           )}
         </div>

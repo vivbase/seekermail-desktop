@@ -50,6 +50,10 @@ pub use sync_state_repo::SyncStateRepo;
 /// edit to `001_init.sql`.
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
 
+/// The external-content FTS5 indexes kept in sync with `mails` / `attachments`.
+/// Fixed schema identifiers — safe to interpolate into repair SQL.
+const FTS_TABLES: [&str; 2] = ["mails_fts", "attachments_fts"];
+
 /// The shared SQLite handle (sqlx pool). Cloneable; holds an `Arc` internally.
 #[derive(Clone)]
 pub struct Db {
@@ -130,6 +134,117 @@ impl Db {
         Ok(count)
     }
 
+    /// Startup self-heal for corrupt FTS5 shadow indexes (`SQLITE_CORRUPT_VTAB`,
+    /// code 267).
+    ///
+    /// Both full-text indexes (`mails_fts`, `attachments_fts`) are external-content
+    /// FTS5 tables derived from `mails` / `attachments`. An unclean shutdown can
+    /// leave a shadow index "malformed"; because a cascading `DELETE` on `mails`
+    /// fires the FTS sync triggers, that corruption makes **account removal** (and
+    /// sync) fail with "database disk image is malformed". We run the cheap FTS
+    /// `'integrity-check'` and, only when it reports corruption, repair the index.
+    /// Best-effort by design: a heal failure is logged, never fatal — startup must
+    /// still proceed even if an index is unrepairable (search degrades; the app
+    /// still runs).
+    ///
+    /// IMPORTANT: `'integrity-check'` does **not** catch every corruption that
+    /// aborts the delete-trigger write path — an index can pass the check yet still
+    /// fail the cascading `DELETE` with code 267. Account removal therefore does
+    /// **not** rely on this cheap check; it calls [`Self::repair_fts_indexes_forced`]
+    /// directly on failure (which rebuilds unconditionally and propagates errors).
+    pub async fn heal_fts_indexes(&self) -> AppResult<()> {
+        for table in FTS_TABLES {
+            // Fixed schema identifiers, never user input — safe to interpolate.
+            let check = sqlx::query(&format!(
+                "INSERT INTO {table}({table}) VALUES('integrity-check')"
+            ))
+            .execute(&self.pool)
+            .await;
+            if let Err(err) = check {
+                tracing::warn!(table, error = %err, "FTS integrity-check failed; repairing index");
+                match self.repair_fts_table(table).await {
+                    Ok(()) => tracing::info!(table, "repaired corrupt FTS index"),
+                    Err(err) => {
+                        tracing::error!(table, error = %err, "FTS index repair failed; continuing")
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Forcefully repair every FTS5 index, regardless of what `'integrity-check'`
+    /// reports, and **propagate** any failure.
+    ///
+    /// Used by the account-delete retry: a `DELETE` that already failed with
+    /// "database disk image is malformed" is itself proof of corruption that the
+    /// cheap check can miss, so the only safe move is to rebuild unconditionally
+    /// and let the caller know whether the retry can now succeed.
+    pub async fn repair_fts_indexes_forced(&self) -> AppResult<()> {
+        for table in FTS_TABLES {
+            self.repair_fts_table(table).await?;
+        }
+        Ok(())
+    }
+
+    /// Repair one external-content FTS5 index, escalating until it sticks:
+    /// 1. `'rebuild'` — repopulate the shadow index from its content table.
+    /// 2. `'delete-all'` then `'rebuild'` — zero the (possibly malformed) shadow
+    ///    tables without reading them, then repopulate from content.
+    /// 3. `DROP TABLE` + recreate from its stored DDL + `'rebuild'` — discard the
+    ///    corrupt shadow tables entirely. Done in one transaction so concurrent
+    ///    writers wait on the lock rather than observing a missing table; the sync
+    ///    triggers reference the table by name and rebind to the fresh one.
+    ///
+    /// `table` is a fixed schema identifier (never user input) — safe to interpolate.
+    async fn repair_fts_table(&self, table: &str) -> AppResult<()> {
+        if self.fts_rebuild(table).await.is_ok() {
+            return Ok(());
+        }
+        // The shadow b-tree may be malformed; `'delete-all'` rewrites it without a
+        // content read, which often clears what a plain `'rebuild'` cannot.
+        let _ = sqlx::query(&format!(
+            "INSERT INTO {table}({table}) VALUES('delete-all')"
+        ))
+        .execute(&self.pool)
+        .await;
+        if self.fts_rebuild(table).await.is_ok() {
+            return Ok(());
+        }
+        // Last resort: drop the virtual table (removing its corrupt shadow tables)
+        // and recreate it from the DDL SQLite stored at migration time.
+        let mut tx = self.pool.begin().await.map_err(map_sqlx_err)?;
+        let (ddl,): (String,) =
+            sqlx::query_as("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?")
+                .bind(table)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(map_sqlx_err)?;
+        sqlx::query(&format!("DROP TABLE {table}"))
+            .execute(&mut *tx)
+            .await
+            .map_err(map_sqlx_err)?;
+        sqlx::query(&ddl)
+            .execute(&mut *tx)
+            .await
+            .map_err(map_sqlx_err)?;
+        sqlx::query(&format!("INSERT INTO {table}({table}) VALUES('rebuild')"))
+            .execute(&mut *tx)
+            .await
+            .map_err(map_sqlx_err)?;
+        tx.commit().await.map_err(map_sqlx_err)?;
+        Ok(())
+    }
+
+    /// Repopulate an external-content FTS5 index from its content table.
+    async fn fts_rebuild(&self, table: &str) -> AppResult<()> {
+        sqlx::query(&format!("INSERT INTO {table}({table}) VALUES('rebuild')"))
+            .execute(&self.pool)
+            .await
+            .map(|_| ())
+            .map_err(map_sqlx_err)
+    }
+
     /// Borrow the pool for repositories added by later feature cards.
     pub fn pool(&self) -> &SqlitePool {
         &self.pool
@@ -157,6 +272,87 @@ mod tests {
         let db = Db::connect_in_memory().await.expect("connect");
         db.run_migrations().await.expect("migrate");
         db
+    }
+
+    #[tokio::test]
+    async fn heal_fts_indexes_is_noop_on_healthy_db() {
+        // Validates the heal SQL and that it never harms a consistent index: a
+        // row stays searchable across two heal passes (idempotent, best-effort).
+        let db = migrated_db().await;
+        let pool = db.pool();
+        sqlx::query(
+            "INSERT INTO accounts (id, email, display_name, provider, color_token, badge_label, \
+             created_at, updated_at) VALUES ('a1','a1@x.com','W','imap','slate','W',0,0)",
+        )
+        .execute(pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO mails (id, account_id, message_id, from_email, to_addrs, date_sent, \
+             date_received, body_text, created_at, updated_at) \
+             VALUES ('m1','a1','<1@x>','s@x.y','[]',1,1,'figures attached budget',0,0)",
+        )
+        .execute(pool)
+        .await
+        .unwrap();
+        db.heal_fts_indexes().await.expect("heal pass 1");
+        db.heal_fts_indexes().await.expect("heal pass 2");
+        let (n,): (i64,) =
+            sqlx::query_as("SELECT count(*) FROM mails_fts WHERE mails_fts MATCH 'budget'")
+                .fetch_one(pool)
+                .await
+                .unwrap();
+        assert_eq!(n, 1, "healthy index stays searchable after heal");
+    }
+
+    #[tokio::test]
+    async fn forced_fts_repair_repopulates_and_is_idempotent() {
+        // The forced repair must restore a broken index unconditionally (the path
+        // account removal relies on, since `'integrity-check'` can miss the
+        // corruption that aborts the delete trigger). We simulate a broken index
+        // by emptying it out-of-band, then assert forced repair rebuilds it from
+        // the content table — twice, to prove idempotency.
+        let db = migrated_db().await;
+        let pool = db.pool();
+        sqlx::query(
+            "INSERT INTO accounts (id, email, display_name, provider, color_token, badge_label, \
+             created_at, updated_at) VALUES ('a1','a1@x.com','W','imap','slate','W',0,0)",
+        )
+        .execute(pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO mails (id, account_id, message_id, from_email, to_addrs, date_sent, \
+             date_received, body_text, created_at, updated_at) \
+             VALUES ('m1','a1','<1@x>','s@x.y','[]',1,1,'quarterly budget figures',0,0)",
+        )
+        .execute(pool)
+        .await
+        .unwrap();
+
+        // Break the index: drop all postings without touching the content table.
+        sqlx::query("INSERT INTO mails_fts(mails_fts) VALUES('delete-all')")
+            .execute(pool)
+            .await
+            .unwrap();
+        let (before,): (i64,) =
+            sqlx::query_as("SELECT count(*) FROM mails_fts WHERE mails_fts MATCH 'budget'")
+                .fetch_one(pool)
+                .await
+                .unwrap();
+        assert_eq!(before, 0, "index emptied before repair");
+
+        db.repair_fts_indexes_forced().await.expect("forced repair");
+        db.repair_fts_indexes_forced()
+            .await
+            .expect("forced repair is idempotent");
+
+        let (after,): (i64,) =
+            sqlx::query_as("SELECT count(*) FROM mails_fts WHERE mails_fts MATCH 'budget'")
+                .fetch_one(pool)
+                .await
+                .unwrap();
+        assert_eq!(after, 1, "forced repair repopulates the index from content");
     }
 
     #[tokio::test]

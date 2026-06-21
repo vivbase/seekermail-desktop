@@ -30,6 +30,9 @@ impl StorageFacade {
         paths.ensure_dirs()?;
         let db = Db::connect(&paths.db).await?;
         db.run_migrations().await?;
+        // Repair a corrupt full-text index left by an unclean shutdown before any
+        // command runs, so mail deletes / account removal can't be blocked by it.
+        db.heal_fts_indexes().await?;
         let vectors = Arc::new(VectorStore::open(&paths.vectors)?);
         let blobs = DiskBlobStore::new(paths.root.clone());
         Ok(Self { db, vectors, blobs })

@@ -123,7 +123,10 @@ export default function Repository() {
   const [searchMode, setSearchMode] = useState<SearchMode>("semantic");
   const [manualMode, setManualMode] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
-  const [recent, setRecent] = useState<string[]>(["vendor payment history", "boss@corp.com contract"]);
+  const [recent, setRecent] = useState<string[]>([
+    "vendor payment history",
+    "boss@corp.com contract",
+  ]);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -134,7 +137,10 @@ export default function Repository() {
     query: searchQ,
     enabled: liveActive,
   });
-  const liveResults: SearchResult[] = useMemo(() => liveSearch.data?.items ?? [], [liveSearch.data]);
+  const liveResults: SearchResult[] = useMemo(
+    () => liveSearch.data?.items ?? [],
+    [liveSearch.data],
+  );
 
   // Today's AI decisions from the audit log; fall back to the curated seed while the
   // query is loading or empty so the panel is never blank.
@@ -200,7 +206,9 @@ export default function Repository() {
       if (topicFilter.size > 0 && !item.tags.some((tag) => topicFilter.has(tag))) return false;
       if (cutoff != null && item.dateSent * 1000 < cutoff) return false;
       if (ql)
-        return (item.subject + " " + item.excerpt + " " + item.tags.join(" ")).toLowerCase().includes(ql);
+        return (item.subject + " " + item.excerpt + " " + item.tags.join(" "))
+          .toLowerCase()
+          .includes(ql);
       return true;
     });
 
@@ -269,7 +277,9 @@ export default function Repository() {
   function toggleSearchMode() {
     if (!searchQ) return;
     setManualMode(true);
-    setSearchMode((m) => (m === "semantic" ? "keyword" : m === "keyword" ? "structured" : "semantic"));
+    setSearchMode((m) =>
+      m === "semantic" ? "keyword" : m === "keyword" ? "structured" : "semantic",
+    );
   }
 
   const flatSuggestions = useMemo(
@@ -296,7 +306,8 @@ export default function Repository() {
       e.preventDefault();
       setActiveSuggest((i) => Math.max(i - 1, -1));
     } else if (e.key === "Enter") {
-      if (activeSuggest >= 0 && flatSuggestions[activeSuggest]) applySearch(flatSuggestions[activeSuggest]);
+      if (activeSuggest >= 0 && flatSuggestions[activeSuggest])
+        applySearch(flatSuggestions[activeSuggest]);
       else applySearch(inputValue);
     } else if (e.key === "Escape") {
       clearSearch();
@@ -493,7 +504,12 @@ export default function Repository() {
               <div className="search-hero-icon-wrap">
                 <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
                   <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="M10.5 10.5l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <path
+                    d="M10.5 10.5l4 4"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </div>
               <input
@@ -527,9 +543,7 @@ export default function Repository() {
                 {recent.length > 0 && (
                   <div className="suggest-section">
                     <div className="suggest-section-lbl">{t("suggest_recent")}</div>
-                    {recent.map((q) =>
-                      suggestRow({ icon: "🕐", text: q, query: q }),
-                    )}
+                    {recent.map((q) => suggestRow({ icon: "🕐", text: q, query: q }))}
                   </div>
                 )}
                 <div className="suggest-section">
@@ -590,7 +604,9 @@ export default function Repository() {
                 <div>
                   {todayDecisions.map((d, i) => (
                     <div className="today-item" key={i}>
-                      <div className={cn("today-impact-icon", d.impact)}>{IMPACT_ICON[d.impact] || "✦"}</div>
+                      <div className={cn("today-impact-icon", d.impact)}>
+                        {IMPACT_ICON[d.impact] || "✦"}
+                      </div>
                       <div className="today-main">
                         <div className="today-top">
                           <span className="today-time">{d.time}</span>
@@ -651,7 +667,11 @@ export default function Repository() {
                 </span>
               ))}
               {hasFilters && (
-                <span className="clear-filters-btn" style={{ display: "inline-flex" }} onClick={clearAllFilters}>
+                <span
+                  className="clear-filters-btn"
+                  style={{ display: "inline-flex" }}
+                  onClick={clearAllFilters}
+                >
                   {t("clear_filters")}
                 </span>
               )}
@@ -663,7 +683,11 @@ export default function Repository() {
               <div className="sort-row">
                 <span className="sort-lbl">{t("sort_lbl")}</span>
                 {(["date", "rel", "acct"] as SortBy[]).map((s) => (
-                  <span key={s} className={cn("sort-opt", sortBy === s && "on")} onClick={() => setSortBy(s)}>
+                  <span
+                    key={s}
+                    className={cn("sort-opt", sortBy === s && "on")}
+                    onClick={() => setSortBy(s)}
+                  >
                     {t(`sort_${s}`)}
                   </span>
                 ))}
@@ -735,7 +759,14 @@ export default function Repository() {
                 <div className="stat-l">{t("stat_emails")}</div>
               </div>
               <div className="stat-cell stat-wide">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "baseline",
+                    gap: 8,
+                  }}
+                >
                   <div>
                     <div className="stat-n">{(s?.coveragePct ?? 0).toFixed(1)}%</div>
                     <div className="stat-l">{t("stat_coverage")}</div>
@@ -747,7 +778,10 @@ export default function Repository() {
                   </div>
                 </div>
                 <div className="coverage-bar-track">
-                  <div className="coverage-bar-fill" style={{ width: `${(s?.coveragePct ?? 0).toFixed(1)}%` }}></div>
+                  <div
+                    className="coverage-bar-fill"
+                    style={{ width: `${(s?.coveragePct ?? 0).toFixed(1)}%` }}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -758,7 +792,10 @@ export default function Repository() {
               <div className="gte-panel">
                 <EngineRow k={t("engine_status")}>
                   <span
-                    className={cn("gte-val", engineStatus === "active" ? "ok" : engineStatus === "paused" ? "dim" : "warn")}
+                    className={cn(
+                      "gte-val",
+                      engineStatus === "active" ? "ok" : engineStatus === "paused" ? "dim" : "warn",
+                    )}
                   >
                     {engineStatus === "active"
                       ? t("engine_status_active")
@@ -777,14 +814,18 @@ export default function Repository() {
                   <span className="gte-val">{indexVersion}</span>
                 </EngineRow>
                 <EngineRow k={t("engine_last_sync")}>
-                  <span className="gte-val dim">{synced ? t("engine_sync_now") : t("engine_sync_2min")}</span>
+                  <span className="gte-val dim">
+                    {synced ? t("engine_sync_now") : t("engine_sync_2min")}
+                  </span>
                 </EngineRow>
                 <EngineRow k={t("engine_storage")}>
                   <span className="gte-val">{fmtMB(s?.storageBytes ?? 0)}</span>
                 </EngineRow>
                 <EngineRow k={t("engine_queue")}>
                   <span className="gte-val warn">
-                    {indexing ? queue.toLocaleString() : t("engine_queue_pending", { count: queue })}
+                    {indexing
+                      ? queue.toLocaleString()
+                      : t("engine_queue_pending", { count: queue })}
                   </span>
                 </EngineRow>
                 <EngineRow k={t("engine_coverage")}>
@@ -797,9 +838,13 @@ export default function Repository() {
                 {indexing && (
                   <div className="progress-wrap" style={{ display: "block" }}>
                     <div className="progress-header">
-                      <span className="progress-lbl">{t("progress_indexing", { pct: Math.round(pct) })}</span>
+                      <span className="progress-lbl">
+                        {t("progress_indexing", { pct: Math.round(pct) })}
+                      </span>
                       <span className="progress-eta">
-                        {etaSecs != null ? t("progress_eta", { secs: etaSecs }) : t("progress_calc")}
+                        {etaSecs != null
+                          ? t("progress_eta", { secs: etaSecs })
+                          : t("progress_calc")}
                       </span>
                     </div>
                     <div className="progress-track">
@@ -834,7 +879,15 @@ export default function Repository() {
                       <RepoAcctRow key={a.id} account={a} totalRef={totalMail.data ?? 1} />
                     ))
                   : ACCT_BREAKDOWN.map((d) => (
-                      <SeedAcctRow key={d.lbl} lbl={d.lbl} addr={d.addr} color={d.color} tc={d.tc} n={d.n} pct={Math.round((d.n / d.max) * 100)} />
+                      <SeedAcctRow
+                        key={d.lbl}
+                        lbl={d.lbl}
+                        addr={d.addr}
+                        color={d.color}
+                        tc={d.tc}
+                        n={d.n}
+                        pct={Math.round((d.n / d.max) * 100)}
+                      />
                     ))}
               </div>
             </div>
@@ -846,12 +899,19 @@ export default function Repository() {
                 {(() => {
                   const max = Math.max(1, ...topicData.map((d) => d.count));
                   return topicData.map((d) => (
-                    <div className="topic-bar-row" key={d.label} onClick={() => filterByTag(d.label)}>
+                    <div
+                      className="topic-bar-row"
+                      key={d.label}
+                      onClick={() => filterByTag(d.label)}
+                    >
                       <div className="topic-bar-lbl">{d.label}</div>
                       <div className="topic-bar-track">
                         <div
                           className="topic-bar-fill"
-                          style={{ width: `${Math.round((d.count / max) * 100)}%`, background: `var(--${d.color})` }}
+                          style={{
+                            width: `${Math.round((d.count / max) * 100)}%`,
+                            background: `var(--${d.color})`,
+                          }}
                         ></div>
                       </div>
                       <div className="topic-bar-n">{d.count}</div>
@@ -905,8 +965,10 @@ function KnowledgeCard({
   t: TFn;
 }) {
   const impact = asImpact(entry.impact);
-  const acctTc = entry.acctColor === "sage" || entry.acctColor === "amber" ? "var(--p10)" : undefined;
-  const usedText = entry.usedCount > 0 ? t("used_by_ai", { count: entry.usedCount }) : t("not_used");
+  const acctTc =
+    entry.acctColor === "sage" || entry.acctColor === "amber" ? "var(--p10)" : undefined;
+  const usedText =
+    entry.usedCount > 0 ? t("used_by_ai", { count: entry.usedCount }) : t("not_used");
 
   return (
     <div
@@ -926,7 +988,10 @@ function KnowledgeCard({
           {entry.acctBadge}
         </div>
         <div className="k-main">
-          <div className="k-title" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <div
+            className="k-title"
+            style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}
+          >
             <span>{entry.subject}</span>
             <span className={cn("k-impact-badge", impact)}>{impactLabel}</span>
             <span className={cn("k-used-badge", entry.usedCount > 0 && "active")}>{usedText}</span>
@@ -972,7 +1037,9 @@ function KnowledgeCard({
           </div>
           <div className="k-meta-cell">
             <div className="k-meta-lbl">{t("meta_indexed")}</div>
-            <div className="k-meta-val">{entry.indexedAt != null ? fmtCardDate(entry.indexedAt) : "—"}</div>
+            <div className="k-meta-val">
+              {entry.indexedAt != null ? fmtCardDate(entry.indexedAt) : "—"}
+            </div>
           </div>
         </div>
         <div className="k-expand-body" dangerouslySetInnerHTML={{ __html: entry.body }} />
@@ -1060,14 +1127,23 @@ function AdvancedDrawer({
   return (
     <div className="c3-drawer" style={{ display: "block" }}>
       <div className="c3-grid">
-        {grp("mode", t("c3_mode"), [{ v: t("mode_keyword") }, { v: t("mode_semantic") }, { v: t("mode_hybrid") }])}
+        {grp("mode", t("c3_mode"), [
+          { v: t("mode_keyword") },
+          { v: t("mode_semantic") },
+          { v: t("mode_hybrid") },
+        ])}
         {grp("accounts", t("c3_accounts"), [
           { v: "Legal" },
           { v: "Work" },
           { v: "Personal" },
           { v: "Backup" },
         ])}
-        {grp("time", t("c3_time"), [{ v: t("t_any") }, { v: t("t_7d") }, { v: t("t_month") }, { v: t("t_year") }])}
+        {grp("time", t("c3_time"), [
+          { v: t("t_any") },
+          { v: t("t_7d") },
+          { v: t("t_month") },
+          { v: t("t_year") },
+        ])}
         {grp("filters", t("c3_filters"), [
           { v: t("f_unread") },
           { v: t("f_flagged") },
@@ -1080,7 +1156,11 @@ function AdvancedDrawer({
           { v: t("fold_archive") },
           { v: t("fold_sent") },
         ])}
-        {grp("sender", t("c3_sender"), [{ v: "Boss Senior" }, { v: "AP Finance" }, { v: "Project Manager" }])}
+        {grp("sender", t("c3_sender"), [
+          { v: "Boss Senior" },
+          { v: "AP Finance" },
+          { v: "Project Manager" },
+        ])}
         {grp("tags", t("c3_tags"), [{ v: "Contract" }, { v: "Invoice" }, { v: "Client A" }])}
       </div>
       <div className="c3-drawer-foot">
@@ -1160,19 +1240,32 @@ function SearchResultCard({
   const scoreClass = score >= 0.7 ? "score-high" : score >= 0.4 ? "score-mid" : "score-low";
   const scoreLabel = score >= 0.7 ? t("rel_high") : score >= 0.4 ? t("rel_mid") : t("rel_low");
   const basisMode =
-    searchMode === "keyword" ? t("mode_keyword") : searchMode === "semantic" ? t("mode_semantic") : t("mode_hybrid");
+    searchMode === "keyword"
+      ? t("mode_keyword")
+      : searchMode === "semantic"
+        ? t("mode_semantic")
+        : t("mode_hybrid");
   const chip = account?.badgeLabel ?? "·";
   const chipBg = account ? `var(--${account.colorToken})` : "var(--p9)";
-  const chipTc = account && (account.colorToken === "sage" || account.colorToken === "amber") ? "var(--p10)" : undefined;
+  const chipTc =
+    account && (account.colorToken === "sage" || account.colorToken === "amber")
+      ? "var(--p10)"
+      : undefined;
   const excerptHtml = result.highlights.length
-    ? result.highlights.join(" … ").replaceAll("<mark>", '<span class="hl">').replaceAll("</mark>", "</span>")
+    ? result.highlights
+        .join(" … ")
+        .replaceAll("<mark>", '<span class="hl">')
+        .replaceAll("</mark>", "</span>")
     : highlightHtml(result.snippet, searchQ);
 
   return (
     <div className="k-card" style={{ animationDelay: `${index * 30}ms` }}>
       <div className="k-rel-bar" style={{ background: relColor }}></div>
       <div className="k-top">
-        <div className="k-acct-chip" style={{ background: chipBg, ...(chipTc ? { color: chipTc } : {}) }}>
+        <div
+          className="k-acct-chip"
+          style={{ background: chipBg, ...(chipTc ? { color: chipTc } : {}) }}
+        >
           {chip}
         </div>
         <div className="k-main">
@@ -1198,7 +1291,8 @@ function RepoAcctRow({ account, totalRef }: { account: Account; totalRef: number
   const count = useMailCount({ accountId: account.id });
   const n = count.data ?? 0;
   const pct = totalRef > 0 ? Math.max(6, Math.min(100, Math.round((n / totalRef) * 100))) : 6;
-  const tc = account.colorToken === "sage" || account.colorToken === "amber" ? "var(--p10)" : undefined;
+  const tc =
+    account.colorToken === "sage" || account.colorToken === "amber" ? "var(--p10)" : undefined;
   return (
     <SeedAcctRow
       lbl={account.displayName}
@@ -1250,10 +1344,35 @@ function SeedAcctRow({
           marginBottom: 2,
         }}
       >
-        <div style={{ flex: 1, height: 5, background: "var(--p5)", borderRadius: 3, overflow: "hidden" }}>
-          <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 3, transition: "width .7s var(--ease)" }}></div>
+        <div
+          style={{
+            flex: 1,
+            height: 5,
+            background: "var(--p5)",
+            borderRadius: 3,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${pct}%`,
+              height: "100%",
+              background: color,
+              borderRadius: 3,
+              transition: "width .7s var(--ease)",
+            }}
+          ></div>
         </div>
-        <span style={{ fontFamily: "var(--fm)", fontSize: 10, color: "var(--p8)", flexShrink: 0, minWidth: 44, textAlign: "right" }}>
+        <span
+          style={{
+            fontFamily: "var(--fm)",
+            fontSize: 10,
+            color: "var(--p8)",
+            flexShrink: 0,
+            minWidth: 44,
+            textAlign: "right",
+          }}
+        >
           {n.toLocaleString()}
         </span>
       </div>

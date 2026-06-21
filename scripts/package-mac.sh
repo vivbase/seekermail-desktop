@@ -19,6 +19,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 APP="src-tauri/target/release/bundle/macos/SeekerMail.app"
+MACOS_DIR="src-tauri/target/release/bundle/macos"
 DMG_DIR="src-tauri/target/release/bundle/dmg"
 
 echo "==> Toolchain"
@@ -26,12 +27,18 @@ echo "    node $(node -v)   pnpm $(pnpm -v)"
 command -v cargo >/dev/null || { echo "ERROR: Rust/cargo not found on PATH"; exit 1; }
 
 echo "==> Cleaning leftovers from any previous run"
-# A still-mounted volume or a leftover read-write temp dmg makes hdiutil fail on
-# the next build. Detach stale mounts and delete the rw.*.dmg temp files.
-for vol in /Volumes/SeekerMail*; do
+# Tauri runs its bundle_dmg.sh helper FROM the macos/ bundle dir, so both the
+# read-write temp images (rw.<pid>.*.dmg) AND the previous final dmg pile up
+# there — not in dmg/. Tauri's bundled bundle_dmg.sh calls `hdiutil convert`
+# WITHOUT the -ov flag, so a single leftover SeekerMail_*.dmg makes every later
+# run abort with "hdiutil: convert failed - File exists". Detach any stale mounts
+# (the helper mounts at /Volumes/dmg.XXXXXX) and delete the leftover images from
+# both dirs so each build starts from a clean slate.
+for vol in /Volumes/SeekerMail* /Volumes/dmg.*; do
   [ -d "$vol" ] && hdiutil detach "$vol" -force >/dev/null 2>&1 || true
 done
-rm -f "${DMG_DIR}"/rw.*.dmg 2>/dev/null || true
+rm -f "${MACOS_DIR}"/rw.*.dmg "${MACOS_DIR}"/SeekerMail*.dmg 2>/dev/null || true
+rm -f "${DMG_DIR}"/rw.*.dmg   "${DMG_DIR}"/SeekerMail*.dmg   2>/dev/null || true
 
 echo "==> Installing JS dependencies (frozen lockfile)"
 pnpm install --frozen-lockfile

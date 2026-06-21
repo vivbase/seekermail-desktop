@@ -24,6 +24,7 @@ import {
   useSetKnowledgeDepth,
   useVerifyConnection,
 } from "@/ipc/queries/accounts";
+import GmailAppPasswordGuide from "./GmailAppPasswordGuide";
 import KnowledgeDepthStep from "./KnowledgeDepthStep";
 
 interface AddAccountWizardProps {
@@ -72,6 +73,17 @@ export default function AddAccountWizard({ onClose }: AddAccountWizardProps) {
   // Gmail imports via IMAP + App Password now; only Outlook/Microsoft uses OAuth
   // (Google's mail scope is restricted/paid — knowledge base analysis/29).
   const isOAuth = provider === "outlook";
+  // Gmail connects over IMAP with an App Password; detect it to surface the
+  // App Password guide and prefill the Gmail servers.
+  const isGmail = provider === "imap" && /@(gmail|googlemail)\.com$/i.test(email.trim());
+
+  // Prefill the Gmail IMAP/SMTP hosts when a Gmail address is entered, but only
+  // when the fields are still empty so a manual override is never clobbered.
+  useEffect(() => {
+    if (!isGmail) return;
+    setImapHost((h) => h || "imap.gmail.com");
+    setSmtpHost((h) => h || "smtp.gmail.com");
+  }, [isGmail]);
 
   const num = (s: string): number | null => (s.trim() === "" ? null : Number(s));
   const errMsg = (e: unknown): string | null => (e instanceof Error ? e.message : null);
@@ -283,6 +295,7 @@ export default function AddAccountWizard({ onClose }: AddAccountWizardProps) {
                   type="password"
                 />
               )}
+              {isGmail && <GmailAppPasswordGuide />}
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t("wizard_imap_host")} value={imapHost} onChange={setImapHost} />
                 <Field label={t("wizard_imap_port")} value={imapPort} onChange={setImapPort} />

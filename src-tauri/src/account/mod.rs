@@ -243,20 +243,33 @@ impl AccountService {
         Ok(())
     }
 
-    /// Purge one account's secrets, blob files, derived vectors, and DB rows in the
-    /// delete ordering (T026 §6): Keychain first (no orphan secrets survive) → blob
-    /// files on disk → derived vectors → DB rows (ON DELETE CASCADE clears
-    /// threads/mails/sync_state/…). Teardown for [`Self::delete`]; it does **not**
-    /// heal the primary invariant or post a channel message — the caller decides
-    /// those. Returns the account identity (for any post-delete messaging).
+    /// Purge one account's secrets, blob files, derived vectors, and DB rows
+    /// (T026 §6). The side cleanups run first (Keychain → blob files → derived
+    /// vectors), then the authoritative DB row delete (`ON DELETE CASCADE` clears
+    /// threads/mails/sync_state/…).
+    ///
+    /// The side cleanups are **best-effort**: a failure there (a denied Keychain
+    /// prompt after an app re-sign, a read-only vectors file, …) is logged but must
+    /// NOT abort the removal — otherwise a user can be stuck unable to remove a
+    /// mailbox. Any leftover secret is keyed by a UUID that no longer exists, so it
+    /// is inert. The DB delete is the one step that must succeed (and it self-heals
+    /// a corrupt FTS index + retries, see [`AccountRepo::delete`]). Teardown for
+    /// [`Self::delete`]; it does **not** heal the primary invariant or post a
+    /// channel message — the caller decides those. Returns the account identity.
     async fn purge_account(state: &AppState, id: &str) -> AppResult<Account> {
         let repo = AccountRepo::new(state.storage.db());
         // Ensure it exists (clear NOT_FOUND semantics) + capture identity.
         let account = repo.get(id).await?;
         let uuid = parse_uuid(id)?;
-        state.keychain.delete_all(&uuid)?;
-        state.storage.blobs().cleanup_account_dir(id).await?;
-        state.storage.vectors().delete_account(id)?;
+        if let Err(err) = state.keychain.delete_all(&uuid) {
+            tracing::warn!(account_id = id, error = %err, "keychain purge failed; continuing");
+        }
+        if let Err(err) = state.storage.blobs().cleanup_account_dir(id).await {
+            tracing::warn!(account_id = id, error = %err, "blob purge failed; continuing");
+        }
+        if let Err(err) = state.storage.vectors().delete_account(id) {
+            tracing::warn!(account_id = id, error = %err, "vector purge failed; continuing");
+        }
         repo.delete(id).await?;
         Ok(account)
     }

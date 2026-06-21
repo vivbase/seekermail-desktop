@@ -43,7 +43,7 @@
       "icons/icon.ico"
     ],
     "resources": ["resources/*"],
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "macOS": {
       "minimumSystemVersion": "11.0",
       "hardenedRuntime": true,
