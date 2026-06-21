@@ -36,6 +36,7 @@ export const NAMESPACES = [
   "gte",
   "repository",
   "accountEmails",
+  "activation",
 ] as const;
 
 // Eagerly import every `resources/<locale>/<namespace>.json` and assemble the

@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 
 import Sidebar from "./Sidebar";
 import RiskBanner from "./RiskBanner";
+import AiActivationPrompt from "@/components/ai/AiActivationPrompt";
 import { ToastViewport } from "@/components/ui/Toast";
 import { useUi } from "@/stores/ui";
 import { useHasAccounts } from "@/lib/accountGate";
@@ -69,6 +70,8 @@ export default function AppShell() {
         {/* Toast queue (T078/T081) — survives route changes. */}
         <ToastViewport />
       </div>
+      {/* First-run AI activation nudge — dismissible, optional (not a gate). */}
+      <AiActivationPrompt />
     </div>
   );
 }
