@@ -4,6 +4,15 @@ All notable changes to the SeekerMail code repo are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 uses [Conventional Commits](https://www.conventionalcommits.org/).
 
+> **⚠️ Pre-release — nothing here has shipped publicly yet.** The repository has
+> **no git release tags**, and the app manifest version is **`0.1.0`**
+> (`package.json` + `src-tauri/Cargo.toml`). The version-numbered sections below are
+> **internal development-milestone groupings** (the work slated to ship under that
+> version), **not** shipped releases. In particular, the **v1.0.0 / v1.0.1** sections
+> describe _planned_ GA scope and have **not** been released. On a real release the
+> top `[Unreleased]` section is renamed to the version + date and a git tag is pushed;
+> until then, treat every dated heading below as a development milestone, not a ship.
+
 ## [Unreleased]
 
 Wires the previously-stubbed mail pipeline end-to-end: the app now **fetches real
@@ -12,7 +21,72 @@ _and_ the `live-net` build's IMAP session was a stub _and_ the mail-list read co
 were never implemented — so the inbox was always empty (`sync_state.last_sync_result =
 network_error`, 0 mails) even with a configured account.
 
+### Added
+
+- **feat(settings): surface the global AI master switch (F5 §4.5).** Settings → AI Providers
+  gains an **AI Master Switch** that disables every AI capability across all accounts for
+  **24 hours / 48 hours / indefinitely**, or resumes it immediately. It drives the dedicated
+  `set_ai_disabled` command (previously registered in `lib.rs` but never surfaced) through the new
+  `useSetAiDisabled` hook, reading current state from `get_setting("ai.disable_until")`; the F5
+  fallback router already honors that deadline for every AI call. Closes the `set_ai_disabled`
+  half of the front/back contract gap. (Knowledge base `docs/analysis/30_*` §5.)
+- **feat(sync): IMAP IDLE push — new mail now arrives in seconds, not minutes.** Each active
+  account keeps one long-lived connection parked in IMAP IDLE (`src/imap/idle_task.rs`); the
+  instant the server reports a mailbox change it pokes the existing poll task's `Notify` — the
+  same wake the manual sync uses — so every fetch still runs in one place and the two paths can
+  never double-fetch a UID. On the RFC-2177 ~29-min keepalive it re-issues IDLE; on a dropped
+  connection it reconnects with capped backoff; on an auth error or shutdown it exits. The
+  interval poll stays as the safety-net and the fallback for servers without IDLE. **No backend
+  service is required** — the IDLE connection is held by the local client straight to the mail
+  provider, so the local-first / data-sovereignty model is unchanged. New `ImapSession::idle_wait`
+  transport seam (live adapter over `async-imap` 0.9.7 + scriptable test fake), spawned by the
+  scheduler alongside each poll task. Real push requires `--features live-net`.
+- **feat(ui): "Get Mail" pinwheel in the nav rail.** An icon-only refresh control
+  (`src/components/layout/GetMailButton.tsx`) sits at the top of the sidebar — no permanent text;
+  the "Get Mail" label shows only as a hover tooltip. Clicking force-syncs every active account via
+  `trigger_sync`; the pinwheel spins **in place (non-blocking — it never covers the UI)** until the
+  `sync:complete` / `sync:error` event lands.
+
+### Changed
+
+- **fix(team): the sidebar TEAM badge now tracks real read/unread state instead of a static-looking count.**
+  The TEAM nav badge previously showed `count_pending_queries` — the number of open _decision_ cards —
+  so reading the channel never changed it; and the AGENTS nav badge simply showed the _number of
+  configured agents_, a red count that never cleared. Neither matched what a red badge implies
+  ("things you haven't seen"). The TEAM badge is now a **hybrid** driven by the new `count_team_unread`
+  command / `useTeamUnreadCount` hook: it counts unread agent messages **plus** unresolved decision
+  cards (`status='pending' OR (sender_type='agent' AND read_at IS NULL)`). Opening the TEAM channel calls
+  the new `mark_im_channel_read` command (via `useMarkTeamRead`), which clears the unread half while open
+  decisions keep counting until answered/skipped. This finally wires up the previously dead read/unread
+  plumbing (`im_messages.read_at`, `mark_read`). `count_pending_queries` is kept for the Dashboard
+  pending tile. New Rust tests cover `count_unread`/`mark_all_read`; updated vitest covers the new badge
+  hook and read-on-open. (Knowledge base `docs/analysis/36_*`.)
+- **change(sync): default poll interval lowered 300s → 60s.** With IMAP IDLE now delivering new
+  mail in near-real-time, the interval poll is only a safety net plus the fallback for servers
+  without IDLE, so a tighter 60s floor is cheap and keeps that fallback responsive. New accounts
+  get 60s from `AccountRepo::create`; migration `017_default_sync_interval.sql` brings existing
+  accounts still on the old 300s default down to 60s (user-customised values are left untouched).
+
+### Removed
+
+- **The AGENTS sidebar nav badge.** It only ever rendered the agent count (always ≥1 once you have an
+  agent), so as a red badge it read as permanent noise rather than a notification. The Agents roster page
+  still shows live active/idle/paused/query counts; the rail item is now badge-free. (Knowledge base
+  `docs/analysis/36_*`.)
+
 ### Fixed
+
+- **fix(mail): open links in emails with the system browser instead of hijacking the app window.**
+  Email bodies are injected via `dangerouslySetInnerHTML` (`SanitizedMail`), and `<a href>` clicks had
+  no handling — so clicking a link (e.g. a Google OAuth notice) navigated the Tauri webview itself,
+  replacing the entire SPA with the destination page and leaving no way back. A new capture-phase
+  interceptor (`lib/externalLinks.ts`, installed once in `main.tsx`) cancels the navigation for
+  cross-origin web links and `mailto:`/`tel:` links and routes them to the OS default browser / mail
+  client via the new `open_external_url` command (`commands/shell.rs`); same-origin routes and
+  `#fragment` anchors still fall through to React Router. The backend re-validates the scheme as the
+  trust boundary — only `http`/`https`/`mailto`/`tel` reach the OS opener, and arguments are passed to
+  the opener process directly (no shell), so `javascript:`/`data:`/`file:` and injection are refused.
+  New Rust tests cover the scheme allowlist; new vitest tests cover external-vs-internal link routing.
 
 - **fix(attachment): address attachment bytes by a real MIME part index (not the row UUID).**
   The deferred download passed the attachment's database UUID as the IMAP part specifier
@@ -69,6 +143,16 @@ network_error`, 0 mails) even with a configured account.
 
 ### Added
 
+- **feat(compose): rich-text formatting bar.** The Reply / Compose body is now a
+  formatting-capable `contentEditable` editor instead of a plain-text box — bold,
+  italic, underline, strikethrough, font size, text colour, highlight colour,
+  bulleted & numbered lists, indent, alignment, block quote, insert link, clear
+  formatting, and undo/redo. Outgoing mail is sent as a `multipart/alternative`
+  message (a `text/html` part plus a plain-text fallback) and drafts persist their
+  formatting; the SMTP transport already supported HTML bodies, so this change is
+  frontend-only. New `src/components/compose/ComposeFormatBar.tsx` +
+  `src/lib/richText.ts`; `ComposeEditor` became a `contentEditable` surface that
+  mirrors plain text into the store for validation and quote seeding.
 - **feat(identity): decouple SeekerMail ID from mailboxes (A6 rewrite)** — the SeekerMail ID is
   now an **independent, optional identity** created by signing in with Google, with **no link to
   imported mailboxes** (the "binding mailbox" model is retired). Signing out of the SeekerMail ID
@@ -234,9 +318,9 @@ network_error`, 0 mails) even with a configured account.
   `sync_state.last_sync_result = ok`, 0 errors), and the Inbox / All Mail / Unread views
   render the fetched mail.
 
-## [1.0.1] - 2026-06-14
+## v1.0.1 — planned milestone (not released)
 
-Post-GA build verification on macOS 26 / Apple Silicon. The first-ever compile of
+Build-verification work slated for the v1.0.1 milestone, on macOS 26 / Apple Silicon. The first-ever compile of
 the OFF-by-default `local-embed` path surfaced three API-drift breakages — the path
 is not built in CI, so it had bit-rotted against the resolved `ort`. All three are
 fixed; `--features live-net,local-embed` now builds green, as does the default and
@@ -288,11 +372,11 @@ gen_bindings` — bindings output is byte-identical (drift check passes). Refs u
   Keychain; the non-macOS path is stubbed). Needs a headless Keychain shim or a
   pre-authorized CI keychain to run unattended. Frontend `vitest`: 169/169 pass.
 
-## [1.0.0] - 2026-06-14
+## v1.0.0 — planned GA scope (not released)
 
-First public release and first commercial milestone (v1.0 GA). This entry covers
-the v1.0 GA batch (T108–T120). The detailed pre-GA engineering notes for v0.5–v0.7
-remain under [Unreleased] below and ship as part of this release.
+Planned first public release and first commercial milestone (v1.0 GA) — **not yet
+shipped**. This section covers the intended v1.0 GA batch (T108–T120). The detailed
+pre-GA engineering notes for v0.5–v0.7 appear under the milestone sections below.
 
 ### Added — Attachment full-text search (v0.6, T108–T110)
 
@@ -339,7 +423,7 @@ remain under [Unreleased] below and ship as part of this release.
 - **chore(release):** v1.0.0-ga release gate — `smoke_v10_ga.sh` + `release_check_v10.sh`,
   GA release notes; first public + commercial milestone.
 
-## [Unreleased]
+## v0.5–v0.7 — development milestones (not released)
 
 ### v0.5 Beta — Agent-IM / TEAM channel (I module)
 
