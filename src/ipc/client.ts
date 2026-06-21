@@ -155,9 +155,10 @@ export type Commands = {
   // invariant is enforced atomically in the backend transaction.
   set_primary_account: { input: { account_id: string }; output: Account };
 
-  // Account AI settings (T073, dev/02 §Module H) — PROVISIONAL: served by the
-  // mock layer below until the T059 command surface is registered in Rust; the
-  // hook surface (queries/accounts.ts) is already final.
+  // Account AI settings (T073, dev/02 §Module H). Backed by the real Rust
+  // commands (commands::ai::{get,update}_account_ai_settings, registered in
+  // lib.rs); the mock layer below is only the off-Tauri dev/test double. The
+  // hook surface (queries/accounts.ts) is final.
   get_account_ai_settings: {
     input: { account_id: string };
     output: AccountAiSettings;
@@ -230,8 +231,12 @@ export type Commands = {
     output: PageResult<ImMessage>;
   };
   mark_im_message_read: { input: { id: string }; output: null };
-  // Count of pending I3/I4 queries (T101 sidebar TEAM badge).
+  // Mark the entire shared channel read — what opening the TEAM page does.
+  mark_im_channel_read: { input: { channel_id: string }; output: null };
+  // Count of pending I3/I4 queries (still drives the Dashboard pending tile).
   count_pending_queries: { input: undefined; output: number };
+  // TEAM nav badge — unread agent messages + unresolved decision cards (T101).
+  count_team_unread: { input: undefined; output: number };
 
   // Agent presence (T094) — derived statuses for every active account.
   get_agent_statuses: { input: undefined; output: AgentStatus[] };
@@ -318,6 +323,12 @@ export type Commands = {
     output: string | null;
   };
 
+  // Shell / external links. Opens http/https/mailto/tel in the OS default app
+  // (browser / mail client) so a link click in rendered mail HTML never
+  // navigates the app's own webview away from the SPA. The backend re-validates
+  // the scheme (commands/shell.rs).
+  open_external_url: { input: { url: string }; output: null };
+
   // Tracker / remote images (T029)
   get_tracker_info: { input: { mail_id: string }; output: TrackerInfo };
   allow_remote_images: {
@@ -371,10 +382,13 @@ export type Commands = {
   get_draft: { input: { id: string }; output: Draft };
   delete_draft: { input: { id: string }; output: null };
 
-  // AI drafts (Module E: T077 E1 generation, T080 E6 queue) — PROVISIONAL:
-  // served by the mock layer below until the Rust Module E surface registers.
-  // The AI-draft getter is `get_ai_draft` (NOT dev/02's `get_draft`) to avoid
-  // colliding with the T045 compose-draft command of the same name.
+  // AI drafts (Module E: T077 E1 generation, T080 E6 queue). Backed by the real
+  // Rust commands (commands::ai::{request_ai_reply, regenerate_draft,
+  // list_pending_drafts, get_ai_draft, update_draft_body, approve_draft,
+  // discard_draft, cancel_draft_send}, registered in lib.rs); the mock layer
+  // below is only the off-Tauri dev/test double. The AI-draft getter is
+  // `get_ai_draft` (NOT dev/02's `get_draft`) to avoid colliding with the T045
+  // compose-draft command of the same name.
   request_ai_reply: { input: { params: RequestAiReplyParams }; output: AiDraft };
   regenerate_draft: { input: { params: RegenerateDraftParams }; output: AiDraft };
   list_pending_drafts: { input: { params: ListAiDraftsParams }; output: AiDraft[] };
@@ -386,9 +400,11 @@ export type Commands = {
   // SMTP send actually ran; CONFLICT once the draft is `sent`.
   cancel_draft_send: { input: { id: string }; output: AiDraft };
 
-  // E7 audit log (T088 backend, T089 UI) — PROVISIONAL: served by the mock
-  // layer below until the Rust Wave-3 surface registers. Argument keys follow
-  // the T088 contract verbatim (camelCase for the summary command).
+  // E7 audit log (T088 backend, T089 UI). Backed by the real Rust commands
+  // (commands::ai::{list_ai_decisions, get_ai_decisions_summary,
+  // export_ai_decisions}, registered in lib.rs); the mock layer below is only
+  // the off-Tauri dev/test double. Argument keys follow the T088 contract
+  // verbatim (camelCase for the summary command).
   list_ai_decisions: { input: { params: ListDecisionsParams }; output: AiDecisionRow[] };
   get_ai_decisions_summary: {
     input: { accountId: string | null; sinceUnix: number; untilUnix: number };
@@ -399,6 +415,10 @@ export type Commands = {
   // Settings (T050/T051)
   get_setting: { input: { key: string }; output: string | null };
   set_setting: { input: { key: string; value: string }; output: null };
+  // Global AI master switch (T067, F_F5 §4.5). Disable every AI capability until
+  // a unix-seconds deadline, or null to restore immediately. The fallback router
+  // honors `ai.disable_until`; reads go through `get_setting`. Hook: queries/settings.ts.
+  set_ai_disabled: { input: { until: number | null }; output: null };
   apply_privacy_policy: {
     input: { tracker_policy: TrackerPolicy; remote_image_policy: ImagePolicy };
     output: null;
@@ -441,8 +461,10 @@ export type Commands = {
   };
   resolve_risk_event: { input: { params: ResolveRiskParams }; output: null };
 
-  // Mail list (G2/G3) — PROVISIONAL: served by the mock layer below until the
-  // mail-list read backend card lands; the hook surface (T036) is already final.
+  // Mail list (G2/G3). Backed by the real Rust commands (commands::mail::{
+  // list_threads, list_mails, get_mail, set_mail_read, set_mail_starred,
+  // archive_mail, delete_mail}, registered in lib.rs); the mock layer below is
+  // only the off-Tauri dev/test double. The hook surface (T036) is final.
   list_threads: {
     input: { params: ListThreadsParams };
     output: PageResult<Thread>;
@@ -484,7 +506,7 @@ const SAMPLE_ACCOUNT: Account = {
   authLevel: 1,
   isPrimary: true,
   isActive: true,
-  syncIntervalSecs: 300,
+  syncIntervalSecs: 60,
   lastSyncedAt: null,
   knowledgeDepthMonths: 12,
   createdAt: 0,
@@ -1383,6 +1405,7 @@ const MOCK_RESPONSES: {
   open_attachment: () => null,
   reveal_attachment: () => null,
   get_attachment_local_path: () => null,
+  open_external_url: () => null,
   get_tracker_info: () => ({
     blocked: false,
     trackerCount: 0,
@@ -1689,6 +1712,13 @@ const MOCK_RESPONSES: {
     MOCK_SETTINGS.set(args.key, args.value);
     return null;
   },
+  set_ai_disabled: (args) => {
+    // Mirror the Rust command: a deadline writes the raw integer string the
+    // fallback router reads; null deletes the key (AI restored).
+    if (args.until === null) MOCK_SETTINGS.delete("ai.disable_until");
+    else MOCK_SETTINGS.set("ai.disable_until", String(args.until));
+    return null;
+  },
   apply_privacy_policy: (args) => {
     MOCK_SETTINGS.set("privacy.tracker_policy", JSON.stringify(args.tracker_policy));
     MOCK_SETTINGS.set("privacy.remote_image_policy", JSON.stringify(args.remote_image_policy));
@@ -1803,7 +1833,20 @@ const MOCK_RESPONSES: {
     if (msg && msg.readAt === null) msg.readAt = Math.floor(Date.now() / 1000);
     return null;
   },
+  mark_im_channel_read: (args) => {
+    if (args.channel_id !== "main") {
+      throw { code: "VALIDATION", message: "channel_id must be 'main' (no private chats)." };
+    }
+    const now = Math.floor(Date.now() / 1000);
+    for (const m of MOCK_IM_MESSAGES) if (m.readAt === null) m.readAt = now;
+    return null;
+  },
   count_pending_queries: () => MOCK_PENDING_QUERIES.filter((q) => q.status === "pending").length,
+  // Hybrid badge: unread agent messages + still-pending decision cards.
+  count_team_unread: () =>
+    MOCK_IM_MESSAGES.filter(
+      (m) => m.status === "pending" || (m.senderType === "agent" && m.readAt === null),
+    ).length,
 
   // Agent presence (T094): one idle status per known account.
   get_agent_statuses: () => [{ accountId: SAMPLE_ACCOUNT.id, status: "idle" as const }],

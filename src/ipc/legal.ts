@@ -1,9 +1,10 @@
 // Hand-written mirrors of the Rust legal-analysis DTOs (T070 `src-tauri/src/types.rs`
-// Module D section) and the Module E risk-event contracts (dev/02 §Module E; backend
-// commands `list_risk_events` / `resolve_risk_event` are not registered yet — served
-// by the mock layer in client.ts until they land). Once `pnpm gen:types` emits these
-// into `@shared/bindings`, delete this file and import from there instead (field
-// shapes follow the generated-bindings conventions: camelCase, `| null` optionals).
+// Module D section) and the Module E risk-event contracts (dev/02 §Module E). The
+// `list_risk_events` / `resolve_risk_event` backends are registered and live
+// (commands::risk, T071; lib.rs); the client.ts mock layer is only the off-Tauri
+// dev/test double. Once `pnpm gen:types` emits these into `@shared/bindings`, delete
+// this file and import from there instead (field shapes follow the generated-bindings
+// conventions: camelCase, `| null` optionals).
 
 /** Severity of one identified risk item (D1 output schema, F_D1 §4.4). */
 export type LegalRiskLevel = "high" | "medium" | "low";
