@@ -73,12 +73,7 @@ network_error`, 0 mails) even with a configured account.
   because it is already locked until an account has ≥ 50 approved drafts (F_E3 §4.1, `AuthLevelSection`), so day-one users
   could never have applied it anyway; it stays available, lock-gated, under Settings → AI Reply Mode. i18n keys `mode_full*`
   removed and `cta_activate_semi` → interpolated `cta_activate` in `en` + `zh-CN`. Knowledge base: `docs/analysis/30`,
-  `docs/product/AI_MODES_DESIGN.md` §7.4. / 首次运行的 AI 激活浮层不再提供"全自动",且"半自动 / 仅手动"现在真正可点选。
-  原"从半自动开始"步骤把三档回复模式渲染成无法点击的死行、并把激活写死为半自动——全自动与仅手动看着像选项却点不动。现改为真正的
-  单选组,只提供**半自动(推荐、默认)**与**仅手动**;激活按钮跟随所选项并写入对应 `authLevel`(2 / 1)。**全自动在首启隐藏**:
-  它本就要等账户累计 ≥ 50 封已批准草稿才解锁(F_E3 §4.1,`AuthLevelSection`),新用户当天根本无法启用;全自动仍保留在
-  设置 → AI Reply Mode(继续受解锁门槛约束)。i18n 移除 `mode_full*`,`cta_activate_semi` 改为可插值的 `cta_activate`
-  (`en` + `zh-CN`)。知识库:`docs/analysis/30`、`docs/product/AI_MODES_DESIGN.md` §7.4。
+  `docs/product/AI_MODES_DESIGN.md` §7.4.
 - **fix(team): the sidebar TEAM badge now tracks real read/unread state instead of a static-looking count.**
   The TEAM nav badge previously showed `count_pending_queries` — the number of open _decision_ cards —
   so reading the channel never changed it; and the AGENTS nav badge simply showed the _number of
@@ -106,6 +101,24 @@ network_error`, 0 mails) even with a configured account.
 
 ### Fixed
 
+- **fix(sync): a newly added mailbox imports its existing mail again.** Adding an account had
+  stopped importing any history. By design (F_A4 §6) the first incremental poll of a brand-new
+  account seeds the UID cursor at the mailbox's current high-water mark and fetches nothing itself
+  — existing mail is the history backfill's job — but the first sync never actually _started_ that
+  backfill. The only place a backfill was ever kicked off is `set_knowledge_depth` (the wizard's
+  last step), so any add path that didn't reach it (and any single backfill that errored or raced)
+  left the inbox empty. The previous behavior masked this because the first poll used to fetch
+  everything from `UID 1`; once that was changed to the baseline-only seed, the backfill became the
+  _sole_ importer and the missing trigger surfaced as "mailbox added → no mail shows". The first
+  sync now starts the backfill itself (`imap/sync.rs`, step 3a), so every add path — wizard,
+  onboarding, re-enable, OAuth, programmatic — imports history; a new per-account in-flight guard in
+  `imap/backfill.rs` collapses the first-sync trigger and the wizard's own `set_knowledge_depth`
+  trigger into a single run so they can't race on `backfill_state`. Regression coverage added:
+  `imap::backfill` previously had **no tests** — added one proving the backfill imports existing
+  history to the ingest channel, plus `imap::sync::first_sync_imports_existing_mail_for_new_account`
+  proving a freshly added mailbox imports its mail on the first sync (it fails without the trigger).
+  Note: until a knowledge depth is chosen the initial fill imports all history (this matches the
+  pre-regression behavior); a depth-bounded initial fill is a follow-up.
 - **fix(mail): open links in emails with the system browser instead of hijacking the app window.**
   Email bodies are injected via `dangerouslySetInnerHTML` (`SanitizedMail`), and `<a href>` clicks had
   no handling — so clicking a link (e.g. a Google OAuth notice) navigated the Tauri webview itself,
