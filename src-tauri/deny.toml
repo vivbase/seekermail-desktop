@@ -1,11 +1,22 @@
 # cargo-deny configuration (T056, dev/05 §4 supply-chain gate).
 #
 # Licenses: permissive allow-list only — copyleft (GPL/AGPL/LGPL) is rejected
-# because SeekerMail ships as a commercial binary. Advisories: any Critical
-# vulnerability blocks the release workflow.
+# because SeekerMail ships as a commercial binary. Advisories: vulnerabilities
+# (and unsound/yanked) block the release; third-party crates merely going
+# unmaintained do not.
 
 [graph]
 all-features = false
+# SeekerMail ships only macOS and Windows binaries (see the Release matrix in
+# ../.github/workflows/release.yml), so the supply-chain gate is scoped to the
+# shipped targets. This keeps Linux-only transitive dependencies — e.g. the GTK3
+# gtk-rs stack pulled in by Tauri's webkit2gtk backend — out of scope, since they
+# are never compiled into a shipped artifact.
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
 
 [licenses]
 allow = [
@@ -21,12 +32,22 @@ allow = [
     "MPL-2.0",
     "CDLA-Permissive-2.0",
     "OpenSSL",
+    "CC0-1.0",
 ]
 confidence-threshold = 0.9
+# The application crate is proprietary and never published to a registry
+# (publish = false in Cargo.toml); skip the license check for our own crate.
+private = { ignore = true }
 
 [advisories]
 version = 2
 yanked = "deny"
+# Vulnerabilities, unsound, and yanked advisories still block the release.
+# "unmaintained" is scoped to workspace crates only: an upstream transitive
+# dependency becoming unmaintained must not block a release when no patched
+# version exists. This matches the gate's stated intent — critical
+# vulnerabilities block; third-party maintenance status does not.
+unmaintained = "workspace"
 
 [bans]
 multiple-versions = "warn"

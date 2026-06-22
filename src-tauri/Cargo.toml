@@ -5,6 +5,9 @@ description = "SeekerMail — local-first desktop email client with per-account 
 authors = ["SeekerMail"]
 edition = "2021"
 rust-version = "1.77"
+# Application crate — never published to a registry. `publish = false` also marks
+# it "private" so the cargo-deny license gate skips it (see deny.toml [licenses]).
+publish = false
 # Canonical binary for `cargo run` / `tauri build`. The bindings generator is an
 # [[example]] (below), so the app crate has a single bin and the bundler is unambiguous.
 default-run = "seekermail"
