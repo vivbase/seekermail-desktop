@@ -11,6 +11,8 @@ pub mod backfill;
 pub mod backoff;
 pub mod dedup;
 pub mod idle_task;
+pub mod inbound;
+pub mod outbound;
 pub mod parser;
 pub mod poll_task;
 pub mod sampler;

@@ -151,6 +151,9 @@
   "images_load_always": "Visa alltid från den här avsändaren",
   "images_allowed_toast": "Bilder tillåtna",
   "images_loaded": "Bilder laddade",
+  "images_loading": "Läser in bilder…",
+  "images_blocked_title": "Fjärrbilder blockerade",
+  "images_blocked_notice": "Fjärrbilder läses in från avsändarens server, vilket kan avslöja att du öppnat det här mejlet. SeekerMail hämtar dem privat – utan cookies eller identifierande rubriker – endast när du väljer att läsa in dem.",
   "mail_body_truncated": "E-postmeddelandet är för stort — visar de första {sizeKb} KB",
   "mail_body_plaintext_fallback": "Visar oformaterad text"
 }

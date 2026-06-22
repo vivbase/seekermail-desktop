@@ -327,6 +327,9 @@ pub fn run() {
             // ── Tracker / remote images (T029) ───────────────────────────────
             commands::mail::get_tracker_info,
             commands::mail::allow_remote_images,
+            // Inline (cid:) image resolution + privacy-hardened remote-image fetch.
+            commands::mail::get_inline_images,
+            commands::mail::fetch_remote_image,
             // ── Mail-list read backend (G2/G3) ───────────────────────────────
             commands::mail::list_threads,
             commands::mail::list_mails,
@@ -335,6 +338,8 @@ pub fn run() {
             commands::mail::set_mail_starred,
             commands::mail::archive_mail,
             commands::mail::delete_mail,
+            commands::mail::set_mail_spam,
+            commands::mail::restore_mail,
             // ── Search (T032/T033/T035) ──────────────────────────────────────
             commands::search::keyword_search,
             commands::search::semantic_search,

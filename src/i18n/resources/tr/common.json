@@ -151,6 +151,9 @@
   "images_load_always": "Bu göndericiden her zaman göster",
   "images_allowed_toast": "Görsellere izin verildi",
   "images_loaded": "Görseller yüklendi",
+  "images_loading": "Görseller yükleniyor…",
+  "images_blocked_title": "Uzak görseller engellendi",
+  "images_blocked_notice": "Uzak görseller gönderenin sunucusundan yüklenir; bu, e-postayı açtığınızı ortaya çıkarabilir. SeekerMail bunları yalnızca yüklemeyi seçtiğinizde — çerez veya tanımlayıcı başlık olmadan — gizlice getirir.",
   "mail_body_truncated": "E-posta çok büyük — ilk {sizeKb} KB gösteriliyor",
   "mail_body_plaintext_fallback": "Düz metin gösteriliyor"
 }

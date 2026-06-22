@@ -82,6 +82,8 @@ export type MailDetail = {
   isRead: boolean;
   isStarred: boolean;
   isArchived: boolean;
+  isDeleted: boolean;
+  isSpam: boolean;
   hasAttachments: boolean;
   folder: string;
 };
@@ -161,6 +163,8 @@ pub fn export_bindings(out_path: &str) -> anyhow::Result<()> {
     types.register::<crate::types::Attachment>();
     types.register::<crate::types::TrackerInfo>();
     types.register::<crate::types::ImageAllowScope>();
+    types.register::<crate::types::InlineImage>();
+    types.register::<crate::types::RemoteImage>();
     // Event payloads (T024).
     types.register::<crate::types::SyncStartedPayload>();
     types.register::<crate::types::SyncProgressPayload>();

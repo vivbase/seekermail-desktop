@@ -151,6 +151,9 @@
   "images_load_always": "この送信者からは常に表示",
   "images_allowed_toast": "画像を許可しました",
   "images_loaded": "画像を読み込みました",
+  "images_loading": "画像を読み込み中…",
+  "images_blocked_title": "リモート画像をブロックしました",
+  "images_blocked_notice": "リモート画像は送信者のサーバーから読み込まれ、メールを開いたことが伝わる可能性があります。SeekerMail は、読み込みを選択したときだけ、Cookie や識別可能なヘッダーを送らずに非公開で取得します。",
   "mail_body_truncated": "メールが大きすぎます — 先頭 {sizeKb} KB を表示しています",
   "mail_body_plaintext_fallback": "プレーンテキストを表示しています"
 }

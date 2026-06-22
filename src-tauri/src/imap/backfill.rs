@@ -5,8 +5,9 @@
 //! at once; batches of 200 with a 500 ms pause; pauses on low battery / low disk;
 //! `last_uid_fetched` is the resume cursor.
 
+use std::collections::HashSet;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use once_cell::sync::Lazy;
@@ -24,6 +25,12 @@ use crate::util::now_unix;
 /// Global cap: at most 2 accounts backfilling at once (F_A4 §4.3).
 static BACKFILL_SEM: Lazy<Arc<Semaphore>> =
     Lazy::new(|| Arc::new(Semaphore::new(MAX_CONCURRENT_BACKFILLS)));
+
+/// Accounts with a backfill currently in flight. Guards against two starts for
+/// one account racing on `backfill_state` — e.g. the first-sync trigger in
+/// `poll_once` and the wizard's explicit `set_knowledge_depth` both firing for a
+/// newly added mailbox. The second start collapses into a no-op.
+static BACKFILL_INFLIGHT: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 
 /// Seconds per "month" of knowledge depth (30-day months, F_A4 §3).
 const MONTH_SECS: i64 = 30 * 86_400;
@@ -73,6 +80,18 @@ pub async fn resume(state: AppState, account_id: String) -> AppResult<()> {
 }
 
 async fn run(state: &AppState, account_id: &str, resume: bool) -> AppResult<()> {
+    // Collapse duplicate concurrent starts for one account into a single run, so
+    // the first-sync trigger and an explicit set_knowledge_depth can't race on
+    // `backfill_state`. The guard clears on every exit path (incl. early returns).
+    if !BACKFILL_INFLIGHT
+        .lock()
+        .expect("backfill inflight lock poisoned")
+        .insert(account_id.to_string())
+    {
+        return Ok(());
+    }
+    let _inflight = InflightGuard(account_id.to_string());
+
     let _permit = BACKFILL_SEM
         .clone()
         .acquire_owned()
@@ -187,4 +206,74 @@ fn scopeguard(state: AppState) -> impl Drop {
         }
     }
     Guard(state)
+}
+
+/// Clears an account's [`BACKFILL_INFLIGHT`] entry when its run ends (any path).
+struct InflightGuard(String);
+impl Drop for InflightGuard {
+    fn drop(&mut self) {
+        BACKFILL_INFLIGHT
+            .lock()
+            .expect("backfill inflight lock poisoned")
+            .remove(&self.0);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::net::fakes::{net_with_imap, FakeImapFactory, FakeMailbox};
+
+    fn body(uid: i64) -> Vec<u8> {
+        format!(
+            "From: sender{uid}@example.com\r\nSubject: Message {uid}\r\n\
+             Message-ID: <{uid}@example.com>\r\n\r\nBody {uid}\r\n"
+        )
+        .into_bytes()
+    }
+
+    async fn insert_imap_account(state: &AppState, id: &str) {
+        sqlx::query(
+            "INSERT INTO accounts (id, email, display_name, provider, imap_host, color_token, \
+                 badge_label, created_at, updated_at) \
+             VALUES (?, 'a@x.com', 'A', 'imap', 'imap.example.com', 'slate', 'A', 0, 0)",
+        )
+        .bind(id)
+        .execute(state.storage.db().pool())
+        .await
+        .unwrap();
+    }
+
+    /// The history backfill is the sole importer of mail that already exists on the
+    /// server (the incremental poll only fetches mail that arrives after the
+    /// baseline). It must fetch every existing message and hand it to the ingest
+    /// channel. With no knowledge depth set the boundary is 0 → import everything.
+    #[tokio::test]
+    async fn backfill_imports_existing_history_to_ingest_channel() {
+        let account_id = "5f2d6a1e-0000-4000-8000-0000000000b1";
+        let mailbox = FakeMailbox::new()
+            .with_inbox(42, 100, 3)
+            .with_uids([95, 96, 97])
+            .with_body(95, body(95))
+            .with_body(96, body(96))
+            .with_body(97, body(97));
+        let (state, mut rx) =
+            AppState::test_state_with_net(net_with_imap(FakeImapFactory::new(mailbox))).await;
+        insert_imap_account(&state, account_id).await;
+
+        run(&state, account_id, false).await.unwrap();
+
+        // Close the only sender so the receiver drains to completion.
+        drop(state);
+        let mut got: Vec<i64> = Vec::new();
+        while let Some(raw) = rx.recv().await {
+            got.push(raw.imap_uid);
+        }
+        got.sort_unstable();
+        assert_eq!(
+            got,
+            vec![95, 96, 97],
+            "backfill must import every existing message"
+        );
+    }
 }

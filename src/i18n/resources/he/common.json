@@ -151,6 +151,9 @@
   "images_load_always": "הצג תמיד משולח זה",
   "images_allowed_toast": "התמונות הותרו",
   "images_loaded": "התמונות נטענו",
+  "images_loading": "טוען תמונות…",
+  "images_blocked_title": "תמונות מרוחקות נחסמו",
+  "images_blocked_notice": "תמונות מרוחקות נטענות משרת השולח, מה שעלול לחשוף שפתחת את ההודעה. SeekerMail מאחזר אותן באופן פרטי — ללא עוגיות או כותרות מזהות — רק כשתבחר לטעון אותן.",
   "mail_body_truncated": "הדואר גדול מדי — מציג את {sizeKb} ה-KB הראשונים",
   "mail_body_plaintext_fallback": "מציג טקסט רגיל"
 }

@@ -151,6 +151,9 @@
   "images_load_always": "이 발신자에게서 항상 표시",
   "images_allowed_toast": "이미지 허용됨",
   "images_loaded": "이미지 불러옴",
+  "images_loading": "이미지 로딩 중…",
+  "images_blocked_title": "원격 이미지 차단됨",
+  "images_blocked_notice": "원격 이미지는 보낸 사람의 서버에서 로드되어 메일을 열었다는 사실이 노출될 수 있습니다. SeekerMail은 불러오기를 선택할 때만 쿠키나 식별 가능한 헤더 없이 비공개로 가져옵니다.",
   "mail_body_truncated": "이메일이 너무 큽니다 — 처음 {sizeKb} KB를 표시합니다",
   "mail_body_plaintext_fallback": "일반 텍스트로 표시"
 }

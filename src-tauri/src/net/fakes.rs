@@ -18,22 +18,42 @@ use std::sync::{Arc, Mutex};
 use futures::future::BoxFuture;
 
 use super::{
-    ConnProbe, ConnProbeConfig, ConnProbeReport, IdleOutcome, ImapCreds, ImapFactory, ImapSession,
-    InboxStatus, Net, TokenEndpoint, TokenRequest, TokenResponse,
+    ConnProbe, ConnProbeConfig, ConnProbeReport, FolderRole, IdleOutcome, ImapCreds, ImapFactory,
+    ImapFlag, ImapSession, InboxStatus, MailboxFolder, MessageFlags, Net, TokenEndpoint,
+    TokenRequest, TokenResponse,
 };
 use crate::error::{AppError, AppResult};
 
 /// A shared, ordered record of the transport calls a test made.
 pub type CallLog = Arc<Mutex<Vec<String>>>;
 
-/// A scriptable in-memory INBOX. `uids` is the full UID set; `bodies` and
-/// `parts` are looked up on demand by [`FakeImapSession`].
+/// One non-INBOX folder's scripted data, used by multi-folder fetch tests. The
+/// INBOX keeps its own top-level fields on [`FakeMailbox`] for backward
+/// compatibility with the many tests that script a single inbox.
+#[derive(Clone, Default)]
+pub struct FakeFolder {
+    pub status: InboxStatus,
+    pub uids: Vec<i64>,
+    pub bodies: HashMap<i64, Vec<u8>>,
+}
+
+/// A scriptable in-memory mailbox. The top-level `inbox`/`uids`/`bodies`/`parts`
+/// are the INBOX; `folders` holds any additional folders (SENT/JUNK/TRASH) and
+/// `roles` is what `list_folders` reports. `bodies`/`parts` are looked up on
+/// demand by [`FakeImapSession`].
 #[derive(Clone)]
 pub struct FakeMailbox {
     pub inbox: InboxStatus,
     pub uids: Vec<i64>,
     pub bodies: HashMap<i64, Vec<u8>>,
     pub parts: HashMap<(i64, u32), Vec<u8>>,
+    /// Non-INBOX folders keyed by their server-side selectable name.
+    pub folders: HashMap<String, FakeFolder>,
+    /// Folder list (with roles) returned by `list_folders`; defaults to INBOX only.
+    pub roles: Vec<MailboxFolder>,
+    /// Scripted server-side flags per folder name, for inbound reconciliation
+    /// (`fetch_flags`).
+    pub flags: HashMap<String, Vec<(i64, MessageFlags)>>,
     /// Scripted IDLE outcomes consumed in order by [`FakeImapSession::idle_wait`];
     /// when empty, `idle_wait` parks for its timeout (mimics a quiet server).
     pub idle_script: Arc<Mutex<VecDeque<IdleOutcome>>>,
@@ -51,6 +71,12 @@ impl FakeMailbox {
             uids: Vec::new(),
             bodies: HashMap::new(),
             parts: HashMap::new(),
+            folders: HashMap::new(),
+            roles: vec![MailboxFolder {
+                name: "INBOX".to_string(),
+                role: FolderRole::Inbox,
+            }],
+            flags: HashMap::new(),
             idle_script: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
@@ -79,6 +105,64 @@ impl FakeMailbox {
         self
     }
 
+    /// Set the folder list (with roles) reported by `list_folders`. Defaults to
+    /// INBOX only; pass the full set to drive multi-folder discovery.
+    pub fn with_folders(
+        mut self,
+        roles: impl IntoIterator<Item = (&'static str, FolderRole)>,
+    ) -> Self {
+        self.roles = roles
+            .into_iter()
+            .map(|(name, role)| MailboxFolder {
+                name: name.to_string(),
+                role,
+            })
+            .collect();
+        self
+    }
+
+    /// Set a non-INBOX folder's `SELECT` status.
+    pub fn with_folder_status(
+        mut self,
+        name: &str,
+        uid_validity: i64,
+        uid_next: i64,
+        exists: u32,
+    ) -> Self {
+        self.folders.entry(name.to_string()).or_default().status = InboxStatus {
+            uid_validity,
+            uid_next,
+            exists,
+        };
+        self
+    }
+
+    /// Set a non-INBOX folder's full UID set.
+    pub fn with_folder_uids(mut self, name: &str, uids: impl IntoIterator<Item = i64>) -> Self {
+        self.folders.entry(name.to_string()).or_default().uids = uids.into_iter().collect();
+        self
+    }
+
+    /// Add a raw body for a UID inside a non-INBOX folder.
+    pub fn with_folder_body(mut self, name: &str, uid: i64, bytes: impl Into<Vec<u8>>) -> Self {
+        self.folders
+            .entry(name.to_string())
+            .or_default()
+            .bodies
+            .insert(uid, bytes.into());
+        self
+    }
+
+    /// Script a message's server-side flags in `folder`, for `fetch_flags`
+    /// (inbound reconciliation). Folder name is the server name (e.g. "INBOX").
+    pub fn with_message_flags(mut self, folder: &str, uid: i64, seen: bool, flagged: bool) -> Self {
+        self.flags
+            .entry(folder.to_string())
+            .or_default()
+            .push((uid, MessageFlags { seen, flagged }));
+        self
+    }
+
     /// Script the outcomes the next `idle_wait` calls return, in order. When the
     /// script is exhausted, `idle_wait` parks for its timeout (a quiet server).
     pub fn with_idle_outcomes(self, outcomes: impl IntoIterator<Item = IdleOutcome>) -> Self {
@@ -99,13 +183,111 @@ impl Default for FakeMailbox {
 pub struct FakeImapSession {
     mailbox: FakeMailbox,
     log: CallLog,
+    /// The currently `SELECT`ed folder (defaults to INBOX). `search_*` / `fetch`
+    /// read from this folder's dataset, mirroring a real session's selected state.
+    selected: String,
+}
+
+impl FakeImapSession {
+    fn cur_status(&self) -> InboxStatus {
+        if self.selected == "INBOX" {
+            self.mailbox.inbox
+        } else {
+            self.mailbox
+                .folders
+                .get(&self.selected)
+                .map(|f| f.status)
+                .unwrap_or_default()
+        }
+    }
+
+    fn cur_uids(&self) -> Vec<i64> {
+        if self.selected == "INBOX" {
+            self.mailbox.uids.clone()
+        } else {
+            self.mailbox
+                .folders
+                .get(&self.selected)
+                .map(|f| f.uids.clone())
+                .unwrap_or_default()
+        }
+    }
+
+    fn cur_body(&self, uid: i64) -> Option<Vec<u8>> {
+        if self.selected == "INBOX" {
+            self.mailbox.bodies.get(&uid).cloned()
+        } else {
+            self.mailbox
+                .folders
+                .get(&self.selected)
+                .and_then(|f| f.bodies.get(&uid).cloned())
+        }
+    }
 }
 
 impl ImapSession for FakeImapSession {
     fn select_inbox(&mut self) -> BoxFuture<'_, AppResult<InboxStatus>> {
         self.log.lock().unwrap().push("select_inbox".to_string());
+        self.selected = "INBOX".to_string();
         let inbox = self.mailbox.inbox;
         Box::pin(async move { Ok(inbox) })
+    }
+
+    fn list_folders(&mut self) -> BoxFuture<'_, AppResult<Vec<MailboxFolder>>> {
+        self.log.lock().unwrap().push("list_folders".to_string());
+        let roles = self.mailbox.roles.clone();
+        Box::pin(async move { Ok(roles) })
+    }
+
+    fn select_folder(&mut self, name: &str) -> BoxFuture<'_, AppResult<InboxStatus>> {
+        self.log
+            .lock()
+            .unwrap()
+            .push(format!("select_folder:{name}"));
+        self.selected = name.to_string();
+        let status = self.cur_status();
+        Box::pin(async move { Ok(status) })
+    }
+
+    fn store_flag(
+        &mut self,
+        folder: &str,
+        uid: i64,
+        flag: ImapFlag,
+        set: bool,
+    ) -> BoxFuture<'_, AppResult<()>> {
+        self.log.lock().unwrap().push(format!(
+            "store_flag:{folder}:{uid}:{}:{set}",
+            flag.as_imap_token()
+        ));
+        Box::pin(async move { Ok(()) })
+    }
+
+    fn move_message(
+        &mut self,
+        source_folder: &str,
+        uid: i64,
+        dest_folder: &str,
+    ) -> BoxFuture<'_, AppResult<()>> {
+        self.log
+            .lock()
+            .unwrap()
+            .push(format!("move:{source_folder}:{uid}:{dest_folder}"));
+        Box::pin(async move { Ok(()) })
+    }
+
+    fn fetch_flags(
+        &mut self,
+        folder: &str,
+        uid_from: i64,
+    ) -> BoxFuture<'_, AppResult<Vec<(i64, MessageFlags)>>> {
+        let out: Vec<(i64, MessageFlags)> = self
+            .mailbox
+            .flags
+            .get(folder)
+            .map(|v| v.iter().copied().filter(|(u, _)| *u >= uid_from).collect())
+            .unwrap_or_default();
+        Box::pin(async move { Ok(out) })
     }
 
     fn search_uids_since(&mut self, since_epoch: i64) -> BoxFuture<'_, AppResult<Vec<i64>>> {
@@ -113,7 +295,7 @@ impl ImapSession for FakeImapSession {
             .lock()
             .unwrap()
             .push(format!("search_since:{since_epoch}"));
-        let mut uids = self.mailbox.uids.clone();
+        let mut uids = self.cur_uids();
         uids.sort_unstable_by(|a, b| b.cmp(a)); // newest (highest UID) first
         Box::pin(async move { Ok(uids) })
     }
@@ -124,10 +306,8 @@ impl ImapSession for FakeImapSession {
             .unwrap()
             .push(format!("search_from:{uid_from}"));
         let mut uids: Vec<i64> = self
-            .mailbox
-            .uids
-            .iter()
-            .copied()
+            .cur_uids()
+            .into_iter()
             .filter(|&u| u >= uid_from)
             .collect();
         uids.sort_unstable();
@@ -138,7 +318,7 @@ impl ImapSession for FakeImapSession {
         // Own the result before the async block so it doesn't borrow `uids`/`self`.
         let pairs: Vec<(i64, Vec<u8>)> = uids
             .iter()
-            .filter_map(|u| self.mailbox.bodies.get(u).map(|b| (*u, b.clone())))
+            .filter_map(|u| self.cur_body(*u).map(|b| (*u, b)))
             .collect();
         Box::pin(async move { Ok(pairs) })
     }
@@ -218,7 +398,11 @@ impl ImapFactory for FakeImapFactory {
             if let Some(msg) = fail {
                 return Err(AppError::ImapConnection(msg));
             }
-            Ok(Box::new(FakeImapSession { mailbox, log }) as Box<dyn ImapSession>)
+            Ok(Box::new(FakeImapSession {
+                mailbox,
+                log,
+                selected: "INBOX".to_string(),
+            }) as Box<dyn ImapSession>)
         })
     }
 }
@@ -442,5 +626,43 @@ mod tests {
             bad.exchange(req).await,
             Err(AppError::AuthOAuthFailed(_))
         ));
+    }
+
+    #[tokio::test]
+    async fn select_folder_switches_the_active_dataset() {
+        // INBOX holds UID 1; a non-INBOX SENT folder holds UID 9 with its own body
+        // and status — proving select_folder swaps the dataset search/fetch read.
+        let mailbox = FakeMailbox::new()
+            .with_inbox(1, 2, 1)
+            .with_uids([1])
+            .with_body(1, b"in-1".to_vec())
+            .with_folders([
+                ("INBOX", FolderRole::Inbox),
+                ("[Gmail]/Sent Mail", FolderRole::Sent),
+            ])
+            .with_folder_status("[Gmail]/Sent Mail", 5, 10, 1)
+            .with_folder_uids("[Gmail]/Sent Mail", [9])
+            .with_folder_body("[Gmail]/Sent Mail", 9, b"sent-9".to_vec());
+        let mut session = FakeImapFactory::new(mailbox)
+            .open(creds("you@example.com"))
+            .await
+            .unwrap();
+
+        // list_folders surfaces the SPECIAL-USE roles.
+        let folders = session.list_folders().await.unwrap();
+        assert!(folders.iter().any(|f| f.role == FolderRole::Sent));
+
+        // Selecting SENT switches search + fetch to that folder's data.
+        let st = session.select_folder("[Gmail]/Sent Mail").await.unwrap();
+        assert_eq!(st.uid_validity, 5);
+        assert_eq!(session.search_uids_from(1).await.unwrap(), vec![9]);
+        assert_eq!(
+            session.fetch_bodies(&[9]).await.unwrap(),
+            vec![(9, b"sent-9".to_vec())]
+        );
+
+        // Returning to INBOX restores the INBOX dataset.
+        session.select_inbox().await.unwrap();
+        assert_eq!(session.search_uids_from(1).await.unwrap(), vec![1]);
     }
 }

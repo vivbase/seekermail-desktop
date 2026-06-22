@@ -59,7 +59,29 @@ pub fn spawn(
             };
 
             match sync::poll_once(&state, &account_id).await {
-                Ok(_) => {}
+                Ok(_) => {
+                    // Secondary folders (SENT / JUNK / TRASH) ride the same tick but
+                    // are best-effort: a failure here must not trip the INBOX backoff
+                    // or stop the loop. They don't need second-level latency, so the
+                    // interval poll (not IDLE) is the right cadence.
+                    if let Err(e) = sync::poll_secondary_folders(&state, &account_id).await {
+                        tracing::warn!(
+                            account_id = %account_id,
+                            error = %e,
+                            "secondary-folder sync failed (INBOX poll succeeded)"
+                        );
+                    }
+                    // Safety net for queued write-backs (read/star → server); the
+                    // per-action spawn_drain handles the prompt path.
+                    if let Err(e) = super::outbound::drain(&state, &account_id).await {
+                        tracing::warn!(account_id = %account_id, error = %e, "outbound drain failed");
+                    }
+                    // Inbound reconciliation (server→local read/star state + vanished
+                    // messages); mirrors changes made from another device.
+                    if let Err(e) = super::inbound::reconcile(&state, &account_id).await {
+                        tracing::warn!(account_id = %account_id, error = %e, "inbound reconcile failed");
+                    }
+                }
                 Err(e) if sync::is_auth_error(&e) => {
                     let _ = AccountRepo::new(state.storage.db())
                         .set_auth_failed(&account_id)

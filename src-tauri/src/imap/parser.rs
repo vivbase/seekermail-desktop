@@ -58,34 +58,52 @@ async fn handle_one(state: &AppState, raw: &RawMail) -> crate::error::AppResult<
     };
     let had_attachments = mail.has_attachments;
     let account_id = mail.account_id.clone();
+    let folder = mail.folder.clone();
     // Capture the body before `mail` is moved so we can enqueue it for embedding.
     let body_text = mail.body_text.clone();
 
     let (_stats, inserted) = MailRepo::new(state.storage.db())
         .upsert_batch(&[mail])
         .await?;
+
+    // Folder-aware ingest policy (analysis/43 §3, "Junk quarantine"):
+    //  • INBOX        → index for GTE + run the E2/E3 auto-reply pipeline + notify.
+    //  • SENT         → index for GTE/style + notify; never auto-reply to our own
+    //                   sent mail, so the pipeline is skipped.
+    //  • JUNK / TRASH → persist only: no GTE index, no auto-reply, no notification.
+    //    (Their rows are also written `embedding_status='skipped'`, so the embedding
+    //    catch-up can't pull them in either — defence in depth.)
+    let index = matches!(folder.as_str(), "INBOX" | "SENT");
+    let run_pipeline = folder == "INBOX";
+    let notify = matches!(folder.as_str(), "INBOX" | "SENT");
+
     for ins in inserted {
         // B3 hot path: enqueue for vectorisation (T031). A full queue is non-fatal —
         // the mail stays `pending` and the worker's catch-up poll claims it later.
-        if let Some(job) =
-            crate::embedding::queue::job_from_summary(&ins.summary, body_text.as_deref())
-        {
-            state.embed_queue.try_send(job);
+        if index {
+            if let Some(job) =
+                crate::embedding::queue::job_from_summary(&ins.summary, body_text.as_deref())
+            {
+                state.embed_queue.try_send(job);
+            }
         }
-        // E2/E3 AI pipeline hook (T082): one job per freshly INSERTED inbound
-        // mail (this path only ever ingests received mail — sent mail is
-        // persisted by mail_writer, not the parse worker). Non-blocking; a
-        // full queue just skips automatic drafting for this mail.
-        state
-            .pipeline_queue
-            .try_enqueue(crate::ai::pipeline::worker::E2PipelineJob {
-                mail_id: ins.summary.id.clone(),
-                account_id: account_id.clone(),
-            });
-        state.events.mail_new(ins.summary);
+        // E2/E3 AI pipeline hook (T082): one job per freshly INSERTED inbound mail.
+        // Non-blocking; a full queue just skips automatic drafting for this mail.
+        if run_pipeline {
+            state
+                .pipeline_queue
+                .try_enqueue(crate::ai::pipeline::worker::E2PipelineJob {
+                    mail_id: ins.summary.id.clone(),
+                    account_id: account_id.clone(),
+                });
+        }
+        if notify {
+            state.events.mail_new(ins.summary);
+        }
     }
-    // A5 branch of the shared pipeline: queue document attachments (T025).
-    if had_attachments {
+    // A5 branch of the shared pipeline: queue document attachments (T025). INBOX
+    // only — we don't chase attachments (or links) out of Junk.
+    if had_attachments && folder == "INBOX" {
         crate::imap::attachment::trigger_auto(state, &account_id).await;
     }
     Ok(())

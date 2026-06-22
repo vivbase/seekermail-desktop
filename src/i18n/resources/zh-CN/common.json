@@ -151,6 +151,9 @@
   "images_load_always": "始终显示此发件人的图片",
   "images_allowed_toast": "已允许显示图片",
   "images_loaded": "图片已加载",
+  "images_loading": "正在加载图片…",
+  "images_blocked_title": "已拦截远程图片",
+  "images_blocked_notice": "远程图片会从发件人服务器加载,可能暴露你已打开此邮件。SeekerMail 仅在你选择加载时私密获取它们——不带 Cookie 或可识别标头。",
   "mail_body_truncated": "邮件过大——仅显示前 {sizeKb} KB",
   "mail_body_plaintext_fallback": "显示纯文本"
 }

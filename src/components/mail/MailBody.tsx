@@ -5,7 +5,7 @@
 // provided. We pass trackerInfo here so both the badge and image bar appear
 // at the top of the body column — the natural reading-pane position.
 import { useTranslation } from "react-i18next";
-import type { MailDetail, TrackerInfo } from "@shared/bindings";
+import type { InlineImage, MailDetail, TrackerInfo } from "@shared/bindings";
 
 import { useSelection } from "@/stores/selection";
 import SanitizedMail from "./SanitizedMail";
@@ -14,9 +14,11 @@ interface MailBodyProps {
   mail: MailDetail;
   /** When provided, renders TrackerBadge + RemoteImageBar inside SanitizedMail. */
   trackerInfo?: TrackerInfo;
+  /** Resolved inline (cid:) images, swapped into the body by SanitizedMail. */
+  inlineImages?: InlineImage[];
 }
 
-export function MailBody({ mail, trackerInfo }: MailBodyProps) {
+export function MailBody({ mail, trackerInfo, inlineImages }: MailBodyProps) {
   const { t } = useTranslation("reading");
   // D1 legal excerpt highlight (T071 §3.3) — set by LegalSidebar risk clicks,
   // cleared automatically when the selected mail changes (selection store).
@@ -41,6 +43,7 @@ export function MailBody({ mail, trackerInfo }: MailBodyProps) {
         bodyText={mail.bodyText}
         mailId={mail.id}
         trackerInfo={trackerInfo}
+        inlineImages={inlineImages}
         highlightPhrase={legalHighlightText}
       />
     </div>

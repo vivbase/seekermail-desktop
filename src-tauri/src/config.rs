@@ -26,6 +26,14 @@ pub const BACKFILL_BATCH_SIZE: usize = 200;
 pub const BACKFILL_BATCH_PAUSE_MS: u64 = 500;
 /// Batch size for incremental poll FETCH (T022).
 pub const POLL_FETCH_BATCH_SIZE: usize = 50;
+/// On a secondary folder's (SENT/JUNK/TRASH) first sync, fetch at most this many
+/// of the most-recent messages, then track new arrivals incrementally. Bounds the
+/// initial pull — Junk in particular can be large and noisy (analysis/43 §3).
+pub const SECONDARY_INITIAL_WINDOW: i64 = 200;
+/// Inbound reconciliation re-reads server FLAGS for at most this many of the most
+/// recent locally-held messages per folder, mirrors read/star state, and detects
+/// messages that vanished (moved/deleted) on the server.
+pub const RECONCILE_WINDOW: i64 = 200;
 /// Re-issue IMAP IDLE at least this often so the server never logs the connection
 /// off as idle (RFC 2177 advises < 29 min); doubles as a liveness probe. The push
 /// listener (`imap::idle_task`) waits at most this long before re-entering IDLE.

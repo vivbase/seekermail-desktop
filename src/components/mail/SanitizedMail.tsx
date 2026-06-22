@@ -3,11 +3,12 @@
 // 07 §10). Falls back to plain text, truncates oversized bodies, and hosts the
 // tracker badge + remote-image bar (T029). Consumes props only — no `invoke`.
 import DOMPurify from "dompurify";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import type { TrackerInfo } from "@shared/bindings";
+import type { InlineImage, TrackerInfo } from "@shared/bindings";
 
 import { DOMPURIFY_CONFIG, MAX_BODY_BYTES, TRUNCATE_KB } from "@/lib/dompurify-config";
+import { applyInlineImages } from "@/lib/mailImages";
 import RemoteImageBar from "./RemoteImageBar";
 import TrackerBadge from "./TrackerBadge";
 
@@ -17,6 +18,8 @@ interface SanitizedMailProps {
   mailId: string;
   /** Tracker status; when present the badge + image bar render (T029). */
   trackerInfo?: TrackerInfo;
+  /** Inline (cid:) images resolved by the route; swapped into the body in place. */
+  inlineImages?: InlineImage[];
   /** D1 legal excerpt to highlight in the body (T071 §3.3). Null = none. */
   highlightPhrase?: string | null;
 }
@@ -52,6 +55,7 @@ export default function SanitizedMail({
   bodyText,
   mailId,
   trackerInfo,
+  inlineImages,
   highlightPhrase,
 }: SanitizedMailProps) {
   const { t } = useTranslation();
@@ -68,6 +72,12 @@ export default function SanitizedMail({
 
   const hasRemoteImages = !!bodyHtml && bodyHtml.includes("data-remote-src");
 
+  // Inline (cid:) images carry no privacy cost — swap them in as soon as the
+  // body is in the DOM and the resolved bytes arrive (re-runs on either change).
+  useEffect(() => {
+    applyInlineImages(bodyRef.current, inlineImages);
+  }, [clean, inlineImages]);
+
   return (
     <div className="mx-auto max-w-[680px]">
       <style>{MAIL_BODY_CSS}</style>
@@ -75,6 +85,7 @@ export default function SanitizedMail({
       {trackerInfo && <TrackerBadge info={trackerInfo} />}
       {trackerInfo && hasRemoteImages && (
         <RemoteImageBar
+          key={mailId}
           mailId={mailId}
           senderEmail={trackerInfo.senderEmail}
           imagesAllowed={trackerInfo.imagesAllowed}
@@ -121,9 +132,11 @@ const MAIL_BODY_CSS = `
 .seeker-mail-body a { color: var(--terra); text-decoration: underline; }
 .seeker-mail-body img { max-width: 100%; height: auto; }
 /* Remote images are emptied at ingest (src="") and restored on demand by the
-   image bar; hide the blanks until then so blocked images show no broken frame. */
+   image bar; inline images carry an unresolved cid: src until the bytes arrive.
+   Hide both until their real src is swapped in, so no broken frame flashes. */
 .seeker-mail-body img[src=""],
-.seeker-mail-body img:not([src]) { display: none; }
+.seeker-mail-body img:not([src]),
+.seeker-mail-body img[src^="cid:" i] { display: none; }
 .seeker-mail-body blockquote {
   border-inline-start: 4px solid var(--p5);
   padding-inline-start: 12px;

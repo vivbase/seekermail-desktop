@@ -20,12 +20,14 @@ use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 use tokio_rustls::TlsConnector;
 
 use super::{
-    ConnProbe, ConnProbeConfig, ConnProbeReport, IdleOutcome, ImapCreds, ImapFactory, ImapSession,
-    InboxStatus, SmtpCreds, TokenEndpoint, TokenRequest, TokenResponse,
+    ConnProbe, ConnProbeConfig, ConnProbeReport, FolderRole, IdleOutcome, ImapCreds, ImapFactory,
+    ImapFlag, ImapSession, InboxStatus, MailboxFolder, MessageFlags, SmtpCreds, TokenEndpoint,
+    TokenRequest, TokenResponse,
 };
 use crate::error::{AppError, AppResult};
 
 use async_imap::extensions::idle::IdleResponse;
+use async_imap::types::NameAttribute;
 
 /// OAuth token endpoint over HTTPS (`reqwest`, rustls).
 pub struct LiveTokenEndpoint {
@@ -258,6 +260,25 @@ fn classify_imap_err(e: &async_imap::error::Error) -> AppError {
     }
 }
 
+/// Resolve a folder's [`FolderRole`] from its RFC 6154 SPECIAL-USE attributes,
+/// falling back to a leaf-name heuristic for servers that don't advertise them.
+/// `imap-proto` decodes the SPECIAL-USE flags (`\Sent`, `\Junk`, …) into named
+/// [`NameAttribute`] variants; anything unknown arrives as `Extension` (ignored).
+fn classify_folder(name: &str, attrs: &[NameAttribute<'_>]) -> FolderRole {
+    for a in attrs {
+        match a {
+            NameAttribute::Sent => return FolderRole::Sent,
+            NameAttribute::Junk => return FolderRole::Junk,
+            NameAttribute::Trash => return FolderRole::Trash,
+            NameAttribute::Drafts => return FolderRole::Drafts,
+            NameAttribute::All => return FolderRole::All,
+            NameAttribute::Archive => return FolderRole::Archive,
+            _ => {}
+        }
+    }
+    FolderRole::from_name_heuristic(name)
+}
+
 /// A live, authenticated IMAP session bound to a single connection. Implements
 /// the [`ImapSession`] seam over `async-imap`'s `Session` (SELECT / UID SEARCH /
 /// UID FETCH).
@@ -300,6 +321,131 @@ where
                 uid_next: mb.uid_next.unwrap_or(1) as i64,
                 exists: mb.exists,
             })
+        })
+    }
+
+    fn select_folder(&mut self, name: &str) -> BoxFuture<'_, AppResult<InboxStatus>> {
+        let name = name.to_string();
+        Box::pin(async move {
+            let mb = self
+                .sess()?
+                .select(&name)
+                .await
+                .map_err(|e| classify_imap_err(&e))?;
+            Ok(InboxStatus {
+                uid_validity: mb.uid_validity.unwrap_or(0) as i64,
+                uid_next: mb.uid_next.unwrap_or(1) as i64,
+                exists: mb.exists,
+            })
+        })
+    }
+
+    fn list_folders(&mut self) -> BoxFuture<'_, AppResult<Vec<MailboxFolder>>> {
+        Box::pin(async move {
+            // `LIST "" "*"` enumerates every selectable mailbox. Servers that
+            // support RFC 6154 return the SPECIAL-USE flags (\Sent, \Junk, …) in
+            // the attributes; for those that don't, `classify_folder` falls back to
+            // a leaf-name heuristic.
+            let mut stream = self
+                .sess()?
+                .list(Some(""), Some("*"))
+                .await
+                .map_err(|e| classify_imap_err(&e))?;
+            let mut out = Vec::new();
+            while let Some(item) = stream.next().await {
+                let entry = item.map_err(|e| classify_imap_err(&e))?;
+                let role = classify_folder(entry.name(), entry.attributes());
+                out.push(MailboxFolder {
+                    name: entry.name().to_string(),
+                    role,
+                });
+            }
+            Ok(out)
+        })
+    }
+
+    fn store_flag(
+        &mut self,
+        folder: &str,
+        uid: i64,
+        flag: ImapFlag,
+        set: bool,
+    ) -> BoxFuture<'_, AppResult<()>> {
+        let folder = folder.to_string();
+        Box::pin(async move {
+            let sess = self.sess()?;
+            sess.select(&folder)
+                .await
+                .map_err(|e| classify_imap_err(&e))?;
+            let verb = if set { "+FLAGS" } else { "-FLAGS" };
+            let query = format!("{verb} ({})", flag.as_imap_token());
+            let mut stream = sess
+                .uid_store(uid.to_string(), query)
+                .await
+                .map_err(|e| classify_imap_err(&e))?;
+            // Drain the updated-FLAGS response so a server NO/BAD surfaces as an error.
+            while let Some(item) = stream.next().await {
+                item.map_err(|e| classify_imap_err(&e))?;
+            }
+            Ok(())
+        })
+    }
+
+    fn move_message(
+        &mut self,
+        source_folder: &str,
+        uid: i64,
+        dest_folder: &str,
+    ) -> BoxFuture<'_, AppResult<()>> {
+        let source = source_folder.to_string();
+        let dest = dest_folder.to_string();
+        Box::pin(async move {
+            let sess = self.sess()?;
+            sess.select(&source)
+                .await
+                .map_err(|e| classify_imap_err(&e))?;
+            sess.uid_mv(uid.to_string(), &dest)
+                .await
+                .map_err(|e| classify_imap_err(&e))?;
+            Ok(())
+        })
+    }
+
+    fn fetch_flags(
+        &mut self,
+        folder: &str,
+        uid_from: i64,
+    ) -> BoxFuture<'_, AppResult<Vec<(i64, MessageFlags)>>> {
+        let folder = folder.to_string();
+        Box::pin(async move {
+            let sess = self.sess()?;
+            sess.select(&folder)
+                .await
+                .map_err(|e| classify_imap_err(&e))?;
+            let from = uid_from.max(1);
+            let mut stream = sess
+                .uid_fetch(format!("{from}:*"), "FLAGS")
+                .await
+                .map_err(|e| classify_imap_err(&e))?;
+            let mut out = Vec::new();
+            while let Some(item) = stream.next().await {
+                let fetch = item.map_err(|e| classify_imap_err(&e))?;
+                let Some(uid) = fetch.uid else { continue };
+                // `from:*` always echoes the mailbox's highest UID even if below `from`.
+                if (uid as i64) < from {
+                    continue;
+                }
+                let mut flags = MessageFlags::default();
+                for f in fetch.flags() {
+                    match f {
+                        async_imap::types::Flag::Seen => flags.seen = true,
+                        async_imap::types::Flag::Flagged => flags.flagged = true,
+                        _ => {}
+                    }
+                }
+                out.push((uid as i64, flags));
+            }
+            Ok(out)
         })
     }
 

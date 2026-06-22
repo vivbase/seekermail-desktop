@@ -151,6 +151,9 @@
   "images_load_always": "الإظهار دائمًا من هذا المُرسِل",
   "images_allowed_toast": "تم السماح بالصور",
   "images_loaded": "تم تحميل الصور",
+  "images_loading": "جارٍ تحميل الصور…",
+  "images_blocked_title": "تم حظر الصور البعيدة",
+  "images_blocked_notice": "يتم تحميل الصور البعيدة من خادم المُرسِل، ما قد يكشف أنك فتحت هذه الرسالة. يجلبها SeekerMail بخصوصية — دون ملفات تعريف ارتباط أو ترويسات تعريفية — فقط عندما تختار تحميلها.",
   "mail_body_truncated": "البريد كبير جدًا — عرض أول {sizeKb} كيلوبايت",
   "mail_body_plaintext_fallback": "عرض نص عادي"
 }

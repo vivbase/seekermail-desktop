@@ -151,6 +151,9 @@
   "images_load_always": "永遠顯示此寄件者的圖片",
   "images_allowed_toast": "圖片已允許",
   "images_loaded": "圖片已載入",
+  "images_loading": "正在載入圖片…",
+  "images_blocked_title": "已封鎖遠端圖片",
+  "images_blocked_notice": "遠端圖片會從寄件者伺服器載入,可能洩露你已開啟此郵件。SeekerMail 只在你選擇載入時以私密方式擷取——不帶 Cookie 或可識別標頭。",
   "mail_body_truncated": "郵件過大——僅顯示前 {sizeKb} KB",
   "mail_body_plaintext_fallback": "以純文字顯示"
 }

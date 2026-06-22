@@ -10,6 +10,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import {
+  useInlineImages,
   useMailDetail,
   useSetMailRead,
   useSetMailStarred,
@@ -72,6 +73,9 @@ export default function MailDetail() {
 
   const { data: mail, isLoading, isError } = useMailDetail(mailId);
   const { data: trackerInfo } = useTrackerInfo(mailId ?? "");
+  // Inline (cid:) images: only fetched when the body actually references them.
+  const hasInlineImages = !!mail?.bodyHtml && /src=["']cid:/i.test(mail.bodyHtml);
+  const { data: inlineImages } = useInlineImages(mailId ?? "", hasInlineImages);
   const { data: accounts } = useAccounts();
   // Open risk events for this mail (T071 §3.2). The `risk:alert` push event
   // invalidates ['riskEvents'] (events.ts), so T4 banners appear live.
@@ -260,7 +264,7 @@ export default function MailDetail() {
 
           {/* Body reading column — stays centred for a comfortable line length */}
           <div className="mx-auto w-full max-w-[680px] px-5 pb-6">
-            <MailBody mail={mail} trackerInfo={trackerInfo} />
+            <MailBody mail={mail} trackerInfo={trackerInfo} inlineImages={inlineImages} />
 
             {mail.hasAttachments && <AttachmentList mailId={mail.id} />}
           </div>

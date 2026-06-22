@@ -47,6 +47,32 @@ export function useAllowRemoteImages() {
   });
 }
 
+/**
+ * Resolve a mail's inline (cid:) images to bytes for in-body rendering. Inline
+ * parts carry no privacy cost (they ship inside the message), so this is enabled
+ * automatically — but only when the body actually references `cid:`, so plain
+ * mail never triggers a backend fetch.
+ */
+export function useInlineImages(mailId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["inline_images", mailId] as const,
+    queryFn: () => ipc("get_inline_images", { mail_id: mailId }),
+    enabled: enabled && !!mailId,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * Fetch one remote image through the backend (no cookies / Referer / UA) for a
+ * `data:` URI swap, so the webview never connects to the origin. Used by the
+ * remote-image bar's load action and the allow-listed-sender auto-reveal.
+ */
+export function useFetchRemoteImage() {
+  return useMutation({
+    mutationFn: (url: string) => ipc("fetch_remote_image", { url }),
+  });
+}
+
 // ── L0 thread stream (T036/T037) ─────────────────────────────────────────────
 
 type ThreadFilter = Omit<ListThreadsParams, "limit" | "offset">;
@@ -169,6 +195,18 @@ export function useDeleteMail() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (mailId: string) => ipc("delete_mail", { mail_id: mailId }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["threads"] });
+      void qc.invalidateQueries({ queryKey: ["mails"] });
+    },
+  });
+}
+
+/** Restore a trashed mail back to the Inbox (analysis/44 §5). */
+export function useRestoreMail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (mailId: string) => ipc("restore_mail", { mail_id: mailId }),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["threads"] });
       void qc.invalidateQueries({ queryKey: ["mails"] });

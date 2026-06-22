@@ -151,6 +151,9 @@
   "images_load_always": "Luôn hiển thị từ người gửi này",
   "images_allowed_toast": "Đã cho phép hình ảnh",
   "images_loaded": "Đã tải hình ảnh",
+  "images_loading": "Đang tải hình ảnh…",
+  "images_blocked_title": "Đã chặn hình ảnh từ xa",
+  "images_blocked_notice": "Hình ảnh từ xa được tải từ máy chủ của người gửi, điều này có thể tiết lộ rằng bạn đã mở email. SeekerMail chỉ tải chúng một cách riêng tư — không cookie hay tiêu đề nhận dạng — khi bạn chọn tải.",
   "mail_body_truncated": "Email quá lớn — hiển thị {sizeKb} KB đầu tiên",
   "mail_body_plaintext_fallback": "Đang hiển thị văn bản thuần"
 }

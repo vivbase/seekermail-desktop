@@ -62,6 +62,17 @@ network_error`, 0 mails) even with a configured account.
   the "Get Mail" label shows only as a hover tooltip. Clicking force-syncs every active account via
   `trigger_sync`; the pinwheel spins **in place (non-blocking — it never covers the UI)** until the
   `sync:complete` / `sync:error` event lands.
+- **feat(mail): remote images load privately through the backend, with a prominent one-click bar.**
+  Remote images stay blocked by default, but loading them no longer lets the WebView connect to the
+  sender's server: the new `fetch_remote_image` command fetches locally from Rust with **no cookies, no
+  Referer, and no User-Agent**, accepts only an `image/*` response under a 16 MB cap, caps + re-validates
+  redirects, and refuses internal/localhost hosts (basic SSRF guard); the bytes return as a `data:` URI
+  (CSP already allows `img-src data:`). The reading-view bar (`RemoteImageBar`) is now a clear amber
+  banner with a privacy note and one-click **Load images** / **Always from this sender**, and allow-listed
+  senders now auto-reveal on reopen (previously they stayed blocked). New `useFetchRemoteImage` hook +
+  `lib/mailImages.ts` helpers + `RemoteImage` DTO. A local fetch can't hide the device IP (proxy/VPN is
+  out of scope to stay local-first) but removes the other correlating headers. (Knowledge base
+  `docs/analysis/47`.)
 
 ### Changed
 
@@ -101,10 +112,20 @@ network_error`, 0 mails) even with a configured account.
 
 ### Fixed
 
+- **fix(mail): inline (`cid:`) images now render in the reading view.** Company logos, signature
+  images and in-body pictures never showed — the sanitiser correctly preserved `<img src="cid:...">`,
+  but the inline part's bytes were never downloaded (auto-download excluded them with `is_inline = 0`)
+  and nothing resolved `cid:` to bytes for the WebView, which cannot load a `cid:` URL, so it rendered
+  blank/broken frames. The new `get_inline_images` command fetches the inline bytes on demand (reusing
+  the attachment-download transport) and returns them base64; the reading view (`SanitizedMail`) swaps
+  each `cid:` image to a `data:` URI after the DOMPurify pass, with unresolved ones hidden via CSS to
+  avoid a broken-image flash. Inline images ship inside the message (no network, no privacy cost), so
+  they load automatically — no "load images" gate. New `useInlineImages` hook + `InlineImage` DTO; the
+  remote-image blocker is unchanged. (Knowledge base `docs/analysis/47`.)
 - **fix(sync): a newly added mailbox imports its existing mail again.** Adding an account had
-  stopped importing any history. By design (F_A4 §6) the first incremental poll of a brand-new
+  stopped importing any history. By design (F*A4 §6) the first incremental poll of a brand-new
   account seeds the UID cursor at the mailbox's current high-water mark and fetches nothing itself
-  — existing mail is the history backfill's job — but the first sync never actually _started_ that
+  — existing mail is the history backfill's job — but the first sync never actually \_started* that
   backfill. The only place a backfill was ever kicked off is `set_knowledge_depth` (the wizard's
   last step), so any add path that didn't reach it (and any single backfill that errored or raced)
   left the inbox empty. The previous behavior masked this because the first poll used to fetch

@@ -151,6 +151,9 @@
   "images_load_always": "Altijd tonen van deze afzender",
   "images_allowed_toast": "Afbeeldingen toegestaan",
   "images_loaded": "Afbeeldingen geladen",
+  "images_loading": "Afbeeldingen laden…",
+  "images_blocked_title": "Externe afbeeldingen geblokkeerd",
+  "images_blocked_notice": "Externe afbeeldingen worden geladen vanaf de server van de afzender, wat kan onthullen dat je deze e-mail hebt geopend. SeekerMail haalt ze privé op — zonder cookies of identificerende headers — alleen wanneer je ze laadt.",
   "mail_body_truncated": "E-mail te groot — eerste {sizeKb} KB wordt getoond",
   "mail_body_plaintext_fallback": "Platte tekst wordt getoond"
 }

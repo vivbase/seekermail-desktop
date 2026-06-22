@@ -251,6 +251,8 @@ const HIGHLIGHT_MAIL: MailDetail = {
   isRead: true,
   isStarred: false,
   isArchived: false,
+  isDeleted: false,
+  isSpam: false,
   hasAttachments: false,
   folder: "INBOX",
 };

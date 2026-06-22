@@ -151,6 +151,9 @@
   "images_load_always": "Always show from this sender",
   "images_allowed_toast": "Images allowed",
   "images_loaded": "Images loaded",
+  "images_loading": "Loading images…",
+  "images_blocked_title": "Remote images blocked",
+  "images_blocked_notice": "Remote images load from the sender's server, which can reveal that you opened this email. SeekerMail fetches them privately — no cookies or identifying headers — only when you load them.",
   "mail_body_truncated": "Email too large — showing first {sizeKb} KB",
   "mail_body_plaintext_fallback": "Showing plain text"
 }

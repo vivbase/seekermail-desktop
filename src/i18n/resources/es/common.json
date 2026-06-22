@@ -151,6 +151,9 @@
   "images_load_always": "Mostrar siempre de este remitente",
   "images_allowed_toast": "Imágenes permitidas",
   "images_loaded": "Imágenes cargadas",
+  "images_loading": "Cargando imágenes…",
+  "images_blocked_title": "Imágenes remotas bloqueadas",
+  "images_blocked_notice": "Las imágenes remotas se cargan desde el servidor del remitente, lo que puede revelar que abriste este correo. SeekerMail las obtiene de forma privada —sin cookies ni encabezados identificativos— solo cuando eliges cargarlas.",
   "mail_body_truncated": "Correo demasiado grande — mostrando los primeros {sizeKb} KB",
   "mail_body_plaintext_fallback": "Mostrando texto plano"
 }

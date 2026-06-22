@@ -4,6 +4,8 @@
   "forward": "Forward",
   "archive": "Archive",
   "delete": "Delete",
+  "restore": "Restore",
+  "not_spam": "Not spam",
   "star": "Star",
   "unstar": "Unstar",
   "mark_unread": "Mark unread",

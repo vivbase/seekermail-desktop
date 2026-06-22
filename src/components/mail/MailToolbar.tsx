@@ -12,6 +12,7 @@ import type { MailDetail } from "@shared/bindings";
 import {
   useArchiveMail,
   useDeleteMail,
+  useRestoreMail,
   useSetMailRead,
   useSetMailStarred,
 } from "@/ipc/queries/mail";
@@ -145,6 +146,19 @@ const Icons = {
       />
     </svg>
   ),
+  Restore: () => (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2 8a6 6 0 1 0 2-4.5M2 2v3h3" />
+    </svg>
+  ),
   MarkUnread: () => (
     <svg
       width="14"
@@ -195,8 +209,16 @@ export function MailToolbar({
 
   const archiveMail = useArchiveMail();
   const deleteMail = useDeleteMail();
+  const restoreMail = useRestoreMail();
   const setMailRead = useSetMailRead();
   const setMailStarred = useSetMailStarred();
+
+  // A mail in the Trash view (soft-deleted locally, or already moved to the server
+  // Trash folder) shows Restore instead of Archive/Delete.
+  const isTrashed = mail.isDeleted || mail.folder === "TRASH";
+  // A mail in the Spam view (marked spam locally, or already moved to the server
+  // Junk folder) shows "Not spam" — the same restore action, moved back to Inbox.
+  const isSpammed = mail.isSpam || mail.folder === "JUNK";
 
   // The account that received this mail is the default From-account on reply,
   // and its address is excluded from the reply-all recipient list.
@@ -244,6 +266,12 @@ export function MailToolbar({
     });
   };
 
+  const handleRestore = () => {
+    restoreMail.mutate(mail.id, {
+      onSuccess: () => navigate("/"),
+    });
+  };
+
   const handleMarkUnread = () => {
     setMailRead.mutate({ mailId: mail.id, isRead: false });
     navigate("/");
@@ -271,19 +299,37 @@ export function MailToolbar({
 
         {/* Management actions */}
         <div className="flex items-center gap-1">
-          <ToolbarButton
-            label={t("archive")}
-            onClick={handleArchive}
-            disabled={archiveMail.isPending}
-            icon={<Icons.Archive />}
-          />
-          <ToolbarButton
-            label={t("delete")}
-            onClick={handleDelete}
-            disabled={deleteMail.isPending}
-            destructive
-            icon={<Icons.Delete />}
-          />
+          {isTrashed ? (
+            <ToolbarButton
+              label={t("restore")}
+              onClick={handleRestore}
+              disabled={restoreMail.isPending}
+              icon={<Icons.Restore />}
+            />
+          ) : isSpammed ? (
+            <ToolbarButton
+              label={t("not_spam")}
+              onClick={handleRestore}
+              disabled={restoreMail.isPending}
+              icon={<Icons.Restore />}
+            />
+          ) : (
+            <>
+              <ToolbarButton
+                label={t("archive")}
+                onClick={handleArchive}
+                disabled={archiveMail.isPending}
+                icon={<Icons.Archive />}
+              />
+              <ToolbarButton
+                label={t("delete")}
+                onClick={handleDelete}
+                disabled={deleteMail.isPending}
+                destructive
+                icon={<Icons.Delete />}
+              />
+            </>
+          )}
 
           {/* More menu */}
           <div className="relative">

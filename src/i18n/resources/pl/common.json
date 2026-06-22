@@ -151,6 +151,9 @@
   "images_load_always": "Zawsze wyświetlaj od tego nadawcy",
   "images_allowed_toast": "Obrazy dozwolone",
   "images_loaded": "Obrazy załadowane",
+  "images_loading": "Ładowanie obrazów…",
+  "images_blocked_title": "Zablokowano zdalne obrazy",
+  "images_blocked_notice": "Zdalne obrazy ładują się z serwera nadawcy, co może ujawnić, że otworzyłeś tę wiadomość. SeekerMail pobiera je prywatnie — bez plików cookie i nagłówków identyfikujących — tylko gdy zdecydujesz się je załadować.",
   "mail_body_truncated": "E-mail zbyt duży — wyświetlanie pierwszych {sizeKb} KB",
   "mail_body_plaintext_fallback": "Wyświetlanie zwykłego tekstu"
 }

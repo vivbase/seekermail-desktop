@@ -22,6 +22,8 @@ import type {
   ListDecisionsParams,
   ImageAllowScope,
   ImagePolicy,
+  InlineImage,
+  RemoteImage,
   IpcError,
   KeywordSearchParams,
   ListMailsParams,
@@ -335,6 +337,11 @@ export type Commands = {
     input: { mail_id: string; scope: ImageAllowScope };
     output: null;
   };
+  // Inline (cid:) images: resolved to bytes for in-body rendering (no network).
+  get_inline_images: { input: { mail_id: string }; output: InlineImage[] };
+  // Privacy-hardened remote-image load: fetched by the backend (no cookies /
+  // Referer / UA), returned base64 for a data: URI swap.
+  fetch_remote_image: { input: { url: string }; output: RemoteImage };
 
   // Search (T032/T033/T035) — real backend
   keyword_search: {
@@ -481,6 +488,7 @@ export type Commands = {
   };
   archive_mail: { input: { mail_id: string }; output: null };
   delete_mail: { input: { mail_id: string }; output: null };
+  restore_mail: { input: { mail_id: string }; output: null };
 };
 
 export type CommandName = keyof Commands;
@@ -589,6 +597,8 @@ const SAMPLE_DETAIL: MailDetail = {
   isRead: false,
   isStarred: true,
   isArchived: false,
+  isDeleted: false,
+  isSpam: false,
   hasAttachments: true,
   folder: "INBOX",
 };
@@ -1413,6 +1423,16 @@ const MOCK_RESPONSES: {
     senderEmail: "sender@example.com",
   }),
   allow_remote_images: () => null,
+  // No inline images in the off-Tauri fixtures; the reading view simply renders
+  // no cid: images (the real backend resolves them from the message parts).
+  get_inline_images: () => [],
+  // A 1x1 transparent PNG so a dev/browser "load images" click resolves without
+  // a backend, exercising the data: URI swap path.
+  fetch_remote_image: () => ({
+    mime: "image/png",
+    dataBase64:
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  }),
 
   // Search
   keyword_search: () => ({
@@ -1946,6 +1966,7 @@ const MOCK_RESPONSES: {
   set_mail_starred: () => null,
   archive_mail: () => null,
   delete_mail: () => null,
+  restore_mail: () => null,
 };
 
 /**

@@ -485,6 +485,12 @@ pub struct MailDetail {
     pub is_read: bool,
     pub is_starred: bool,
     pub is_archived: bool,
+    /// Locally soft-deleted (lives in the Trash view). Drives the reading-view
+    /// Restore affordance even before the server-side Trash move has synced back.
+    pub is_deleted: bool,
+    /// Locally marked spam (lives in the Spam view). Drives the reading-view
+    /// "Not spam" affordance even before the server-side Junk move has synced back.
+    pub is_spam: bool,
     pub has_attachments: bool,
     pub folder: String,
 }
@@ -563,6 +569,35 @@ pub enum ImageAllowScope {
         #[serde(rename = "senderEmail")]
         sender_email: String,
     },
+}
+
+/// One resolved inline (`cid:`) image for the reading view. Returned by
+/// `get_inline_images`; the frontend swaps `<img src="cid:…">` to a `data:` URI
+/// built from `mime` + `data_base64`. Inline parts ship inside the message, so
+/// resolving them sends nothing to any third party — there is no privacy cost
+/// and no "load images" gate (F_G3 §4.1). `content_id` is normalised (angle
+/// brackets stripped) to match the `cid:` reference in the sanitised HTML.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct InlineImage {
+    pub content_id: String,
+    pub mime: String,
+    pub data_base64: String,
+}
+
+/// One remote image fetched through the backend on explicit user action
+/// (`fetch_remote_image`). Routing the load through Rust — instead of letting
+/// the webview hit the origin — sends no cookies, no Referer, and no
+/// User-Agent, and keeps the origin connection out of the renderer entirely
+/// (F_B2 §4.3, pulled forward as a LOCAL fetch — no third-party proxy). The
+/// frontend swaps the blocked `data-remote-src` to a `data:` URI from these
+/// fields. NOTE: a local fetch still originates from the device, so it cannot
+/// hide the IP from the origin — only a proxy/VPN could, which is out of scope.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteImage {
+    pub mime: String,
+    pub data_base64: String,
 }
 
 // ── Event payloads (T024, 02 §4) — broadcast via the Emitter ────────────────

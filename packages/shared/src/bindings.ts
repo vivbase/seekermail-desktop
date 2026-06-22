@@ -582,6 +582,16 @@ export type ImageAllowScope = { type: "thisMessage" } | { type: "alwaysSender"; 
 export type ImagePolicy = "block_all" | "trusted_only" | "allow_all"
 
 /**
+ * One resolved inline (`cid:`) image for the reading view. Returned by
+ * `get_inline_images`; the frontend swaps `<img src="cid:…">` to a `data:` URI
+ * built from `mime` + `data_base64`. Inline parts ship inside the message, so
+ * resolving them sends nothing to any third party — there is no privacy cost
+ * and no "load images" gate (F_G3 §4.1). `content_id` is normalised (angle
+ * brackets stripped) to match the `cid:` reference in the sanitised HTML.
+ */
+export type InlineImage = { contentId: string; mime: string; dataBase64: string }
+
+/**
  * The serialized wire error (02 §2). Tauri throws the `Err` variant of a
  * command's `Result` to JS in this shape.
  */
@@ -930,6 +940,18 @@ export type RegenerateDraftParams = {
  * The draft being regenerated (it ends up `discarded`/`superseded`).
  */
 id: string; instruction: string | null }
+
+/**
+ * One remote image fetched through the backend on explicit user action
+ * (`fetch_remote_image`). Routing the load through Rust — instead of letting
+ * the webview hit the origin — sends no cookies, no Referer, and no
+ * User-Agent, and keeps the origin connection out of the renderer entirely
+ * (F_B2 §4.3, pulled forward as a LOCAL fetch — no third-party proxy). The
+ * frontend swaps the blocked `data-remote-src` to a `data:` URI from these
+ * fields. NOTE: a local fetch still originates from the device, so it cannot
+ * hide the IP from the origin — only a proxy/VPN could, which is out of scope.
+ */
+export type RemoteImage = { mime: string; dataBase64: string }
 
 /**
  * Params for `request_ai_reply` (02 §Module E): generate an E1 manual reply
@@ -1361,6 +1383,8 @@ export type MailDetail = {
   isRead: boolean;
   isStarred: boolean;
   isArchived: boolean;
+  isDeleted: boolean;
+  isSpam: boolean;
   hasAttachments: boolean;
   folder: string;
 };

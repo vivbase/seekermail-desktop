@@ -18,12 +18,13 @@ import { cn } from "@/lib/cn";
  * `inbox` is the received-only IMAP INBOX folder and is the default landing tab
  * (IA: "main view defaults to Inbox"). `all` applies no folder filter, so it
  * unifies received + sent + archived across the account(s). */
-type FolderView = "inbox" | "all" | "sent" | "drafts" | "trash";
+type FolderView = "inbox" | "all" | "sent" | "drafts" | "spam" | "trash";
 const FOLDER_MAP: Record<FolderView, string | null> = {
   inbox: "INBOX",
   all: null,
   sent: "SENT",
   drafts: "DRAFTS",
+  spam: "JUNK",
   trash: "TRASH",
 };
 
@@ -190,6 +191,7 @@ function FolderTabs({
   const allCount = useMailCount({ accountId: acct }).data ?? 0;
   const sentCount = useMailCount({ accountId: acct, folder: "SENT" }).data ?? 0;
   const draftCount = useMailCount({ accountId: acct, folder: "DRAFTS" }).data ?? 0;
+  const spamCount = useMailCount({ accountId: acct, folder: "JUNK" }).data ?? 0;
   const trashCount = useMailCount({ accountId: acct, folder: "TRASH" }).data ?? 0;
 
   const tabs: { key: FolderView; label: string; count: number }[] = [
@@ -197,6 +199,7 @@ function FolderTabs({
     { key: "all", label: t("tab_all_mail"), count: allCount },
     { key: "sent", label: t("tab_sent"), count: sentCount },
     { key: "drafts", label: t("tab_drafts"), count: draftCount },
+    { key: "spam", label: t("tab_spam"), count: spamCount },
     { key: "trash", label: t("tab_trash"), count: trashCount },
   ];
 

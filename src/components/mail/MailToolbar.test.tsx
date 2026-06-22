@@ -69,6 +69,8 @@ const MAIL: MailDetail = {
   isRead: true,
   isStarred: false,
   isArchived: false,
+  isDeleted: false,
+  isSpam: false,
   hasAttachments: false,
   folder: "INBOX",
 };
@@ -111,5 +113,33 @@ describe("MailToolbar — compose navigation carries router state", () => {
     expect(navigateMock).toHaveBeenCalledWith("/compose", {
       state: { mode: "forward", mail: MAIL, ownEmail: "owner@example.com" },
     });
+  });
+});
+
+// A mail in the Trash view (analysis/44 §5) swaps Archive/Delete for Restore, so
+// the user can recover it in-app instead of going back to the web.
+describe("MailToolbar — Trash view shows Restore", () => {
+  it("renders Restore (not Delete/Archive) for a trashed mail", () => {
+    render(<MailToolbar mail={{ ...MAIL, isDeleted: true }} />, { wrapper });
+    expect(screen.getByRole("button", { name: "Restore" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
+  });
+
+  it("keeps Archive/Delete (no Restore) for a normal inbox mail", () => {
+    render(<MailToolbar mail={MAIL} />, { wrapper });
+    expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Restore" })).toBeNull();
+  });
+});
+
+// A mail in the Spam view (analysis/44 §5) swaps Archive/Delete for "Not spam",
+// which moves it back to the Inbox so the user can recover a false positive in-app.
+describe("MailToolbar — Spam view shows Not spam", () => {
+  it("renders Not spam (not Delete/Archive) for a spam'd mail", () => {
+    render(<MailToolbar mail={{ ...MAIL, isSpam: true }} />, { wrapper });
+    expect(screen.getByRole("button", { name: "Not spam" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
   });
 });

@@ -55,12 +55,118 @@ pub struct SmtpCreds {
     pub secret: String,
 }
 
-/// `SELECT INBOX` result (01 `sync_state`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// `SELECT` result for a folder (01 `sync_state`). Named for the INBOX it was
+/// first used with; [`ImapSession::select_folder`] returns the same shape for any
+/// folder.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct InboxStatus {
     pub uid_validity: i64,
     pub uid_next: i64,
     pub exists: u32,
+}
+
+/// The role of a server folder, resolved from RFC 6154 SPECIAL-USE attributes
+/// (with a leaf-name fallback for servers that don't advertise them). Drives the
+/// multi-folder fetch allow-list and the local `mails.folder` tag on ingest.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FolderRole {
+    Inbox,
+    Sent,
+    Junk,
+    Trash,
+    Drafts,
+    Archive,
+    All,
+    Other,
+}
+
+impl FolderRole {
+    /// Best-effort role from a mailbox name, for servers that don't advertise
+    /// SPECIAL-USE. Case-insensitive; matches the last path segment so
+    /// `[Gmail]/Sent Mail` and `INBOX.Sent` both resolve to `Sent`.
+    pub fn from_name_heuristic(name: &str) -> FolderRole {
+        if name.eq_ignore_ascii_case("INBOX") {
+            return FolderRole::Inbox;
+        }
+        let leaf = name
+            .rsplit(['/', '.'])
+            .next()
+            .unwrap_or(name)
+            .trim()
+            .to_ascii_lowercase();
+        match leaf.as_str() {
+            "sent" | "sent mail" | "sent items" | "sent messages" => FolderRole::Sent,
+            "junk" | "spam" | "junk email" | "junk e-mail" | "bulk mail" => FolderRole::Junk,
+            "trash" | "deleted" | "deleted items" | "deleted messages" | "bin" => FolderRole::Trash,
+            "drafts" | "draft" => FolderRole::Drafts,
+            "all mail" => FolderRole::All,
+            "archive" | "archives" => FolderRole::Archive,
+            _ => FolderRole::Other,
+        }
+    }
+
+    /// The canonical local `mails.folder` tag for this role, or `None` for folders
+    /// SeekerMail does not ingest in the read-side pass (Drafts/Archive/All/Other).
+    /// The allow-list is therefore exactly INBOX / SENT / JUNK / TRASH.
+    pub fn local_folder_tag(self) -> Option<&'static str> {
+        match self {
+            FolderRole::Inbox => Some("INBOX"),
+            FolderRole::Sent => Some("SENT"),
+            FolderRole::Junk => Some("JUNK"),
+            FolderRole::Trash => Some("TRASH"),
+            _ => None,
+        }
+    }
+
+    /// The inverse of [`Self::local_folder_tag`]: the role behind a stored
+    /// `mails.folder` tag. Lets the write-back worker map a tag back to the live
+    /// server mailbox name (which differs, e.g. `[Gmail]/Sent Mail`).
+    pub fn from_local_tag(tag: &str) -> Option<FolderRole> {
+        match tag {
+            "INBOX" => Some(FolderRole::Inbox),
+            "SENT" => Some(FolderRole::Sent),
+            "JUNK" => Some(FolderRole::Junk),
+            "TRASH" => Some(FolderRole::Trash),
+            _ => None,
+        }
+    }
+}
+
+/// One folder discovered by [`ImapSession::list_folders`]: the server-side
+/// selectable name plus its resolved [`FolderRole`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MailboxFolder {
+    pub name: String,
+    pub role: FolderRole,
+}
+
+/// A message's server-side system flags, read during inbound reconciliation
+/// (server→local read/star state).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct MessageFlags {
+    pub seen: bool,
+    pub flagged: bool,
+}
+
+/// A message flag SeekerMail writes back to the server (RFC 3501 system flags).
+/// The write-back side of two-way sync: a local read/star toggle becomes a
+/// `UID STORE` of the matching flag.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImapFlag {
+    /// `\Seen` — read / unread.
+    Seen,
+    /// `\Flagged` — starred.
+    Flagged,
+}
+
+impl ImapFlag {
+    /// The IMAP wire token (backslash-prefixed system flag).
+    pub fn as_imap_token(self) -> &'static str {
+        match self {
+            ImapFlag::Seen => "\\Seen",
+            ImapFlag::Flagged => "\\Flagged",
+        }
+    }
 }
 
 /// Outcome of one IMAP IDLE wait (push sync). The listener treats *any* server
@@ -114,6 +220,45 @@ pub struct TokenResponse {
 /// An open, authenticated IMAP session over the INBOX (T021/T022).
 pub trait ImapSession: Send {
     fn select_inbox(&mut self) -> BoxFuture<'_, AppResult<InboxStatus>>;
+    /// List the server's selectable folders with their resolved SPECIAL-USE roles
+    /// (RFC 6154). Lets the multi-folder scheduler find SENT / JUNK / TRASH
+    /// without hard-coding provider-specific names (Gmail's `[Gmail]/Sent Mail`
+    /// vs a plain `Sent`).
+    fn list_folders(&mut self) -> BoxFuture<'_, AppResult<Vec<MailboxFolder>>>;
+    /// `SELECT` an arbitrary folder by name (generalises [`Self::select_inbox`],
+    /// which is kept for the INBOX-only IDLE and sampler paths).
+    fn select_folder(&mut self, name: &str) -> BoxFuture<'_, AppResult<InboxStatus>>;
+    /// `UID STORE` one system flag on a single message — the write-back primitive
+    /// for read/starred state (two-way sync). `set` adds the flag (`+FLAGS`),
+    /// `!set` removes it (`-FLAGS`). Selects `folder` first, so it is
+    /// self-contained.
+    fn store_flag(
+        &mut self,
+        folder: &str,
+        uid: i64,
+        flag: ImapFlag,
+        set: bool,
+    ) -> BoxFuture<'_, AppResult<()>>;
+    /// `UID MOVE` a message from `source_folder` to `dest_folder` — the write-back
+    /// primitive for archive / delete (→ Trash) / mark-spam (→ Junk). Selects the
+    /// source first, so it is self-contained. Requires server MOVE support
+    /// (RFC 6851; Gmail / Outlook / iCloud / Dovecot all have it).
+    fn move_message(
+        &mut self,
+        source_folder: &str,
+        uid: i64,
+        dest_folder: &str,
+    ) -> BoxFuture<'_, AppResult<()>>;
+    /// `UID FETCH uid_from:* (FLAGS)` — the current system flags of every message
+    /// at or above `uid_from` in `folder`. Drives inbound reconciliation: the
+    /// caller updates local read/star state from the returned flags and treats any
+    /// locally-held UID missing from the result as vanished (moved/deleted on the
+    /// server). Selects `folder` first, so it is self-contained.
+    fn fetch_flags(
+        &mut self,
+        folder: &str,
+        uid_from: i64,
+    ) -> BoxFuture<'_, AppResult<Vec<(i64, MessageFlags)>>>;
     /// UID list of messages with internal-date ≥ `since_epoch`, newest first.
     fn search_uids_since(&mut self, since_epoch: i64) -> BoxFuture<'_, AppResult<Vec<i64>>>;
     /// UID list of messages with `UID ≥ uid_from` (incremental poll).
@@ -194,4 +339,53 @@ pub(crate) fn offline_err(what: &str) -> AppError {
     AppError::ImapConnection(format!(
         "{what}: offline build (enable --features live-net)"
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FolderRole;
+
+    #[test]
+    fn name_heuristic_resolves_common_folders() {
+        assert_eq!(FolderRole::from_name_heuristic("INBOX"), FolderRole::Inbox);
+        assert_eq!(FolderRole::from_name_heuristic("inbox"), FolderRole::Inbox);
+        assert_eq!(
+            FolderRole::from_name_heuristic("[Gmail]/Sent Mail"),
+            FolderRole::Sent
+        );
+        assert_eq!(
+            FolderRole::from_name_heuristic("INBOX.Sent"),
+            FolderRole::Sent
+        );
+        assert_eq!(FolderRole::from_name_heuristic("Junk"), FolderRole::Junk);
+        assert_eq!(
+            FolderRole::from_name_heuristic("[Gmail]/Spam"),
+            FolderRole::Junk
+        );
+        assert_eq!(
+            FolderRole::from_name_heuristic("Deleted Items"),
+            FolderRole::Trash
+        );
+        assert_eq!(
+            FolderRole::from_name_heuristic("[Gmail]/All Mail"),
+            FolderRole::All
+        );
+        assert_eq!(
+            FolderRole::from_name_heuristic("Work/Clients"),
+            FolderRole::Other
+        );
+    }
+
+    #[test]
+    fn local_folder_tag_is_the_ingest_allow_list() {
+        assert_eq!(FolderRole::Inbox.local_folder_tag(), Some("INBOX"));
+        assert_eq!(FolderRole::Sent.local_folder_tag(), Some("SENT"));
+        assert_eq!(FolderRole::Junk.local_folder_tag(), Some("JUNK"));
+        assert_eq!(FolderRole::Trash.local_folder_tag(), Some("TRASH"));
+        // Not ingested in the read-side pass.
+        assert_eq!(FolderRole::Drafts.local_folder_tag(), None);
+        assert_eq!(FolderRole::Archive.local_folder_tag(), None);
+        assert_eq!(FolderRole::All.local_folder_tag(), None);
+        assert_eq!(FolderRole::Other.local_folder_tag(), None);
+    }
 }

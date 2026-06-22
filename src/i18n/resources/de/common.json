@@ -151,6 +151,9 @@
   "images_load_always": "Von diesem Absender immer anzeigen",
   "images_allowed_toast": "Bilder erlaubt",
   "images_loaded": "Bilder geladen",
+  "images_loading": "Bilder werden geladen…",
+  "images_blocked_title": "Externe Bilder blockiert",
+  "images_blocked_notice": "Externe Bilder werden vom Server des Absenders geladen, was verraten kann, dass Sie diese E-Mail geöffnet haben. SeekerMail ruft sie privat ab – ohne Cookies oder identifizierende Header – nur wenn Sie sie laden.",
   "mail_body_truncated": "Mail zu groß – erste {sizeKb} KB werden angezeigt",
   "mail_body_plaintext_fallback": "Nur-Text wird angezeigt"
 }
