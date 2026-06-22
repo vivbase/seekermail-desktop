@@ -43,6 +43,18 @@ export default {
       boxShadow: {
         card: "var(--shadow-card)",
       },
+      keyframes: {
+        // Dedicated keyframe for the Get Mail pinwheel so its fast spin never
+        // collides with Tailwind's built-in `spin` (used elsewhere at 1s).
+        "spin-fast": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+      },
+      animation: {
+        // Manual mail-fetch pinwheel — a brisk spin that clearly reads as "working".
+        "spin-fast": "spin-fast 0.4s linear infinite",
+      },
     },
   },
   plugins: [],

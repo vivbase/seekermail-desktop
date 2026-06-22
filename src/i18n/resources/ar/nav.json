@@ -21,6 +21,7 @@
   "nav_inbox": "صندوق الوارد",
   "nav_navigate": "التنقّل",
   "nav_get_mail": "جلب البريد",
+  "nav_retrieving_mail": "جارٍ جلب البريد…",
   "nav_search": "بحث",
   "back_to_dashboard": "العودة إلى لوحة المعلومات",
   "back_to_inbox": "العودة إلى صندوق الوارد",

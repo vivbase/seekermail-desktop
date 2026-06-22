@@ -21,6 +21,7 @@
   "nav_inbox": "受信トレイ",
   "nav_navigate": "ナビゲーション",
   "nav_get_mail": "メールを受信",
+  "nav_retrieving_mail": "メールを受信しています…",
   "nav_search": "検索",
   "back_to_dashboard": "ダッシュボードに戻る",
   "back_to_inbox": "受信トレイに戻る",

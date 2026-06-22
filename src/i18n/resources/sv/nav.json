@@ -21,6 +21,7 @@
   "nav_inbox": "Inkorg",
   "nav_navigate": "Navigera",
   "nav_get_mail": "Hämta post",
+  "nav_retrieving_mail": "Hämtar post…",
   "nav_search": "Sök",
   "back_to_dashboard": "Tillbaka till instrumentpanel",
   "back_to_inbox": "Tillbaka till inkorg",

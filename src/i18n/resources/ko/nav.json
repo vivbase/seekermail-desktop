@@ -21,6 +21,7 @@
   "nav_inbox": "받은편지함",
   "nav_navigate": "이동",
   "nav_get_mail": "메일 받기",
+  "nav_retrieving_mail": "메일을 가져오는 중…",
   "nav_search": "검색",
   "back_to_dashboard": "대시보드로 돌아가기",
   "back_to_inbox": "받은편지함으로 돌아가기",

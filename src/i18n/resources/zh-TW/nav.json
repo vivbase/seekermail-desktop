@@ -21,6 +21,7 @@
   "nav_inbox": "收件匣",
   "nav_navigate": "導覽",
   "nav_get_mail": "收取郵件",
+  "nav_retrieving_mail": "正在收取郵件…",
   "nav_search": "搜尋",
   "back_to_dashboard": "返回儀表板",
   "back_to_inbox": "返回收件匣",

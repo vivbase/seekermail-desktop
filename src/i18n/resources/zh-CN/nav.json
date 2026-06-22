@@ -21,6 +21,7 @@
   "nav_inbox": "收件箱",
   "nav_navigate": "导航",
   "nav_get_mail": "收取邮件",
+  "nav_retrieving_mail": "正在收取邮件…",
   "nav_search": "搜索",
   "back_to_dashboard": "返回仪表盘",
   "back_to_inbox": "返回收件箱",
