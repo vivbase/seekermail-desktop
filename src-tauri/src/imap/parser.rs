@@ -366,7 +366,7 @@ SGVsbG8=\r\n\
         let msg = MessageParser::default()
             .parse(MULTIPART_EML.as_bytes())
             .unwrap();
-        let part = msg.attachments().nth(0).expect("one attachment at index 0");
+        let part = msg.attachments().next().expect("one attachment at index 0");
         assert_eq!(part.contents(), b"Hello");
     }
 }

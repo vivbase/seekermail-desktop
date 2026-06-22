@@ -410,7 +410,10 @@ fn clean_reply(text: &str) -> String {
     if let Some(rest) = trimmed.strip_prefix("```") {
         if let Some(end) = rest.rfind("```") {
             // Drop the optional language tag on the fence's first line.
-            let inner = rest[..end].splitn(2, '\n').nth(1).unwrap_or(&rest[..end]);
+            let inner = rest[..end]
+                .split_once('\n')
+                .map(|x| x.1)
+                .unwrap_or(&rest[..end]);
             return inner.trim().to_string();
         }
     }
