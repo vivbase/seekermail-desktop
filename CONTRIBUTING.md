@@ -163,3 +163,43 @@ prettier + eslint + rustfmt on staged files so CI rarely fails on style.
 6. `CHANGELOG.md` updated; CI green.
 7. For release-bound batches: `scripts/smoke_v04.sh` green and
    `scripts/release_check.sh <tag>` exit 0 before the tag is pushed.
+
+## 9. Contributor License Agreement (CLA)
+
+SeekerMail is dual-licensed: the code here is open source under AGPL-3.0, and a
+separate commercial license is offered to organizations that cannot use the AGPL.
+To be able to offer both, the project must hold a clear license to every
+contribution. Therefore **all contributors must agree to the Contributor License
+Agreement in [`CLA.md`](CLA.md) before a pull request can be merged.**
+
+- You keep the copyright to your contribution; you grant vivbase a broad license
+  to use and relicense it (including under the commercial license).
+- Agreement is recorded automatically: the CLA Assistant bot comments on your
+  first pull request and you accept by replying once. Returning contributors are
+  remembered.
+- This only affects outside contributors opening PRs; it changes nothing about
+  how you run or self-host the AGPL code.
+
+## 10. License compliance and building installers
+
+Two gates keep the dependency tree clean - a single GPL/AGPL dependency would
+force the whole app copyleft and break the open-core model:
+
+```bash
+node scripts/ci/check-licenses.mjs                    # npm license gate
+cargo install cargo-deny --locked                     # one-time
+cargo deny --manifest-path src-tauri/Cargo.toml check # Rust gate (desktop app)
+cargo deny --manifest-path cloud/Cargo.toml     check # Rust gate (cloud service)
+cargo deny --manifest-path xtask/Cargo.toml     check # Rust gate (tooling)
+```
+
+Both also run in CI (`.github/workflows/license-check.yml`).
+
+To build a release installer that bundles the third-party notices:
+
+```bash
+pnpm install --frozen-lockfile
+cargo install cargo-about --locked --features cli   # one-time, for the notices
+bash scripts/ci/generate-notice.sh         # writes THIRD-PARTY-NOTICES.md
+pnpm tauri:build                           # DMG/app in src-tauri/target/release/bundle/
+```

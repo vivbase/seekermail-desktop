@@ -5,6 +5,7 @@ description = "SeekerMail — local-first desktop email client with per-account 
 authors = ["SeekerMail"]
 edition = "2021"
 rust-version = "1.77"
+license = "AGPL-3.0-only"
 # Application crate — never published to a registry. `publish = false` also marks
 # it "private" so the cargo-deny license gate skips it (see deny.toml [licenses]).
 publish = false

@@ -1,0 +1,17 @@
+## Rust dependencies
+
+This product bundles the following Rust crates. Each crate's license text is reproduced below.
+
+{{#each licenses}}
+### {{name}}{{#if id}} ({{id}}){{/if}}
+
+Used by:
+{{#each used_by}}
+- {{crate.name}} {{crate.version}}
+{{/each}}
+
+```
+{{{text}}}
+```
+
+{{/each}}

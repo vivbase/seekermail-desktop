@@ -1,0 +1,49 @@
+SeekerMail Desktop
+Copyright (C) 2026 vivbase
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License, version 3, as published by
+the Free Software Foundation. See the LICENSE file for the full text.
+
+A separate commercial license is available for organizations that cannot or do
+not wish to comply with the AGPL (for example, to embed SeekerMail in a closed-
+source product). See LICENSING.md.
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+SeekerMail Desktop bundles third-party open-source components. As of the last
+audit this comprises roughly 696 Rust crates (the desktop application) and 473
+npm packages (the frontend), the overwhelming majority under permissive
+licenses (MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC).
+
+The complete, per-dependency license texts are generated into
+THIRD-PARTY-NOTICES.md by `scripts/ci/generate-notice.sh` and ship with each
+release build.
+
+--------------------------------------------------------------------------------
+MPL-2.0 COMPONENTS - WRITTEN OFFER OF SOURCE
+--------------------------------------------------------------------------------
+
+The following components are licensed under the Mozilla Public License 2.0
+(MPL-2.0). SeekerMail uses them WITHOUT modification. Their complete and
+unmodified source code is available at the locations below; the exact,
+version-pinned source is also downloadable from crates.io / the npm registry.
+
+Rust crates (in the desktop application):
+  - cssparser         https://github.com/servo/rust-cssparser  |  https://crates.io/crates/cssparser
+  - cssparser-macros  https://github.com/servo/rust-cssparser  |  https://crates.io/crates/cssparser-macros
+  - selectors         https://github.com/servo/stylo           |  https://crates.io/crates/selectors
+  - servo_arc         https://github.com/servo/stylo           |  https://crates.io/crates/servo_arc
+  - dtoa-short        https://github.com/upsuper/dtoa-short     |  https://crates.io/crates/dtoa-short
+  - option-ext        https://github.com/soc/option-ext         |  https://crates.io/crates/option-ext
+
+JavaScript package (frontend):
+  - dompurify         https://github.com/cure53/DOMPurify       |  https://www.npmjs.com/package/dompurify
+    (dompurify is dual-licensed "MPL-2.0 OR Apache-2.0"; SeekerMail uses it under Apache-2.0.)
+
+If any of these source links becomes unavailable, the copyright holder (vivbase)
+will, on request, provide the corresponding unmodified source for the exact
+versions distributed with the product.
+Contact: https://github.com/vivbase/seekermail-desktop

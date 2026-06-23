@@ -1,0 +1,57 @@
+# cargo-deny - supply-chain & license gate for SeekerMail.
+#
+# Each Rust workspace has its own lockfile, so run it three times:
+#   cargo deny --manifest-path src-tauri/Cargo.toml check
+#   cargo deny --manifest-path cloud/Cargo.toml     check
+#   cargo deny --manifest-path xtask/Cargo.toml     check
+#
+# Install: cargo install cargo-deny --locked
+# Docs:    https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+all-features = true
+
+[licenses]
+version = 2
+
+# SPDX allowlist. Any license NOT listed here is REJECTED. This is the gate that
+# stops a GPL / AGPL / LGPL / SSPL *dependency* from silently forcing the whole
+# application copyleft and breaking the open-core model.
+#
+# Our own crates (seekermail, seekermail-cloud, xtask) are AGPL-3.0-only, but
+# they set `publish = false`; `private.ignore = true` (below) makes cargo-deny
+# skip them - so AGPL is fine for *us* yet still rejected in a dependency.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "MPL-2.0",            # weak (file-level) copyleft - accepted; see NOTICE
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "OpenSSL",
+    "CDLA-Permissive-2.0", # CA-certificate data bundled by webpki-roots; permissive
+    "CC0-1.0",
+    "BSL-1.0",
+    "0BSD",
+]
+confidence-threshold = 0.8
+
+# Skip license checks on our own unpublished workspace crates (they are AGPL).
+private = { ignore = true }
+
+[bans]
+multiple-versions = "warn"
+wildcards = "allow"
+
+[advisories]
+version = 2
+yanked = "warn"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

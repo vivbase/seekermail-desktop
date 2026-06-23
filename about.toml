@@ -1,0 +1,28 @@
+# cargo-about configuration - generates the Rust third-party license notices.
+#
+# Install: cargo install cargo-about --locked --features cli
+# Run:     see scripts/ci/generate-notice.sh
+#
+# `accepted` mirrors the allowlist in deny.toml; keep the two in sync.
+accepted = [
+    "AGPL-3.0-only",       # our own workspace crates (SeekerMail itself)
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "OpenSSL",
+    "CDLA-Permissive-2.0",
+    "CC0-1.0",
+    "BSL-1.0",
+    "0BSD",
+]
+
+# `ring` ships its terms in a bundled file rather than an SPDX field.
+[ring]
+accepted = ["ISC", "MIT", "OpenSSL"]

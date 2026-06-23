@@ -74,7 +74,7 @@ Engineering specs (in the knowledge base):
 
 ## Preview Builds
 
-Early-access installers are shared for **evaluation only** — they are previews, not production-signed releases. Once published, official preview builds will appear on the GitHub **Releases** page, each matched to a version tag. Until a build is listed there, treat any installer you received as a private preview and please don't redistribute it. See [License](#license) for the terms.
+Early-access installers are shared for **evaluation only** — they are previews, not production-signed releases. Once published, official preview builds will appear on the GitHub **Releases** page, each matched to a version tag. These are early-access previews (no SLA, no warranty), provided for evaluation; breaking changes are expected. Your rights in the source and the builds are governed by the [License](#license) - AGPL-3.0, with a commercial option for proprietary use.
 
 ---
 
@@ -102,6 +102,10 @@ Full plan in the knowledge base: `../seekermail-desktop-2026/docs/planning/01_VE
 
 ## License
 
-**Proprietary — © 2026 vivbase. All rights reserved.** See [`LICENSE`](LICENSE).
+SeekerMail Desktop is **open source under the [GNU AGPL-3.0](LICENSE)**, run as **open core with dual licensing**:
 
-SeekerMail is commercial software in **public preview**. You may download and run the preview builds to **evaluate** the product. You may **not** redistribute the builds, use them commercially, or create derivative products from this source. Publishing the source here is for **transparency and evaluation** — it is **not** an open-source grant. Formal commercial terms will ship with the v1.0 release.
+- **Open-source edition (this repo).** Licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0-only)**. You may use, study, modify, and redistribute it under the AGPL. Note AGPL section 13: if you run a modified version as a network service, you must offer its complete source to that service's users.
+- **Commercial license.** If you cannot or do not want to comply with the AGPL (for example, to embed SeekerMail in a closed-source product or ship a proprietary derivative), a separate commercial license is available. See [`LICENSING.md`](LICENSING.md) or contact **support@vivbase.com**.
+- **Pro / Enterprise features** are a separate, proprietary add-on and are **not** part of the AGPL grant in this repository.
+
+Contributions are accepted under a Contributor License Agreement (see [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CLA.md`](CLA.md)), which is what lets the project offer both the open-source and commercial licenses. Third-party components are credited in [`NOTICE`](NOTICE). Copyright (C) 2026 vivbase.
