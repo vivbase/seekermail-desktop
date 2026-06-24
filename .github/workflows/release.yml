@@ -261,7 +261,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Pre-1.0 milestones (suffixed tags like v*-beta / v*-rc) publish as GitHub
+          # pre-releases — visible for preview but never marked "Latest". Only a final
+          # GA tag with no suffix (e.g. v1.0.0) becomes the public Latest release.
+          # See dev/05 §3.1 and planning/00 §8.
+          case "${GITHUB_REF_NAME}" in
+            *-*) PRERELEASE_FLAG=--prerelease ;;
+            *)   PRERELEASE_FLAG= ;;
+          esac
           gh release create "${GITHUB_REF_NAME}" \
             --title "SeekerMail ${GITHUB_REF_NAME}" \
-            --generate-notes \
+            --generate-notes ${PRERELEASE_FLAG} \
             dist/dist-*/* latest.json

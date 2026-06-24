@@ -1,6 +1,6 @@
 [package]
 name = "seekermail"
-version = "0.1.0"
+version = "0.6.0"
 description = "SeekerMail — local-first desktop email client with per-account AI agents"
 authors = ["SeekerMail"]
 edition = "2021"
@@ -50,6 +50,12 @@ tauri-plugin-notification = "2"
 # T064 recommended-provider grants). Backend-only: the Rust handler routes the
 # redirect to the right flow; the webview listens via generic Tauri events.
 tauri-plugin-deep-link = "2"
+# Native message dialog for the startup database-recovery prompt (`recovery.rs`).
+# Used only when migrations can't be applied at launch: instead of panicking (which
+# crashes the app on open with no message), we show this dialog so the user can back
+# up & reset the local database or quit. Native NSAlert on macOS / Win32 on Windows;
+# Linux reuses the GTK stack Tauri already requires. Backend-only.
+rfd = "0.15"
 
 # ─── Serialization & shared types (T003) ────────────────────────────────────
 serde = { version = "1", features = ["derive"] }

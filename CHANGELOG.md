@@ -4,16 +4,20 @@ All notable changes to the SeekerMail code repo are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project
 uses [Conventional Commits](https://www.conventionalcommits.org/).
 
-> **⚠️ Pre-release — nothing here has shipped publicly yet.** The repository has
-> **no git release tags**, and the app manifest version is **`0.1.0`**
-> (`package.json` + `src-tauri/Cargo.toml`). The version-numbered sections below are
-> **internal development-milestone groupings** (the work slated to ship under that
-> version), **not** shipped releases. In particular, the **v1.0.0 / v1.0.1** sections
-> describe _planned_ GA scope and have **not** been released. On a real release the
-> top `[Unreleased]` section is renamed to the version + date and a git tag is pushed;
-> until then, treat every dated heading below as a development milestone, not a ship.
+> **⚠️ Pre-release — early-access public preview, not the commercial v1.0 GA.** The app
+> manifest version is **`0.6.0`** (`package.json` + `src-tauri/Cargo.toml` +
+> `src-tauri/tauri.conf.json`), shipped under the milestone tag **`v0.6.0-beta`** in the
+> scheme `v0.1 Internal → … → v0.6 Beta → v0.7 RC → v1.0 GA`. Pre-1.0 builds are openly
+> downloadable previews, published as GitHub **pre-releases** (never the _Latest_
+> release), and carry **no commercial promise** — no pricing, SLA, or warranty; those
+> begin at **v1.0 GA**. The **v1.0.0 / v1.0.1** sections below describe _planned_ GA
+> scope and have **not** been released. On each release the top `[Unreleased]` section is
+> renamed to the version + date and a git tag is pushed (`--prerelease` for suffixed
+> tags; the public Latest release only for a no-suffix GA tag).
 
 ## [Unreleased]
+
+## [0.6.0-beta] - 2026-06-24
 
 Wires the previously-stubbed mail pipeline end-to-end: the app now **fetches real
 IMAP mail and renders it**. Before this, the default build shipped offline transports
@@ -438,8 +442,8 @@ gen_bindings` — bindings output is byte-identical (drift check passes). Refs u
 
 ## v1.0.0 — planned GA scope (not released)
 
-Planned first public release and first commercial milestone (v1.0 GA) — **not yet
-shipped**. This section covers the intended v1.0 GA batch (T108–T120). The detailed
+Planned **first commercial GA** milestone (v1.0 GA) — **not yet
+shipped**. Source and preview builds are already public; v1.0 is the commercial launch. This section covers the intended v1.0 GA batch (T108–T120). The detailed
 pre-GA engineering notes for v0.5–v0.7 appear under the milestone sections below.
 
 ### Added — Attachment full-text search (v0.6, T108–T110)

@@ -1,11 +1,11 @@
 // About settings page (T049). Read-only: product name, version, tagline.
 // Version is read from import.meta.env.VITE_APP_VERSION (injected by Vite from
-// tauri.conf.json at build time). Falls back to "0.1.0" in dev/test.
+// tauri.conf.json at build time). Falls back to "0.6.0" in dev/test.
 import { useTranslation } from "react-i18next";
 
 import BrandMark from "@/components/brand/BrandMark";
 
-const APP_VERSION: string = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? "0.1.0";
+const APP_VERSION: string = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? "0.6.0";
 
 export default function AboutSettings() {
   const { t } = useTranslation("settings");
