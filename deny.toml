@@ -1,8 +1,7 @@
 # cargo-deny - supply-chain & license gate for SeekerMail.
 #
-# Each Rust workspace has its own lockfile, so run it three times:
+# Each Rust workspace has its own lockfile, so run it twice:
 #   cargo deny --manifest-path src-tauri/Cargo.toml check
-#   cargo deny --manifest-path cloud/Cargo.toml     check
 #   cargo deny --manifest-path xtask/Cargo.toml     check
 #
 # Install: cargo install cargo-deny --locked
@@ -18,7 +17,7 @@ version = 2
 # stops a GPL / AGPL / LGPL / SSPL *dependency* from silently forcing the whole
 # application copyleft and breaking the open-core model.
 #
-# Our own crates (seekermail, seekermail-cloud, xtask) are AGPL-3.0-only, but
+# Our own crates (seekermail, xtask) are AGPL-3.0-only, but
 # they set `publish = false`; `private.ignore = true` (below) makes cargo-deny
 # skip them - so AGPL is fine for *us* yet still rejected in a dependency.
 allow = [

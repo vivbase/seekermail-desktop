@@ -189,7 +189,6 @@ force the whole app copyleft and break the open-core model:
 node scripts/ci/check-licenses.mjs                    # npm license gate
 cargo install cargo-deny --locked                     # one-time
 cargo deny --manifest-path src-tauri/Cargo.toml check # Rust gate (desktop app)
-cargo deny --manifest-path cloud/Cargo.toml     check # Rust gate (cloud service)
 cargo deny --manifest-path xtask/Cargo.toml     check # Rust gate (tooling)
 ```
 
