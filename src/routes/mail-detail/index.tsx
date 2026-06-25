@@ -25,6 +25,7 @@ import { type AccountColorToken } from "@/lib/accountColor";
 import { MailHeader } from "@/components/mail/MailHeader";
 import { MailBody } from "@/components/mail/MailBody";
 import { MailToolbar } from "@/components/mail/MailToolbar";
+import { AiReplyDraftCard } from "@/components/mail/AiReplyDraftCard";
 import { ReadingSizeControl } from "@/components/mail/ReadingSizeControl";
 import { RiskAlertBanner } from "@/components/mail/RiskAlertBanner";
 import { ThreadDrawer } from "@/components/mail/ThreadDrawer";
@@ -291,6 +292,9 @@ export default function MailDetail() {
 
       {/* Thread drawer */}
       <ThreadDrawer currentMail={mail} isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+      {/* In-place AI reply draft card (E1 inline draft flow) — fixed, above the toolbar */}
+      <AiReplyDraftCard />
 
       {/* Undo toast portal */}
       <div className="pointer-events-none fixed inset-x-4 bottom-20 z-50 flex justify-end">

@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "Odpowiedź AI",
+  "e1_ai_reply_all": "Odpowiedz wszystkim z AI",
+  "e1_ai_reply_options": "Opcje odpowiedzi AI",
   "e1_ai_drafting": "AI pisze wersję roboczą…",
   "e1_regenerate": "Wygeneruj ponownie",
   "e1_regen_hint": "Jeśli nadal nie jesteś zadowolony(-a), rozważ samodzielne napisanie odpowiedzi.",
   "toast_ai_draft_failed": "Odpowiedź AI nie powiodła się — zamiast tego otwarto pustą wersję roboczą.",
   "toast_ai_provider_not_configured": "Dla tego konta nie skonfigurowano dostawcy AI. Skonfiguruj go, aby korzystać z odpowiedzi AI.",
-
   "pending_filter_all": "Wszystkie",
   "pending_filter_needs_decision": "Wymaga decyzji",
   "pending_filter_draft_ready": "Wersja robocza gotowa",
   "pending_empty": "Brak oczekujących — wszystkie agenty są na bieżąco.",
   "draft_banner_count": "{count, plural, one {# wersja robocza AI gotowa do sprawdzenia} few {# wersje robocze AI gotowe do sprawdzenia} many {# wersji roboczych AI gotowych do sprawdzenia} other {# wersji roboczej AI gotowej do sprawdzenia}}",
   "draft_banner_review_all": "Sprawdź wszystkie →",
-
   "draft_badge_ready": "Wersja robocza gotowa",
   "draft_badge_edited": "Edytowane",
   "draft_badge_review": "Wymagana recenzja",
   "draft_review_cta": "Sprawdź wersję roboczą AI i wyślij →",
   "draft_expires_in": "Wygasa za {hours}h",
   "draft_style_match": "{score}% zgodności ze stylem",
-
   "draft_panel_title": "Wersja robocza AI",
   "draft_panel_original": "Oryginalny e-mail",
   "draft_original_unavailable": "Oryginalny e-mail nie jest już dostępny",
@@ -40,16 +39,13 @@
   "style_too_long": "Zbyt długi",
   "style_tone_off": "Nieodpowiedni ton",
   "toast_style_feedback": "Dziękuję — opinia o stylu zapisana.",
-
   "toast_draft_sent": "Wersja robocza wysłana.",
   "toast_draft_discarded": "Wersja robocza odrzucona.",
   "toast_draft_discarded_undo": "Wersja robocza odrzucona — możesz cofnąć przez 5 sekund.",
   "undo": "Cofnij",
   "draft_credential_error": "Dane uwierzytelniające konta wygasły — autoryzuj ponownie w Ustawieniach.",
   "draft_send_failed": "Wysyłanie nie powiodło się — wersja robocza wróciła do kolejki.",
-
   "thread_ai_draft_chip": "Wersja robocza AI",
-
   "draft_show_diff": "Pokaż różnice",
   "draft_hide_diff": "Ukryj różnice",
   "draft_diff_label": "Zmiany względem oryginalnej wersji roboczej AI",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "Wysyłanie anulowane.",
   "draft_already_sent": "Już wysłane",
   "draft_autosave_failed": "Automatyczny zapis nie powiódł się — zmiany mogą zostać utracone",
-
   "auth_level_manual": "Tylko ręcznie",
   "auth_level_semi": "Pół-auto",
   "auth_level_full": "Pełny automat",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "Cofnij",
   "toast_auto_send_cancelled": "Anulowano — wersja robocza przeniesiona do Oczekujących",
   "toast_auto_send_already_sent": "Już wysłane",
-  "trust_demoted_notice": "Powtarzające się zgłoszenia błędnych wysyłek — to konto zostało przywrócone do trybu Pół-auto."
+  "trust_demoted_notice": "Powtarzające się zgłoszenia błędnych wysyłek — to konto zostało przywrócone do trybu Pół-auto.",
+  "e1_card_title": "AI redaguje odpowiedź",
+  "e1_card_assistant": "Asystent AI",
+  "e1_stage_reading": "Czytanie",
+  "e1_stage_recalling": "Przywoływanie",
+  "e1_stage_drafting": "Redagowanie",
+  "e1_stage_writing": "Pisanie",
+  "e1_stage_ready": "Szkic gotowy",
+  "e1_stage_editing": "Edytowanie",
+  "e1_card_subject": "Temat",
+  "e1_card_placeholder": "Napisz swoją odpowiedź…",
+  "e1_card_send": "Wyślij",
+  "e1_tone_default": "Domyślny",
+  "e1_tone_concise": "Zwięzły",
+  "e1_tone_warmer": "Cieplejszy",
+  "e1_tone_formal": "Formalny",
+  "e1_card_discard": "Odrzuć",
+  "e1_card_minimize": "Zminimalizuj",
+  "e1_chip_in_progress": "Szkic w toku",
+  "e1_chip_resume": "Wznów"
 }

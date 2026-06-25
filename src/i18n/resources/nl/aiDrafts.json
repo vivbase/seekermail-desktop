@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI-antwoord",
+  "e1_ai_reply_all": "Allen beantwoorden met AI",
+  "e1_ai_reply_options": "AI-antwoordopties",
   "e1_ai_drafting": "AI stelt op…",
   "e1_regenerate": "Opnieuw genereren",
   "e1_regen_hint": "Als u nog steeds niet tevreden bent, overweeg dan het antwoord zelf te schrijven.",
   "toast_ai_draft_failed": "AI-antwoord mislukt — een leeg concept geopend.",
   "toast_ai_provider_not_configured": "Geen AI-provider geconfigureerd voor dit account. Stel er een in om AI-antwoorden te gebruiken.",
-
   "pending_filter_all": "Alle",
   "pending_filter_needs_decision": "Beslissing nodig",
   "pending_filter_draft_ready": "Concept gereed",
   "pending_empty": "Niets in behandeling — uw agents zijn helemaal bij.",
   "draft_banner_count": "{count, plural, one {# AI-concept klaar voor beoordeling} other {# AI-concepten klaar voor beoordeling}}",
   "draft_banner_review_all": "Alles beoordelen →",
-
   "draft_badge_ready": "Concept gereed",
   "draft_badge_edited": "Bewerkt",
   "draft_badge_review": "Beoordeling nodig",
   "draft_review_cta": "AI-concept beoordelen & verzenden →",
   "draft_expires_in": "Verloopt over {hours}u",
   "draft_style_match": "{score}% stijlovereenkomst",
-
   "draft_panel_title": "AI-concept",
   "draft_panel_original": "Oorspronkelijke e-mail",
   "draft_original_unavailable": "Oorspronkelijke e-mail niet meer beschikbaar",
@@ -40,16 +39,13 @@
   "style_too_long": "Te lang",
   "style_tone_off": "Toon klopt niet",
   "toast_style_feedback": "Bedankt — stijlfeedback ontvangen.",
-
   "toast_draft_sent": "Concept verzonden.",
   "toast_draft_discarded": "Concept verwijderd.",
   "toast_draft_discarded_undo": "Concept verwijderd — u kunt dit 5 seconden ongedaan maken.",
   "undo": "Ongedaan maken",
   "draft_credential_error": "Accountinloggegevens verlopen — autoriseer opnieuw in Instellingen.",
   "draft_send_failed": "Verzenden mislukt — concept terug in uw wachtrij.",
-
   "thread_ai_draft_chip": "AI-concept",
-
   "draft_show_diff": "Wijzigingen tonen",
   "draft_hide_diff": "Wijzigingen verbergen",
   "draft_diff_label": "Wijzigingen ten opzichte van het oorspronkelijke AI-concept",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "Verzenden geannuleerd.",
   "draft_already_sent": "Al verzonden",
   "draft_autosave_failed": "Automatisch opslaan mislukt — wijzigingen kunnen verloren gaan",
-
   "auth_level_manual": "Alleen handmatig",
   "auth_level_semi": "Semi-automatisch",
   "auth_level_full": "Volledig automatisch",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "Ongedaan maken",
   "toast_auto_send_cancelled": "Geannuleerd — concept verplaatst naar In behandeling",
   "toast_auto_send_already_sent": "Al verzonden",
-  "trust_demoted_notice": "Herhaalde meldingen van foutief verzenden — dit account is teruggezet naar Semi-automatisch."
+  "trust_demoted_notice": "Herhaalde meldingen van foutief verzenden — dit account is teruggezet naar Semi-automatisch.",
+  "e1_card_title": "AI stelt een antwoord op",
+  "e1_card_assistant": "AI-assistent",
+  "e1_stage_reading": "Lezen",
+  "e1_stage_recalling": "Ophalen",
+  "e1_stage_drafting": "Opstellen",
+  "e1_stage_writing": "Schrijven",
+  "e1_stage_ready": "Concept klaar",
+  "e1_stage_editing": "Bewerken",
+  "e1_card_subject": "Onderwerp",
+  "e1_card_placeholder": "Schrijf je antwoord…",
+  "e1_card_send": "Verzenden",
+  "e1_tone_default": "Standaard",
+  "e1_tone_concise": "Beknopt",
+  "e1_tone_warmer": "Warmer",
+  "e1_tone_formal": "Formeel",
+  "e1_card_discard": "Negeren",
+  "e1_card_minimize": "Minimaliseren",
+  "e1_chip_in_progress": "Concept in uitvoering",
+  "e1_chip_resume": "Hervatten"
 }

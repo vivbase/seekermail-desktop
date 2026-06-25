@@ -1,5 +1,7 @@
 {
   "e1_ai_reply_btn": "Resposta AI",
+  "e1_ai_reply_all": "Responder a todos com AI",
+  "e1_ai_reply_options": "Opções de resposta AI",
   "e1_ai_drafting": "A AI está a redigir…",
   "e1_regenerate": "Regenerar",
   "e1_regen_hint": "Se continuar insatisfeito, considere escrever a resposta você mesmo.",
@@ -75,5 +77,24 @@
   "toast_auto_sent_undo": "Desfazer",
   "toast_auto_send_cancelled": "Cancelado — rascunho movido para Pendentes",
   "toast_auto_send_already_sent": "Já enviado",
-  "trust_demoted_notice": "Relatórios repetidos de envio incorreto — esta conta foi revertida para Semi-automático."
+  "trust_demoted_notice": "Relatórios repetidos de envio incorreto — esta conta foi revertida para Semi-automático.",
+  "e1_card_title": "A IA está a redigir uma resposta",
+  "e1_card_assistant": "Assistente de IA",
+  "e1_stage_reading": "A ler",
+  "e1_stage_recalling": "A recuperar",
+  "e1_stage_drafting": "A redigir",
+  "e1_stage_writing": "A escrever",
+  "e1_stage_ready": "Rascunho pronto",
+  "e1_stage_editing": "A editar",
+  "e1_card_subject": "Assunto",
+  "e1_card_placeholder": "Escreva a sua resposta…",
+  "e1_card_send": "Enviar",
+  "e1_tone_default": "Padrão",
+  "e1_tone_concise": "Conciso",
+  "e1_tone_warmer": "Mais caloroso",
+  "e1_tone_formal": "Formal",
+  "e1_card_discard": "Descartar",
+  "e1_card_minimize": "Minimizar",
+  "e1_chip_in_progress": "Rascunho em curso",
+  "e1_chip_resume": "Retomar"
 }

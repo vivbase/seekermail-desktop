@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "رد AI",
+  "e1_ai_reply_all": "رد AI على الكل",
+  "e1_ai_reply_options": "خيارات رد AI",
   "e1_ai_drafting": "AI يصوغ الرد…",
   "e1_regenerate": "إعادة التوليد",
   "e1_regen_hint": "إذا كنت لا تزال غير راضٍ، ففكّر في كتابة الرد بنفسك.",
   "toast_ai_draft_failed": "فشل رد AI — تم فتح مسودة فارغة بدلًا من ذلك.",
   "toast_ai_provider_not_configured": "لم يُعدّ أي مزوّد AI لهذا الحساب. أعدّ واحدًا لاستخدام ردود AI.",
-
   "pending_filter_all": "الكل",
   "pending_filter_needs_decision": "بحاجة إلى قرار",
   "pending_filter_draft_ready": "مسودة جاهزة",
   "pending_empty": "لا شيء قيد الانتظار — وكلاؤك أنجزوا كل شيء.",
   "draft_banner_count": "{count, plural, zero {لا مسودات AI جاهزة للمراجعة} one {مسودة AI واحدة جاهزة للمراجعة} two {مسودتا AI جاهزتان للمراجعة} few {# مسودات AI جاهزة للمراجعة} many {# مسودة AI جاهزة للمراجعة} other {# مسودة AI جاهزة للمراجعة}}",
   "draft_banner_review_all": "مراجعة الكل ←",
-
   "draft_badge_ready": "مسودة جاهزة",
   "draft_badge_edited": "مُحرَّرة",
   "draft_badge_review": "بحاجة إلى مراجعة",
   "draft_review_cta": "مراجعة مسودة AI وإرسالها ←",
   "draft_expires_in": "تنتهي صلاحيتها خلال {hours} ساعة",
   "draft_style_match": "تطابق الأسلوب {score}%",
-
   "draft_panel_title": "مسودة AI",
   "draft_panel_original": "الرسالة الأصلية",
   "draft_original_unavailable": "لم تعد الرسالة الأصلية متاحة",
@@ -40,16 +39,13 @@
   "style_too_long": "طويل أكثر من اللازم",
   "style_tone_off": "النبرة غير مناسبة",
   "toast_style_feedback": "شكرًا — تم تدوين ملاحظات الأسلوب.",
-
   "toast_draft_sent": "تم إرسال المسودة.",
   "toast_draft_discarded": "تم تجاهل المسودة.",
   "toast_draft_discarded_undo": "تم تجاهل المسودة — يمكنك التراجع خلال 5 ثوانٍ.",
   "undo": "تراجع",
   "draft_credential_error": "انتهت صلاحية بيانات اعتماد الحساب — أعد التفويض من الإعدادات.",
   "draft_send_failed": "فشل الإرسال — عادت المسودة إلى قائمة انتظارك.",
-
   "thread_ai_draft_chip": "مسودة AI",
-
   "draft_show_diff": "إظهار الفروق",
   "draft_hide_diff": "إخفاء الفروق",
   "draft_diff_label": "التغييرات مقارنةً بمسودة AI الأصلية",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "تم إلغاء الإرسال.",
   "draft_already_sent": "تم الإرسال بالفعل",
   "draft_autosave_failed": "فشل الحفظ التلقائي — قد تُفقد التغييرات",
-
   "auth_level_manual": "يدوي فقط",
   "auth_level_semi": "شبه آلي",
   "auth_level_full": "آلي كامل",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "تراجع",
   "toast_auto_send_cancelled": "تم الإلغاء — نُقلت المسودة إلى قيد الانتظار",
   "toast_auto_send_already_sent": "تم الإرسال بالفعل",
-  "trust_demoted_notice": "تقارير متكرّرة عن إرسال خاطئ — أُعيد هذا الحساب إلى شبه آلي."
+  "trust_demoted_notice": "تقارير متكرّرة عن إرسال خاطئ — أُعيد هذا الحساب إلى شبه آلي.",
+  "e1_card_title": "يقوم الذكاء الاصطناعي بصياغة رد",
+  "e1_card_assistant": "مساعد الذكاء الاصطناعي",
+  "e1_stage_reading": "جارٍ القراءة",
+  "e1_stage_recalling": "جارٍ الاستدعاء",
+  "e1_stage_drafting": "جارٍ الصياغة",
+  "e1_stage_writing": "جارٍ الكتابة",
+  "e1_stage_ready": "المسودة جاهزة",
+  "e1_stage_editing": "جارٍ التحرير",
+  "e1_card_subject": "الموضوع",
+  "e1_card_placeholder": "اكتب ردك…",
+  "e1_card_send": "إرسال",
+  "e1_tone_default": "افتراضي",
+  "e1_tone_concise": "موجز",
+  "e1_tone_warmer": "أكثر دفئًا",
+  "e1_tone_formal": "رسمي",
+  "e1_card_discard": "تجاهل",
+  "e1_card_minimize": "تصغير",
+  "e1_chip_in_progress": "مسودة قيد التنفيذ",
+  "e1_chip_resume": "استئناف"
 }

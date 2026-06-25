@@ -16,6 +16,7 @@ import type {
 import { ipc } from "../client";
 import { showToast } from "@/components/ui/Toast";
 import { markdownToPlainText } from "@/lib/markdown";
+import { buildReplyAllSeed } from "@/lib/quoteBuilder";
 
 export const draftKeys = {
   detail: (id: string) => ["draft", id] as const,
@@ -125,10 +126,21 @@ export function useAiDraftTriggerMailIds(): ReadonlySet<string> {
   return useMemo(() => new Set((data ?? []).map((d) => d.triggerMailId)), [data]);
 }
 
+/** Recipient scope for an AI reply (F_E1): the sender only, or sender + Cc. */
+export type AiReplyScope = "reply" | "reply-all";
+
 export interface RequestAiReplyVars {
   /** The mail being replied to — also seeds the blank-reply fallback. */
   mail: MailDetail;
   instruction?: string;
+  /**
+   * Recipient scope. "reply" (default) addresses the sender; "reply-all" widens
+   * the envelope to the original sender + Cc, matching a manual Reply all. The
+   * AI-written body is the same either way — only the recipient set differs.
+   */
+  scope?: AiReplyScope;
+  /** The receiving account's own address — excluded from the reply-all list. */
+  ownEmail?: string;
 }
 
 /**
@@ -144,14 +156,19 @@ export function useRequestAiReply() {
   return useMutation<AiDraft, IpcError, RequestAiReplyVars>({
     mutationFn: ({ mail, instruction }) =>
       ipc("request_ai_reply", { params: { mailId: mail.id, instruction: instruction ?? null } }),
-    onSuccess: (draft, { mail }) => {
+    onSuccess: (draft, { mail, scope, ownEmail }) => {
       void qc.invalidateQueries({ queryKey: aiDraftKeys.pendingRoot });
       const aiSeed = buildAiComposeSeed(draft);
       // Threading follows the local mail id, same as MailToolbar's reply path.
       aiSeed.inReplyTo = mail.id;
-      void navigate("/compose", { state: { mode: "reply", aiSeed } });
+      // Reply-all keeps the AI body but widens recipients to the sender + Cc,
+      // the same set buildReplyAllSeed produces for a manual Reply all.
+      if (scope === "reply-all") {
+        aiSeed.to = buildReplyAllSeed(mail, ownEmail ?? "").to;
+      }
+      void navigate("/compose", { state: { mode: scope ?? "reply", aiSeed } });
     },
-    onError: (err, { mail }) => {
+    onError: (err, { mail, scope, ownEmail }) => {
       const notConfigured =
         err.code === "AI_PROVIDER_UNREACHABLE" && (err.detail ?? "").includes("not_configured");
       if (notConfigured) {
@@ -161,8 +178,33 @@ export function useRequestAiReply() {
         return;
       }
       // Any other failure: toast + blank reply compose (F_E1 §4.4 — never block).
+      // The scope + ownEmail carry through so a reply-all fallback still seeds Cc.
       showToast(t("toast_ai_draft_failed"));
-      void navigate("/compose", { state: { mode: "reply", mail } });
+      void navigate("/compose", { state: { mode: scope ?? "reply", mail, ownEmail } });
+    },
+  });
+}
+
+export interface GenerateAiReplyInlineVars {
+  mailId: string;
+  instruction?: string;
+}
+
+/**
+ * E1 inline AI reply (T078) — the in-place draft card path. Generates a draft
+ * with `request_ai_reply` and returns it WITHOUT navigating, so AiReplyDraftCard
+ * can reveal it in the reading view. It is the SAME draft object the Pending
+ * review surface shows (one draft, not two); `request_ai_reply` already
+ * persisted and queued it. The card reuses regenerate/approve/discard below.
+ */
+export function useGenerateAiReplyInline() {
+  const qc = useQueryClient();
+  return useMutation<AiDraft, IpcError, GenerateAiReplyInlineVars>({
+    mutationFn: ({ mailId, instruction }) =>
+      ipc("request_ai_reply", { params: { mailId, instruction: instruction ?? null } }),
+    onSuccess: (draft) => {
+      qc.setQueryData(aiDraftKeys.detail(draft.id), draft);
+      void qc.invalidateQueries({ queryKey: aiDraftKeys.pendingRoot });
     },
   });
 }

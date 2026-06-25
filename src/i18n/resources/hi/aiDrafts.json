@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI जवाब",
+  "e1_ai_reply_all": "AI सभी को रिप्लाई",
+  "e1_ai_reply_options": "AI रिप्लाई विकल्प",
   "e1_ai_drafting": "AI ड्राफ़्ट बना रहा है…",
   "e1_regenerate": "फिर से बनाएँ",
   "e1_regen_hint": "अगर अब भी संतुष्ट नहीं हैं, तो जवाब खुद लिखने पर विचार करें।",
   "toast_ai_draft_failed": "AI जवाब विफल — इसके बजाय एक खाली ड्राफ़्ट खोला गया।",
   "toast_ai_provider_not_configured": "इस अकाउंट के लिए कोई AI प्रोवाइडर कॉन्फ़िगर नहीं किया गया। AI जवाब उपयोग करने के लिए एक सेट करें।",
-
   "pending_filter_all": "सभी",
   "pending_filter_needs_decision": "निर्णय आवश्यक",
   "pending_filter_draft_ready": "ड्राफ़्ट तैयार",
   "pending_empty": "कुछ लंबित नहीं — आपके Agents सब कुछ निपटा चुके हैं।",
   "draft_banner_count": "{count, plural, one {समीक्षा हेतु # AI ड्राफ़्ट तैयार} other {समीक्षा हेतु # AI ड्राफ़्ट तैयार}}",
   "draft_banner_review_all": "सभी की समीक्षा करें →",
-
   "draft_badge_ready": "ड्राफ़्ट तैयार",
   "draft_badge_edited": "संपादित",
   "draft_badge_review": "समीक्षा आवश्यक",
   "draft_review_cta": "AI ड्राफ़्ट की समीक्षा करें और भेजें →",
   "draft_expires_in": "{hours} घंटे में समाप्त",
   "draft_style_match": "{score}% शैली मिलान",
-
   "draft_panel_title": "AI ड्राफ़्ट",
   "draft_panel_original": "मूल ईमेल",
   "draft_original_unavailable": "मूल ईमेल अब उपलब्ध नहीं",
@@ -40,16 +39,13 @@
   "style_too_long": "बहुत लंबा",
   "style_tone_off": "लहजा सही नहीं",
   "toast_style_feedback": "धन्यवाद — शैली प्रतिक्रिया दर्ज की गई।",
-
   "toast_draft_sent": "ड्राफ़्ट भेजा गया।",
   "toast_draft_discarded": "ड्राफ़्ट खारिज किया गया।",
   "toast_draft_discarded_undo": "ड्राफ़्ट खारिज किया गया — आप 5 सेकंड तक पूर्ववत कर सकते हैं।",
   "undo": "पूर्ववत करें",
   "draft_credential_error": "अकाउंट क्रेडेंशियल समाप्त हो गए — सेटिंग्स में फिर से अधिकृत करें।",
   "draft_send_failed": "भेजना विफल — ड्राफ़्ट आपकी कतार में वापस है।",
-
   "thread_ai_draft_chip": "AI ड्राफ़्ट",
-
   "draft_show_diff": "अंतर दिखाएँ",
   "draft_hide_diff": "अंतर छिपाएँ",
   "draft_diff_label": "मूल AI ड्राफ़्ट की तुलना में बदलाव",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "भेजना रद्द किया गया।",
   "draft_already_sent": "पहले ही भेजा गया",
   "draft_autosave_failed": "ऑटो-सेव विफल — बदलाव खो सकते हैं",
-
   "auth_level_manual": "Manual Only",
   "auth_level_semi": "Semi-Auto",
   "auth_level_full": "Full Auto",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "पूर्ववत करें",
   "toast_auto_send_cancelled": "रद्द किया गया — ड्राफ़्ट लंबित में ले जाया गया",
   "toast_auto_send_already_sent": "पहले ही भेजा गया",
-  "trust_demoted_notice": "बार-बार ग़लत भेजने की रिपोर्ट — इस अकाउंट को वापस Semi-Auto पर ले जाया गया।"
+  "trust_demoted_notice": "बार-बार ग़लत भेजने की रिपोर्ट — इस अकाउंट को वापस Semi-Auto पर ले जाया गया।",
+  "e1_card_title": "AI उत्तर का मसौदा बना रहा है",
+  "e1_card_assistant": "AI सहायक",
+  "e1_stage_reading": "पढ़ रहा है",
+  "e1_stage_recalling": "याद कर रहा है",
+  "e1_stage_drafting": "मसौदा बना रहा है",
+  "e1_stage_writing": "लिख रहा है",
+  "e1_stage_ready": "मसौदा तैयार",
+  "e1_stage_editing": "संपादन हो रहा है",
+  "e1_card_subject": "विषय",
+  "e1_card_placeholder": "अपना उत्तर लिखें…",
+  "e1_card_send": "भेजें",
+  "e1_tone_default": "डिफ़ॉल्ट",
+  "e1_tone_concise": "संक्षिप्त",
+  "e1_tone_warmer": "अधिक गर्मजोशी",
+  "e1_tone_formal": "औपचारिक",
+  "e1_card_discard": "छोड़ें",
+  "e1_card_minimize": "छोटा करें",
+  "e1_chip_in_progress": "मसौदा प्रगति पर",
+  "e1_chip_resume": "पुनः आरंभ करें"
 }

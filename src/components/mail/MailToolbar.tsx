@@ -293,8 +293,9 @@ export function MailToolbar({
             icon={<Icons.ReplyAll />}
           />
           <ToolbarButton label={t("forward")} onClick={navigateForward} icon={<Icons.Forward />} />
-          {/* E1 manual AI reply (T078) — one of the two sanctioned entry points. */}
-          <AiReplyButton mail={mail} />
+          {/* E1 manual AI reply (T078) — one of the two sanctioned entry points.
+              Splits into Reply / Reply All (sender + Cc) on multi-recipient mail. */}
+          <AiReplyButton mail={mail} ownEmail={ownEmail} />
         </div>
 
         {/* Management actions */}

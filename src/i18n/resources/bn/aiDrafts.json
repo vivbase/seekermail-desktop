@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI উত্তর",
+  "e1_ai_reply_all": "AI সবাইকে রিপ্লাই",
+  "e1_ai_reply_options": "AI রিপ্লাই অপশন",
   "e1_ai_drafting": "AI খসড়া করছে…",
   "e1_regenerate": "পুনরায় তৈরি করুন",
   "e1_regen_hint": "এখনও সন্তুষ্ট না হলে, উত্তরটি নিজেই লেখার কথা বিবেচনা করুন।",
   "toast_ai_draft_failed": "AI উত্তর ব্যর্থ — পরিবর্তে একটি ফাঁকা খসড়া খোলা হয়েছে।",
   "toast_ai_provider_not_configured": "এই অ্যাকাউন্টের জন্য কোনো AI প্রোভাইডার কনফিগার করা হয়নি। AI উত্তর ব্যবহার করতে একটি সেট আপ করুন।",
-
   "pending_filter_all": "সব",
   "pending_filter_needs_decision": "সিদ্ধান্ত প্রয়োজন",
   "pending_filter_draft_ready": "খসড়া প্রস্তুত",
   "pending_empty": "কিছু অপেক্ষমাণ নেই — আপনার Agent-রা সব সামলে ফেলেছে।",
   "draft_banner_count": "{count, plural, one {পর্যালোচনার জন্য # AI খসড়া প্রস্তুত} other {পর্যালোচনার জন্য # AI খসড়া প্রস্তুত}}",
   "draft_banner_review_all": "সব পর্যালোচনা করুন →",
-
   "draft_badge_ready": "খসড়া প্রস্তুত",
   "draft_badge_edited": "সম্পাদিত",
   "draft_badge_review": "পর্যালোচনা প্রয়োজন",
   "draft_review_cta": "AI খসড়া পর্যালোচনা ও পাঠান →",
   "draft_expires_in": "{hours}ঘ পরে মেয়াদ শেষ হবে",
   "draft_style_match": "{score}% শৈলী মিল",
-
   "draft_panel_title": "AI খসড়া",
   "draft_panel_original": "মূল ইমেইল",
   "draft_original_unavailable": "মূল ইমেইল আর উপলব্ধ নেই",
@@ -40,16 +39,13 @@
   "style_too_long": "অতিরিক্ত দীর্ঘ",
   "style_tone_off": "সুর বেমানান",
   "toast_style_feedback": "ধন্যবাদ — শৈলী ফিডব্যাক লক্ষ্য করা হয়েছে।",
-
   "toast_draft_sent": "খসড়া পাঠানো হয়েছে।",
   "toast_draft_discarded": "খসড়া বাতিল করা হয়েছে।",
   "toast_draft_discarded_undo": "খসড়া বাতিল করা হয়েছে — আপনি 5 সেকেন্ডের জন্য পূর্বাবস্থায় ফেরাতে পারবেন।",
   "undo": "পূর্বাবস্থায় ফেরান",
   "draft_credential_error": "অ্যাকাউন্ট ক্রেডেনশিয়ালের মেয়াদ শেষ — সেটিংসে পুনরায় অনুমোদন করুন।",
   "draft_send_failed": "প্রেরণ ব্যর্থ — খসড়াটি আপনার সারিতে ফিরে এসেছে।",
-
   "thread_ai_draft_chip": "AI খসড়া",
-
   "draft_show_diff": "পার্থক্য দেখান",
   "draft_hide_diff": "পার্থক্য লুকান",
   "draft_diff_label": "মূল AI খসড়ার তুলনায় পরিবর্তন",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "প্রেরণ বাতিল করা হয়েছে।",
   "draft_already_sent": "ইতিমধ্যে পাঠানো হয়েছে",
   "draft_autosave_failed": "স্বয়ংক্রিয় সংরক্ষণ ব্যর্থ — পরিবর্তন হারিয়ে যেতে পারে",
-
   "auth_level_manual": "Manual Only",
   "auth_level_semi": "Semi-Auto",
   "auth_level_full": "Full Auto",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "পূর্বাবস্থায় ফেরান",
   "toast_auto_send_cancelled": "বাতিল করা হয়েছে — খসড়া অপেক্ষমাণ-এ সরানো হয়েছে",
   "toast_auto_send_already_sent": "ইতিমধ্যে পাঠানো হয়েছে",
-  "trust_demoted_notice": "বারবার ভুল-প্রেরণ রিপোর্ট — এই অ্যাকাউন্টটি Semi-Auto-তে ফিরিয়ে আনা হয়েছে।"
+  "trust_demoted_notice": "বারবার ভুল-প্রেরণ রিপোর্ট — এই অ্যাকাউন্টটি Semi-Auto-তে ফিরিয়ে আনা হয়েছে।",
+  "e1_card_title": "AI একটি উত্তর খসড়া করছে",
+  "e1_card_assistant": "AI সহকারী",
+  "e1_stage_reading": "পড়ছে",
+  "e1_stage_recalling": "স্মরণ করছে",
+  "e1_stage_drafting": "খসড়া করছে",
+  "e1_stage_writing": "লিখছে",
+  "e1_stage_ready": "খসড়া প্রস্তুত",
+  "e1_stage_editing": "সম্পাদনা করছে",
+  "e1_card_subject": "বিষয়",
+  "e1_card_placeholder": "আপনার উত্তর লিখুন…",
+  "e1_card_send": "পাঠান",
+  "e1_tone_default": "ডিফল্ট",
+  "e1_tone_concise": "সংক্ষিপ্ত",
+  "e1_tone_warmer": "আরও উষ্ণ",
+  "e1_tone_formal": "আনুষ্ঠানিক",
+  "e1_card_discard": "বাতিল করুন",
+  "e1_card_minimize": "ছোট করুন",
+  "e1_chip_in_progress": "খসড়া চলছে",
+  "e1_chip_resume": "পুনরায় শুরু করুন"
 }

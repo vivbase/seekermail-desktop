@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI 返信",
+  "e1_ai_reply_all": "AI 全員に返信",
+  "e1_ai_reply_options": "AI 返信オプション",
   "e1_ai_drafting": "AI が下書き中…",
   "e1_regenerate": "再生成",
   "e1_regen_hint": "それでも満足できない場合は、ご自身で返信を書くことをご検討ください。",
   "toast_ai_draft_failed": "AI 返信に失敗しました — 代わりに空の下書きを開きました。",
   "toast_ai_provider_not_configured": "このアカウントには AI プロバイダーが設定されていません。AI 返信を使うには設定してください。",
-
   "pending_filter_all": "すべて",
   "pending_filter_needs_decision": "判断が必要",
   "pending_filter_draft_ready": "下書き準備完了",
   "pending_empty": "保留中のものはありません — Agent はすべて対応済みです。",
   "draft_banner_count": "{count, plural, other {レビュー待ちの AI 下書き # 件}}",
   "draft_banner_review_all": "すべてレビュー →",
-
   "draft_badge_ready": "下書き準備完了",
   "draft_badge_edited": "編集済み",
   "draft_badge_review": "レビューが必要",
   "draft_review_cta": "AI 下書きをレビューして送信 →",
   "draft_expires_in": "{hours} 時間後に期限切れ",
   "draft_style_match": "文体の一致 {score}%",
-
   "draft_panel_title": "AI 下書き",
   "draft_panel_original": "元のメール",
   "draft_original_unavailable": "元のメールは利用できなくなりました",
@@ -40,16 +39,13 @@
   "style_too_long": "長すぎる",
   "style_tone_off": "トーンが合わない",
   "toast_style_feedback": "ありがとうございます — 文体フィードバックを記録しました。",
-
   "toast_draft_sent": "下書きを送信しました。",
   "toast_draft_discarded": "下書きを破棄しました。",
   "toast_draft_discarded_undo": "下書きを破棄しました — 5 秒間は元に戻せます。",
   "undo": "元に戻す",
   "draft_credential_error": "アカウントの認証情報が期限切れです — 設定で再認証してください。",
   "draft_send_failed": "送信に失敗しました — 下書きはキューに戻りました。",
-
   "thread_ai_draft_chip": "AI 下書き",
-
   "draft_show_diff": "差分を表示",
   "draft_hide_diff": "差分を非表示",
   "draft_diff_label": "元の AI 下書きに対する変更点",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "送信をキャンセルしました。",
   "draft_already_sent": "送信済み",
   "draft_autosave_failed": "自動保存に失敗しました — 変更が失われる可能性があります",
-
   "auth_level_manual": "手動のみ",
   "auth_level_semi": "半自動",
   "auth_level_full": "完全自動",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "元に戻す",
   "toast_auto_send_cancelled": "キャンセルしました — 下書きを保留中に移動しました",
   "toast_auto_send_already_sent": "送信済み",
-  "trust_demoted_notice": "誤送信の報告が繰り返されたため、このアカウントは半自動に戻されました。"
+  "trust_demoted_notice": "誤送信の報告が繰り返されたため、このアカウントは半自動に戻されました。",
+  "e1_card_title": "AIが返信を作成中",
+  "e1_card_assistant": "AIアシスタント",
+  "e1_stage_reading": "読み込み中",
+  "e1_stage_recalling": "履歴を参照中",
+  "e1_stage_drafting": "作成中",
+  "e1_stage_writing": "書き込み中",
+  "e1_stage_ready": "下書き完成",
+  "e1_stage_editing": "編集中",
+  "e1_card_subject": "件名",
+  "e1_card_placeholder": "返信を入力…",
+  "e1_card_send": "送信",
+  "e1_tone_default": "標準",
+  "e1_tone_concise": "簡潔",
+  "e1_tone_warmer": "より丁寧",
+  "e1_tone_formal": "フォーマル",
+  "e1_card_discard": "破棄",
+  "e1_card_minimize": "最小化",
+  "e1_chip_in_progress": "下書き作成中",
+  "e1_chip_resume": "再開"
 }

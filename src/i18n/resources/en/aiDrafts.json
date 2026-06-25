@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI Reply",
+  "e1_ai_reply_all": "AI Reply All",
+  "e1_ai_reply_options": "AI reply options",
   "e1_ai_drafting": "AI is drafting…",
   "e1_regenerate": "Regenerate",
   "e1_regen_hint": "If you're still unsatisfied, consider writing the reply yourself.",
   "toast_ai_draft_failed": "AI reply failed — opened a blank draft instead.",
   "toast_ai_provider_not_configured": "No AI provider is configured for this account. Set one up to use AI replies.",
-
   "pending_filter_all": "All",
   "pending_filter_needs_decision": "Needs Decision",
   "pending_filter_draft_ready": "Draft Ready",
   "pending_empty": "Nothing pending — your agents are all caught up.",
   "draft_banner_count": "{count, plural, one {# AI draft ready for review} other {# AI drafts ready for review}}",
   "draft_banner_review_all": "Review All →",
-
   "draft_badge_ready": "Draft Ready",
   "draft_badge_edited": "Edited",
   "draft_badge_review": "Review Needed",
   "draft_review_cta": "Review AI draft & send →",
   "draft_expires_in": "Expires in {hours}h",
   "draft_style_match": "{score}% style match",
-
   "draft_panel_title": "AI Draft",
   "draft_panel_original": "Original Email",
   "draft_original_unavailable": "Original email no longer available",
@@ -40,16 +39,13 @@
   "style_too_long": "Too long",
   "style_tone_off": "Tone off",
   "toast_style_feedback": "Thanks — style feedback noted.",
-
   "toast_draft_sent": "Draft sent.",
   "toast_draft_discarded": "Draft discarded.",
   "toast_draft_discarded_undo": "Draft discarded — you can undo for 5 seconds.",
   "undo": "Undo",
   "draft_credential_error": "Account credentials expired — re-authorize in Settings.",
   "draft_send_failed": "Sending failed — the draft is back in your queue.",
-
   "thread_ai_draft_chip": "AI Draft",
-
   "draft_show_diff": "Show Diff",
   "draft_hide_diff": "Hide Diff",
   "draft_diff_label": "Changes against the original AI draft",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "Send cancelled.",
   "draft_already_sent": "Already sent",
   "draft_autosave_failed": "Auto-save failed — changes may be lost",
-
   "auth_level_manual": "Manual Only",
   "auth_level_semi": "Semi-Auto",
   "auth_level_full": "Full Auto",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "Undo",
   "toast_auto_send_cancelled": "Cancelled — draft moved to Pending",
   "toast_auto_send_already_sent": "Already sent",
-  "trust_demoted_notice": "Repeated mis-send reports — this account was moved back to Semi-Auto."
+  "trust_demoted_notice": "Repeated mis-send reports — this account was moved back to Semi-Auto.",
+  "e1_card_title": "AI is drafting a reply",
+  "e1_card_assistant": "AI Assistant",
+  "e1_stage_reading": "Reading",
+  "e1_stage_recalling": "Recalling",
+  "e1_stage_drafting": "Drafting",
+  "e1_stage_writing": "Writing",
+  "e1_stage_ready": "Draft ready",
+  "e1_stage_editing": "Editing",
+  "e1_card_subject": "Subject",
+  "e1_card_placeholder": "Write your reply…",
+  "e1_card_send": "Send",
+  "e1_tone_default": "Default",
+  "e1_tone_concise": "Concise",
+  "e1_tone_warmer": "Warmer",
+  "e1_tone_formal": "Formal",
+  "e1_card_discard": "Discard",
+  "e1_card_minimize": "Minimize",
+  "e1_chip_in_progress": "Draft in progress",
+  "e1_chip_resume": "Resume"
 }

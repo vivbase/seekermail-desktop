@@ -109,6 +109,29 @@ describe("useRequestAiReply (T078)", () => {
     expect(options.state.aiSeed.body.length).toBeGreaterThan(0);
   });
 
+  it("reply-all scope widens the seed To to sender + Cc and sets mode=reply-all", async () => {
+    vi.spyOn(client, "ipc").mockResolvedValue(DRAFT);
+    const { result } = renderHook(() => useRequestAiReply(), { wrapper });
+
+    const MAIL_MULTI: MailDetail = {
+      ...MAIL,
+      cc: [{ name: "Bob", email: "bob@northwind.co" }],
+    };
+    result.current.mutate({ mail: MAIL_MULTI, scope: "reply-all", ownEmail: "you@example.com" });
+
+    await waitFor(() => expect(navigateMock).toHaveBeenCalled());
+    const [path, options] = navigateMock.mock.calls[0] as [
+      string,
+      { state: { mode: string; aiSeed: { to: string } } },
+    ];
+    expect(path).toBe("/compose");
+    expect(options.state.mode).toBe("reply-all");
+    // Reply-all keeps the sender and adds the Cc recipient; ownEmail is excluded.
+    expect(options.state.aiSeed.to).toContain("alice@northwind.co");
+    expect(options.state.aiSeed.to).toContain("bob@northwind.co");
+    expect(options.state.aiSeed.to).not.toContain("you@example.com");
+  });
+
   it("falls back to a blank reply compose + toast on generation failure", async () => {
     vi.spyOn(client, "ipc").mockRejectedValue({
       code: "AI_PROVIDER_UNREACHABLE",

@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "Risposta AI",
+  "e1_ai_reply_all": "Rispondi a tutti con AI",
+  "e1_ai_reply_options": "Opzioni risposta AI",
   "e1_ai_drafting": "L'AI sta redigendo…",
   "e1_regenerate": "Rigenera",
   "e1_regen_hint": "Se non sei ancora soddisfatto, considera di scrivere tu stesso la risposta.",
   "toast_ai_draft_failed": "Risposta AI fallita — aperta una bozza vuota.",
   "toast_ai_provider_not_configured": "Nessun provider AI configurato per questo account. Configurane uno per usare le risposte AI.",
-
   "pending_filter_all": "Tutte",
   "pending_filter_needs_decision": "Decisione richiesta",
   "pending_filter_draft_ready": "Bozza pronta",
   "pending_empty": "Nessun elemento in attesa — i tuoi Agent sono in pari.",
   "draft_banner_count": "{count, plural, one {# bozza AI pronta per la revisione} other {# bozze AI pronte per la revisione}}",
   "draft_banner_review_all": "Rivedi tutte →",
-
   "draft_badge_ready": "Bozza pronta",
   "draft_badge_edited": "Modificata",
   "draft_badge_review": "Revisione richiesta",
   "draft_review_cta": "Rivedi bozza AI e invia →",
   "draft_expires_in": "Scade tra {hours}h",
   "draft_style_match": "{score}% corrispondenza stilistica",
-
   "draft_panel_title": "Bozza AI",
   "draft_panel_original": "Email originale",
   "draft_original_unavailable": "Email originale non più disponibile",
@@ -40,16 +39,13 @@
   "style_too_long": "Troppo lunga",
   "style_tone_off": "Tono sbagliato",
   "toast_style_feedback": "Grazie — feedback sullo stile registrato.",
-
   "toast_draft_sent": "Bozza inviata.",
   "toast_draft_discarded": "Bozza eliminata.",
   "toast_draft_discarded_undo": "Bozza eliminata — puoi annullare per 5 secondi.",
   "undo": "Annulla",
   "draft_credential_error": "Credenziali account scadute — riautorizza nelle Impostazioni.",
   "draft_send_failed": "Invio fallito — la bozza è tornata nella tua coda.",
-
   "thread_ai_draft_chip": "Bozza AI",
-
   "draft_show_diff": "Mostra differenze",
   "draft_hide_diff": "Nascondi differenze",
   "draft_diff_label": "Modifiche rispetto alla bozza AI originale",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "Invio annullato.",
   "draft_already_sent": "Già inviata",
   "draft_autosave_failed": "Salvataggio automatico fallito — le modifiche potrebbero andare perse",
-
   "auth_level_manual": "Solo manuale",
   "auth_level_semi": "Semi-automatico",
   "auth_level_full": "Automatico completo",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "Annulla",
   "toast_auto_send_cancelled": "Annullato — bozza spostata in Attesa",
   "toast_auto_send_already_sent": "Già inviata",
-  "trust_demoted_notice": "Segnalazioni ripetute di invio erroneo — questo account è stato riportato a Semi-automatico."
+  "trust_demoted_notice": "Segnalazioni ripetute di invio erroneo — questo account è stato riportato a Semi-automatico.",
+  "e1_card_title": "L'IA sta scrivendo una risposta",
+  "e1_card_assistant": "Assistente IA",
+  "e1_stage_reading": "Lettura",
+  "e1_stage_recalling": "Recupero",
+  "e1_stage_drafting": "Stesura",
+  "e1_stage_writing": "Scrittura",
+  "e1_stage_ready": "Bozza pronta",
+  "e1_stage_editing": "Modifica",
+  "e1_card_subject": "Oggetto",
+  "e1_card_placeholder": "Scrivi la tua risposta…",
+  "e1_card_send": "Invia",
+  "e1_tone_default": "Predefinito",
+  "e1_tone_concise": "Conciso",
+  "e1_tone_warmer": "Più caloroso",
+  "e1_tone_formal": "Formale",
+  "e1_card_discard": "Scarta",
+  "e1_card_minimize": "Riduci",
+  "e1_chip_in_progress": "Bozza in corso",
+  "e1_chip_resume": "Riprendi"
 }

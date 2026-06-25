@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI-Antwort",
+  "e1_ai_reply_all": "Allen mit AI antworten",
+  "e1_ai_reply_options": "AI-Antwortoptionen",
   "e1_ai_drafting": "AI erstellt Entwurf…",
   "e1_regenerate": "Neu generieren",
   "e1_regen_hint": "Wenn Sie weiterhin unzufrieden sind, schreiben Sie die Antwort selbst.",
   "toast_ai_draft_failed": "AI-Antwort fehlgeschlagen – leerer Entwurf geöffnet.",
   "toast_ai_provider_not_configured": "Kein AI-Anbieter für dieses Konto konfiguriert. Richten Sie einen ein, um AI-Antworten zu nutzen.",
-
   "pending_filter_all": "Alle",
   "pending_filter_needs_decision": "Entscheidung erforderlich",
   "pending_filter_draft_ready": "Entwurf bereit",
   "pending_empty": "Nichts ausstehend – Ihre Agents sind auf dem neuesten Stand.",
   "draft_banner_count": "{count, plural, one {# AI-Entwurf zur Prüfung bereit} other {# AI-Entwürfe zur Prüfung bereit}}",
   "draft_banner_review_all": "Alle prüfen →",
-
   "draft_badge_ready": "Entwurf bereit",
   "draft_badge_edited": "Bearbeitet",
   "draft_badge_review": "Prüfung erforderlich",
   "draft_review_cta": "AI-Entwurf prüfen und senden →",
   "draft_expires_in": "Läuft in {hours} h ab",
   "draft_style_match": "{score} % Stilübereinstimmung",
-
   "draft_panel_title": "AI-Entwurf",
   "draft_panel_original": "Original-Mail",
   "draft_original_unavailable": "Original-Mail nicht mehr verfügbar",
@@ -40,16 +39,13 @@
   "style_too_long": "Zu lang",
   "style_tone_off": "Ton unpassend",
   "toast_style_feedback": "Danke – Stil-Feedback notiert.",
-
   "toast_draft_sent": "Entwurf gesendet.",
   "toast_draft_discarded": "Entwurf verworfen.",
   "toast_draft_discarded_undo": "Entwurf verworfen – Rückgängig möglich für 5 Sekunden.",
   "undo": "Rückgängig",
   "draft_credential_error": "Kontodaten abgelaufen – in den Einstellungen erneut autorisieren.",
   "draft_send_failed": "Senden fehlgeschlagen – der Entwurf befindet sich wieder in Ihrer Warteschlange.",
-
   "thread_ai_draft_chip": "AI-Entwurf",
-
   "draft_show_diff": "Änderungen anzeigen",
   "draft_hide_diff": "Änderungen ausblenden",
   "draft_diff_label": "Änderungen gegenüber dem ursprünglichen AI-Entwurf",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "Senden abgebrochen.",
   "draft_already_sent": "Bereits gesendet",
   "draft_autosave_failed": "Automatisches Speichern fehlgeschlagen – Änderungen könnten verloren gehen",
-
   "auth_level_manual": "Nur manuell",
   "auth_level_semi": "Halbautomatisch",
   "auth_level_full": "Vollautomatisch",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "Rückgängig",
   "toast_auto_send_cancelled": "Abgebrochen – Entwurf in Ausstehend verschoben",
   "toast_auto_send_already_sent": "Bereits gesendet",
-  "trust_demoted_notice": "Mehrere Fehlsende-Meldungen – dieses Konto wurde auf Halbautomatisch zurückgestuft."
+  "trust_demoted_notice": "Mehrere Fehlsende-Meldungen – dieses Konto wurde auf Halbautomatisch zurückgestuft.",
+  "e1_card_title": "KI verfasst eine Antwort",
+  "e1_card_assistant": "KI-Assistent",
+  "e1_stage_reading": "Lesen",
+  "e1_stage_recalling": "Abrufen",
+  "e1_stage_drafting": "Entwerfen",
+  "e1_stage_writing": "Schreiben",
+  "e1_stage_ready": "Entwurf bereit",
+  "e1_stage_editing": "Bearbeiten",
+  "e1_card_subject": "Betreff",
+  "e1_card_placeholder": "Schreiben Sie Ihre Antwort…",
+  "e1_card_send": "Senden",
+  "e1_tone_default": "Standard",
+  "e1_tone_concise": "Prägnant",
+  "e1_tone_warmer": "Wärmer",
+  "e1_tone_formal": "Formell",
+  "e1_card_discard": "Verwerfen",
+  "e1_card_minimize": "Minimieren",
+  "e1_chip_in_progress": "Entwurf in Arbeit",
+  "e1_chip_resume": "Fortsetzen"
 }

@@ -143,3 +143,25 @@ describe("MailToolbar — Spam view shows Not spam", () => {
     expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
   });
 });
+
+// F_E1: AI Reply becomes a split button when the thread has recipients beyond
+// the sender, exposing "AI Reply All" (sender + Cc). Single-recipient mail keeps
+// the plain button so the bar never offers a redundant reply-all.
+describe("MailToolbar — AI Reply split button", () => {
+  it("offers AI Reply All for multi-recipient mail (Cc present)", () => {
+    render(<MailToolbar mail={MAIL} />, { wrapper });
+    const caret = screen.getByRole("button", { name: "AI reply options" });
+    expect(caret).toBeTruthy();
+    // Menu is closed until the caret is opened.
+    expect(screen.queryByRole("menuitem", { name: "AI Reply All" })).toBeNull();
+    fireEvent.click(caret);
+    expect(screen.getByRole("menuitem", { name: "AI Reply All" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "AI Reply" })).toBeTruthy();
+  });
+
+  it("stays a plain AI Reply button when there are no other recipients", () => {
+    render(<MailToolbar mail={{ ...MAIL, cc: [] }} />, { wrapper });
+    expect(screen.getByRole("button", { name: "AI Reply" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "AI reply options" })).toBeNull();
+  });
+});

@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI 回复",
+  "e1_ai_reply_all": "AI 回复全部",
+  "e1_ai_reply_options": "AI 回复选项",
   "e1_ai_drafting": "AI 起草中…",
   "e1_regenerate": "重新生成",
   "e1_regen_hint": "若仍不满意，可考虑自行撰写回复。",
   "toast_ai_draft_failed": "AI 回复失败——已打开空白草稿。",
   "toast_ai_provider_not_configured": "此账户未配置 AI 服务商。请先设置以使用 AI 回复。",
-
   "pending_filter_all": "全部",
   "pending_filter_needs_decision": "待决策",
   "pending_filter_draft_ready": "草稿就绪",
   "pending_empty": "无待处理项——您的 Agent 全部处理完毕。",
   "draft_banner_count": "{count, plural, other {# 封 AI 草稿待审核}}",
   "draft_banner_review_all": "全部审核 →",
-
   "draft_badge_ready": "草稿就绪",
   "draft_badge_edited": "已编辑",
   "draft_badge_review": "需要审核",
   "draft_review_cta": "审核 AI 草稿并发送 →",
   "draft_expires_in": "{hours}h 后过期",
   "draft_style_match": "风格匹配度 {score}%",
-
   "draft_panel_title": "AI 草稿",
   "draft_panel_original": "原始邮件",
   "draft_original_unavailable": "原始邮件已不可用",
@@ -40,16 +39,13 @@
   "style_too_long": "过于冗长",
   "style_tone_off": "语气不对",
   "toast_style_feedback": "感谢——风格反馈已记录。",
-
   "toast_draft_sent": "草稿已发送。",
   "toast_draft_discarded": "草稿已丢弃。",
   "toast_draft_discarded_undo": "草稿已丢弃——5 秒内可撤销。",
   "undo": "撤销",
   "draft_credential_error": "账户凭据已过期——请在「设置」中重新授权。",
   "draft_send_failed": "发送失败——草稿已返回队列。",
-
   "thread_ai_draft_chip": "AI 草稿",
-
   "draft_show_diff": "显示差异",
   "draft_hide_diff": "隐藏差异",
   "draft_diff_label": "与原始 AI 草稿的差异",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "发送已取消。",
   "draft_already_sent": "已发送",
   "draft_autosave_failed": "自动保存失败——更改可能丢失",
-
   "auth_level_manual": "仅手动",
   "auth_level_semi": "半自动",
   "auth_level_full": "全自动",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "撤销",
   "toast_auto_send_cancelled": "已取消——草稿已移至待处理",
   "toast_auto_send_already_sent": "已发送",
-  "trust_demoted_notice": "多次误发举报——此账户已降回半自动模式。"
+  "trust_demoted_notice": "多次误发举报——此账户已降回半自动模式。",
+  "e1_card_title": "AI 正在草拟回复",
+  "e1_card_assistant": "AI 助理",
+  "e1_stage_reading": "阅读中",
+  "e1_stage_recalling": "检索记忆",
+  "e1_stage_drafting": "起草中",
+  "e1_stage_writing": "书写中",
+  "e1_stage_ready": "草稿就绪",
+  "e1_stage_editing": "编辑中",
+  "e1_card_subject": "主题",
+  "e1_card_placeholder": "写下你的回复…",
+  "e1_card_send": "发送",
+  "e1_tone_default": "默认",
+  "e1_tone_concise": "简洁",
+  "e1_tone_warmer": "更亲切",
+  "e1_tone_formal": "正式",
+  "e1_card_discard": "丢弃",
+  "e1_card_minimize": "最小化",
+  "e1_chip_in_progress": "草稿进行中",
+  "e1_chip_resume": "继续"
 }

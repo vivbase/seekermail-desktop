@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI 回覆",
+  "e1_ai_reply_all": "AI 回覆全部",
+  "e1_ai_reply_options": "AI 回覆選項",
   "e1_ai_drafting": "AI 起草中…",
   "e1_regenerate": "重新生成",
   "e1_regen_hint": "若仍不滿意，請考慮自行撰寫回覆。",
   "toast_ai_draft_failed": "AI 回覆失敗——已改為開啟空白草稿。",
   "toast_ai_provider_not_configured": "此帳戶未設定 AI 提供者。請先設定才能使用 AI 回覆。",
-
   "pending_filter_all": "全部",
   "pending_filter_needs_decision": "待決策",
   "pending_filter_draft_ready": "草稿就緒",
   "pending_empty": "無待處理項目——您的 Agents 全部處理完畢。",
   "draft_banner_count": "{count, plural, other {# 則 AI 草稿待審核}}",
   "draft_banner_review_all": "全部審核 →",
-
   "draft_badge_ready": "草稿就緒",
   "draft_badge_edited": "已編輯",
   "draft_badge_review": "需要審核",
   "draft_review_cta": "審核 AI 草稿並傳送 →",
   "draft_expires_in": "{hours} 小時後過期",
   "draft_style_match": "{score}% 風格吻合",
-
   "draft_panel_title": "AI 草稿",
   "draft_panel_original": "原始郵件",
   "draft_original_unavailable": "原始郵件已不存在",
@@ -40,16 +39,13 @@
   "style_too_long": "太長",
   "style_tone_off": "語氣不對",
   "toast_style_feedback": "感謝——風格回饋已記錄。",
-
   "toast_draft_sent": "草稿已傳送。",
   "toast_draft_discarded": "草稿已捨棄。",
   "toast_draft_discarded_undo": "草稿已捨棄——可在 5 秒內復原。",
   "undo": "復原",
   "draft_credential_error": "帳戶憑證已過期——請在設定中重新授權。",
   "draft_send_failed": "傳送失敗——草稿已放回您的佇列。",
-
   "thread_ai_draft_chip": "AI 草稿",
-
   "draft_show_diff": "顯示差異",
   "draft_hide_diff": "隱藏差異",
   "draft_diff_label": "與原始 AI 草稿的變更",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "傳送已取消。",
   "draft_already_sent": "已傳送",
   "draft_autosave_failed": "自動儲存失敗——變更可能遺失",
-
   "auth_level_manual": "Manual Only",
   "auth_level_semi": "Semi-Auto",
   "auth_level_full": "Full Auto",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "復原",
   "toast_auto_send_cancelled": "已取消——草稿移至待處理",
   "toast_auto_send_already_sent": "已傳送",
-  "trust_demoted_notice": "多次誤傳回報——此帳戶已退回 Semi-Auto 模式。"
+  "trust_demoted_notice": "多次誤傳回報——此帳戶已退回 Semi-Auto 模式。",
+  "e1_card_title": "AI 正在草擬回覆",
+  "e1_card_assistant": "AI 助理",
+  "e1_stage_reading": "閱讀中",
+  "e1_stage_recalling": "檢索記憶",
+  "e1_stage_drafting": "起草中",
+  "e1_stage_writing": "書寫中",
+  "e1_stage_ready": "草稿就緒",
+  "e1_stage_editing": "編輯中",
+  "e1_card_subject": "主旨",
+  "e1_card_placeholder": "寫下你的回覆…",
+  "e1_card_send": "傳送",
+  "e1_tone_default": "預設",
+  "e1_tone_concise": "簡潔",
+  "e1_tone_warmer": "更親切",
+  "e1_tone_formal": "正式",
+  "e1_card_discard": "捨棄",
+  "e1_card_minimize": "最小化",
+  "e1_chip_in_progress": "草稿進行中",
+  "e1_chip_resume": "繼續"
 }

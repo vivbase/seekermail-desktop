@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "Ответ AI",
+  "e1_ai_reply_all": "AI ответить всем",
+  "e1_ai_reply_options": "Параметры ответа AI",
   "e1_ai_drafting": "AI составляет черновик…",
   "e1_regenerate": "Сгенерировать заново",
   "e1_regen_hint": "Если результат по-прежнему не устраивает, напишите ответ самостоятельно.",
   "toast_ai_draft_failed": "Ошибка ответа AI — открыт пустой черновик.",
   "toast_ai_provider_not_configured": "Для этого аккаунта не настроен провайдер AI. Настройте его, чтобы использовать AI-ответы.",
-
   "pending_filter_all": "Все",
   "pending_filter_needs_decision": "Требует решения",
   "pending_filter_draft_ready": "Черновик готов",
   "pending_empty": "Ничего не ожидает — агенты справились со всем.",
   "draft_banner_count": "{count, plural, one {# черновик AI готов к проверке} few {# черновика AI готовы к проверке} many {# черновиков AI готовы к проверке} other {# черновика AI готовы к проверке}}",
   "draft_banner_review_all": "Проверить все →",
-
   "draft_badge_ready": "Черновик готов",
   "draft_badge_edited": "Отредактировано",
   "draft_badge_review": "Требует проверки",
   "draft_review_cta": "Проверить черновик AI и отправить →",
   "draft_expires_in": "Истекает через {hours} ч",
   "draft_style_match": "Соответствие стилю {score}%",
-
   "draft_panel_title": "Черновик AI",
   "draft_panel_original": "Исходное письмо",
   "draft_original_unavailable": "Исходное письмо больше недоступно",
@@ -40,16 +39,13 @@
   "style_too_long": "Слишком длинно",
   "style_tone_off": "Неверный тон",
   "toast_style_feedback": "Спасибо — отзыв о стиле принят.",
-
   "toast_draft_sent": "Черновик отправлен.",
   "toast_draft_discarded": "Черновик удалён.",
   "toast_draft_discarded_undo": "Черновик удалён — отменить можно в течение 5 секунд.",
   "undo": "Отменить",
   "draft_credential_error": "Учётные данные аккаунта истекли — повторно авторизуйтесь в Настройках.",
   "draft_send_failed": "Отправка не удалась — черновик возвращён в очередь.",
-
   "thread_ai_draft_chip": "Черновик AI",
-
   "draft_show_diff": "Показать изменения",
   "draft_hide_diff": "Скрыть изменения",
   "draft_diff_label": "Изменения относительно исходного черновика AI",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "Отправка отменена.",
   "draft_already_sent": "Уже отправлено",
   "draft_autosave_failed": "Автосохранение не удалось — изменения могут быть потеряны",
-
   "auth_level_manual": "Только вручную",
   "auth_level_semi": "Полуавтомат",
   "auth_level_full": "Полный автомат",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "Отменить",
   "toast_auto_send_cancelled": "Отменено — черновик перемещён в раздел «Ожидающие»",
   "toast_auto_send_already_sent": "Уже отправлено",
-  "trust_demoted_notice": "Несколько жалоб на ошибочную отправку — аккаунт переведён обратно в режим «Полуавтомат»."
+  "trust_demoted_notice": "Несколько жалоб на ошибочную отправку — аккаунт переведён обратно в режим «Полуавтомат».",
+  "e1_card_title": "ИИ составляет ответ",
+  "e1_card_assistant": "Ассистент ИИ",
+  "e1_stage_reading": "Чтение",
+  "e1_stage_recalling": "Извлечение",
+  "e1_stage_drafting": "Составление",
+  "e1_stage_writing": "Написание",
+  "e1_stage_ready": "Черновик готов",
+  "e1_stage_editing": "Редактирование",
+  "e1_card_subject": "Тема",
+  "e1_card_placeholder": "Напишите свой ответ…",
+  "e1_card_send": "Отправить",
+  "e1_tone_default": "По умолчанию",
+  "e1_tone_concise": "Кратко",
+  "e1_tone_warmer": "Теплее",
+  "e1_tone_formal": "Формально",
+  "e1_card_discard": "Отклонить",
+  "e1_card_minimize": "Свернуть",
+  "e1_chip_in_progress": "Черновик в процессе",
+  "e1_chip_resume": "Возобновить"
 }

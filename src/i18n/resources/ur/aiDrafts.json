@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI جواب",
+  "e1_ai_reply_all": "AI سب کو جواب",
+  "e1_ai_reply_options": "AI جواب کے اختیارات",
   "e1_ai_drafting": "AI مسودہ بنا رہا ہے…",
   "e1_regenerate": "دوبارہ بنائیں",
   "e1_regen_hint": "اگر آپ اب بھی مطمئن نہیں ہیں، تو جواب خود لکھنے پر غور کریں۔",
   "toast_ai_draft_failed": "AI جواب ناکام — اس کے بجائے ایک خالی مسودہ کھول دیا گیا۔",
   "toast_ai_provider_not_configured": "اس اکاؤنٹ کے لیے کوئی AI فراہم کنندہ ترتیب نہیں دیا گیا۔ AI جوابات استعمال کرنے کے لیے ایک ترتیب دیں۔",
-
   "pending_filter_all": "تمام",
   "pending_filter_needs_decision": "فیصلہ درکار",
   "pending_filter_draft_ready": "مسودہ تیار",
   "pending_empty": "کچھ زیر التوا نہیں — آپ کے agents سب کچھ نمٹا چکے ہیں۔",
   "draft_banner_count": "{count, plural, one {# AI مسودہ جائزے کے لیے تیار} other {# AI مسودے جائزے کے لیے تیار}}",
   "draft_banner_review_all": "سب کا جائزہ لیں →",
-
   "draft_badge_ready": "مسودہ تیار",
   "draft_badge_edited": "ترمیم شدہ",
   "draft_badge_review": "جائزہ درکار",
   "draft_review_cta": "AI مسودے کا جائزہ لیں اور بھیجیں →",
   "draft_expires_in": "{hours} گھنٹے میں ختم",
   "draft_style_match": "{score}% اسٹائل مطابقت",
-
   "draft_panel_title": "AI مسودہ",
   "draft_panel_original": "اصل ای میل",
   "draft_original_unavailable": "اصل ای میل اب دستیاب نہیں",
@@ -40,16 +39,13 @@
   "style_too_long": "بہت طویل",
   "style_tone_off": "لہجہ بے جا",
   "toast_style_feedback": "شکریہ — اسٹائل فیڈ بیک نوٹ کر لیا گیا۔",
-
   "toast_draft_sent": "مسودہ بھیج دیا گیا۔",
   "toast_draft_discarded": "مسودہ ضائع کر دیا گیا۔",
   "toast_draft_discarded_undo": "مسودہ ضائع کر دیا گیا — آپ 5 سیکنڈ تک واپس کر سکتے ہیں۔",
   "undo": "واپس کریں",
   "draft_credential_error": "اکاؤنٹ اسناد کی میعاد ختم — ترتیبات میں دوبارہ اجازت دیں۔",
   "draft_send_failed": "بھیجنا ناکام — مسودہ آپ کی قطار میں واپس آ گیا۔",
-
   "thread_ai_draft_chip": "AI مسودہ",
-
   "draft_show_diff": "فرق دکھائیں",
   "draft_hide_diff": "فرق چھپائیں",
   "draft_diff_label": "اصل AI مسودے کے مقابلے میں تبدیلیاں",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "بھیجنا منسوخ کر دیا گیا۔",
   "draft_already_sent": "پہلے ہی بھیج دیا گیا",
   "draft_autosave_failed": "خودکار محفوظ ناکام — تبدیلیاں ضائع ہو سکتی ہیں",
-
   "auth_level_manual": "Manual Only",
   "auth_level_semi": "Semi-Auto",
   "auth_level_full": "Full Auto",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "واپس کریں",
   "toast_auto_send_cancelled": "منسوخ کر دیا گیا — مسودہ زیر التوا میں منتقل کر دیا گیا",
   "toast_auto_send_already_sent": "پہلے ہی بھیج دیا گیا",
-  "trust_demoted_notice": "بار بار غلط بھیجنے کی اطلاعات — اس اکاؤنٹ کو واپس Semi-Auto پر منتقل کر دیا گیا۔"
+  "trust_demoted_notice": "بار بار غلط بھیجنے کی اطلاعات — اس اکاؤنٹ کو واپس Semi-Auto پر منتقل کر دیا گیا۔",
+  "e1_card_title": "اے آئی جواب کا مسودہ بنا رہا ہے",
+  "e1_card_assistant": "اے آئی اسسٹنٹ",
+  "e1_stage_reading": "پڑھ رہا ہے",
+  "e1_stage_recalling": "یاد کر رہا ہے",
+  "e1_stage_drafting": "مسودہ بنا رہا ہے",
+  "e1_stage_writing": "لکھ رہا ہے",
+  "e1_stage_ready": "مسودہ تیار",
+  "e1_stage_editing": "ترمیم ہو رہی ہے",
+  "e1_card_subject": "موضوع",
+  "e1_card_placeholder": "اپنا جواب لکھیں…",
+  "e1_card_send": "بھیجیں",
+  "e1_tone_default": "طے شدہ",
+  "e1_tone_concise": "مختصر",
+  "e1_tone_warmer": "زیادہ گرمجوش",
+  "e1_tone_formal": "رسمی",
+  "e1_card_discard": "رد کریں",
+  "e1_card_minimize": "چھوٹا کریں",
+  "e1_chip_in_progress": "مسودہ جاری ہے",
+  "e1_chip_resume": "دوبارہ شروع کریں"
 }

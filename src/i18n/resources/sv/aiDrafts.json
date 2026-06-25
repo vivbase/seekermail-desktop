@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI-svar",
+  "e1_ai_reply_all": "AI Svara alla",
+  "e1_ai_reply_options": "AI-svarsalternativ",
   "e1_ai_drafting": "AI skriver utkast…",
   "e1_regenerate": "Generera om",
   "e1_regen_hint": "Om du fortfarande inte är nöjd kan du överväga att skriva svaret själv.",
   "toast_ai_draft_failed": "AI-svar misslyckades — ett tomt utkast öppnades istället.",
   "toast_ai_provider_not_configured": "Ingen AI-leverantör är konfigurerad för det här kontot. Konfigurera en för att använda AI-svar.",
-
   "pending_filter_all": "Alla",
   "pending_filter_needs_decision": "Kräver beslut",
   "pending_filter_draft_ready": "Utkast klart",
   "pending_empty": "Inget väntande — dina agenter är klara.",
   "draft_banner_count": "{count, plural, one {# AI-utkast redo för granskning} other {# AI-utkast redo för granskning}}",
   "draft_banner_review_all": "Granska alla →",
-
   "draft_badge_ready": "Utkast klart",
   "draft_badge_edited": "Redigerat",
   "draft_badge_review": "Granskning krävs",
   "draft_review_cta": "Granska AI-utkast & skicka →",
   "draft_expires_in": "Upphör om {hours}h",
   "draft_style_match": "{score}% stiltreffer",
-
   "draft_panel_title": "AI-utkast",
   "draft_panel_original": "Ursprunglig e-post",
   "draft_original_unavailable": "Ursprunglig e-post är inte längre tillgänglig",
@@ -40,16 +39,13 @@
   "style_too_long": "För långt",
   "style_tone_off": "Fel ton",
   "toast_style_feedback": "Tack — stilåterkoppling noterad.",
-
   "toast_draft_sent": "Utkast skickat.",
   "toast_draft_discarded": "Utkast kasserat.",
   "toast_draft_discarded_undo": "Utkast kasserat — du kan ångra i 5 sekunder.",
   "undo": "Ångra",
   "draft_credential_error": "Kontots inloggningsuppgifter har gått ut — återauktorisera i Inställningar.",
   "draft_send_failed": "Utskick misslyckades — utkastet är tillbaka i din kö.",
-
   "thread_ai_draft_chip": "AI-utkast",
-
   "draft_show_diff": "Visa ändringar",
   "draft_hide_diff": "Dölj ändringar",
   "draft_diff_label": "Ändringar jämfört med det ursprungliga AI-utkastet",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "Utskick avbrutet.",
   "draft_already_sent": "Redan skickat",
   "draft_autosave_failed": "Automatisk sparning misslyckades — ändringar kan gå förlorade",
-
   "auth_level_manual": "Enbart manuellt",
   "auth_level_semi": "Semi-auto",
   "auth_level_full": "Helautomatisk",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "Ångra",
   "toast_auto_send_cancelled": "Avbrutet — utkast flyttat till Väntande",
   "toast_auto_send_already_sent": "Redan skickat",
-  "trust_demoted_notice": "Upprepade rapporter om felutskick — det här kontot återgick till Semi-auto."
+  "trust_demoted_notice": "Upprepade rapporter om felutskick — det här kontot återgick till Semi-auto.",
+  "e1_card_title": "AI skriver ett svar",
+  "e1_card_assistant": "AI-assistent",
+  "e1_stage_reading": "Läser",
+  "e1_stage_recalling": "Hämtar",
+  "e1_stage_drafting": "Utkast",
+  "e1_stage_writing": "Skriver",
+  "e1_stage_ready": "Utkast klart",
+  "e1_stage_editing": "Redigerar",
+  "e1_card_subject": "Ämne",
+  "e1_card_placeholder": "Skriv ditt svar…",
+  "e1_card_send": "Skicka",
+  "e1_tone_default": "Standard",
+  "e1_tone_concise": "Koncist",
+  "e1_tone_warmer": "Varmare",
+  "e1_tone_formal": "Formellt",
+  "e1_card_discard": "Kasta",
+  "e1_card_minimize": "Minimera",
+  "e1_chip_in_progress": "Utkast pågår",
+  "e1_chip_resume": "Återuppta"
 }

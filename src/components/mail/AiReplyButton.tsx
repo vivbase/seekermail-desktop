@@ -1,19 +1,25 @@
-// E1 manual AI reply trigger (T078, F_E1 §4.1/§4.4/§5). Lives in the L2 action
-// bar (MailToolbar). Three states: idle → "AI Reply", drafting → spinner (text
-// "AI is drafting…" only after 1.5 s), failed → amber icon + "Regenerate" as
-// the retry affordance. Navigation/toasts are handled by useRequestAiReply.
-import { useEffect, useState } from "react";
+// E1 manual AI reply trigger (T078, F_E1 §4.1/§4.4). Lives in the L2 action bar
+// (MailToolbar). For a single-recipient mail it is a plain button that opens the
+// in-place AI reply draft card (AiReplyDraftCard) to draft a sender-only reply.
+// When the thread has other recipients it becomes a menu button: a single click
+// opens a menu with "AI Reply" (sender) and "AI Reply All" (sender + Cc, the
+// same set as a manual Reply all), so the user picks the scope before anything
+// is generated. Generation, editing and sending all happen inside the card —
+// this component is just the entry point that opens it via the aiReplyCard store.
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+
 import type { MailDetail } from "@shared/bindings";
 
-import { useRequestAiReply } from "@/ipc/queries/drafts";
+import { type AiReplyScope } from "@/ipc/queries/drafts";
+import { useAiReplyCard } from "@/stores/aiReplyCard";
+import { buildReplySeed, buildReplyAllSeed } from "@/lib/quoteBuilder";
 import { cn } from "@/lib/cn";
-
-/** Spinner-text threshold (F_E1 §4.4): under 1.5 s only the spinner shows. */
-const DRAFTING_TEXT_DELAY_MS = 1500;
 
 interface AiReplyButtonProps {
   mail: MailDetail;
+  /** Receiving account address — excluded from the reply-all recipient list. */
+  ownEmail?: string;
 }
 
 function SparkleIcon() {
@@ -36,91 +42,128 @@ function SparkleIcon() {
   );
 }
 
-function SpinnerIcon() {
+function CaretIcon() {
   return (
     <svg
-      width="14"
-      height="14"
+      width="10"
+      height="10"
       viewBox="0 0 16 16"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.5"
-      className="animate-spin"
+      strokeWidth="1.75"
       aria-hidden="true"
     >
-      <path strokeLinecap="round" d="M8 1.5A6.5 6.5 0 1 1 1.5 8" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6l4 4 4-4" />
     </svg>
   );
 }
 
-function RetryIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M2.5 8a5.5 5.5 0 1 1 1.6 3.9M2.5 12V8.8h3.2"
-      />
-    </svg>
-  );
-}
-
-export function AiReplyButton({ mail }: AiReplyButtonProps) {
+export function AiReplyButton({ mail, ownEmail = "" }: AiReplyButtonProps) {
   const { t } = useTranslation("aiDrafts");
-  const request = useRequestAiReply();
+  const openCard = useAiReplyCard((s) => s.openCard);
 
-  /** Tri-state per F_E1 §5; "drafting" derives from the mutation in-flight flag. */
-  const [failed, setFailed] = useState(false);
-  const isDrafting = request.isPending;
+  // Reply-all is offered only when it would reach recipients a plain reply would
+  // not — i.e. the reply-all envelope differs from the sender-only one. Reuses
+  // the exact builders the manual reply path uses, so the two stay in lock-step.
+  const canReplyAll = useMemo(
+    () => buildReplyAllSeed(mail, ownEmail).to !== buildReplySeed(mail).to,
+    [mail, ownEmail],
+  );
 
-  const [showDraftingText, setShowDraftingText] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!isDrafting) {
-      setShowDraftingText(false);
-      return;
+    if (!menuOpen) return;
+    function onDocClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
     }
-    const timer = setTimeout(() => setShowDraftingText(true), DRAFTING_TEXT_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [isDrafting]);
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
-  const label = isDrafting
-    ? showDraftingText
-      ? t("e1_ai_drafting")
-      : t("e1_ai_reply_btn")
-    : failed
-      ? t("e1_regenerate")
-      : t("e1_ai_reply_btn");
+  const label = t("e1_ai_reply_btn");
 
-  function handleClick() {
-    setFailed(false);
-    request.mutate({ mail }, { onError: () => setFailed(true) });
+  function runReply(scope: AiReplyScope) {
+    setMenuOpen(false);
+    openCard(mail, scope, ownEmail);
   }
 
+  const triggerClass = cn(
+    "flex items-center gap-1.5 rounded-chip px-3 py-1.5 font-ui text-xs uppercase tracking-wider transition-colors",
+    "text-p9 hover:bg-p4 hover:text-p10",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-p9",
+  );
+
+  // Single-recipient mail: a plain button drafts a sender-only reply directly —
+  // a reply-all choice would be redundant when there is no one else to add.
+  if (!canReplyAll) {
+    return (
+      <button
+        type="button"
+        onClick={() => runReply("reply")}
+        aria-label={label}
+        title={label}
+        className={triggerClass}
+      >
+        <SparkleIcon />
+        <span className="hidden sm:inline">{label}</span>
+      </button>
+    );
+  }
+
+  // Multi-recipient mail: a single click opens a menu so the user explicitly
+  // picks AI Reply (sender) or AI Reply All (sender + Cc) before any drafting
+  // begins — nothing is generated until a choice is made.
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isDrafting}
-      aria-label={label}
-      aria-busy={isDrafting}
-      title={label}
-      className={cn(
-        "flex items-center gap-1.5 rounded-chip px-3 py-1.5 font-ui text-xs uppercase tracking-wider transition-colors",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-p9",
-        failed ? "hover:bg-amber/10 text-amber" : "text-p9 hover:bg-p4 hover:text-p10",
-        "disabled:opacity-60",
+    <div ref={containerRef} className="relative flex items-center">
+      <button
+        type="button"
+        onClick={() => setMenuOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-label={t("e1_ai_reply_options")}
+        title={label}
+        className={triggerClass}
+      >
+        <SparkleIcon />
+        <span className="hidden sm:inline">{label}</span>
+        <CaretIcon />
+      </button>
+
+      {menuOpen && (
+        <div
+          role="menu"
+          className="absolute bottom-full start-0 mb-1 min-w-[176px] rounded-card border border-divider bg-surface py-1 shadow-card"
+        >
+          <button
+            role="menuitem"
+            type="button"
+            onClick={() => runReply("reply")}
+            className="flex w-full items-center gap-2 px-3 py-2 font-ui text-xs text-p8 hover:bg-p4 hover:text-p10 focus:outline-none focus-visible:bg-p4"
+          >
+            <SparkleIcon />
+            {t("e1_ai_reply_btn")}
+          </button>
+          <button
+            role="menuitem"
+            type="button"
+            onClick={() => runReply("reply-all")}
+            className="flex w-full items-center gap-2 px-3 py-2 font-ui text-xs text-p8 hover:bg-p4 hover:text-p10 focus:outline-none focus-visible:bg-p4"
+          >
+            <SparkleIcon />
+            {t("e1_ai_reply_all")}
+          </button>
+        </div>
       )}
-    >
-      {isDrafting ? <SpinnerIcon /> : failed ? <RetryIcon /> : <SparkleIcon />}
-      <span className="hidden sm:inline">{label}</span>
-    </button>
+    </div>
   );
 }

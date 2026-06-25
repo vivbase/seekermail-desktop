@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "Trả lời AI",
+  "e1_ai_reply_all": "AI Trả lời tất cả",
+  "e1_ai_reply_options": "Tùy chọn trả lời AI",
   "e1_ai_drafting": "AI đang soạn thảo…",
   "e1_regenerate": "Tạo lại",
   "e1_regen_hint": "Nếu vẫn chưa hài lòng, hãy tự viết trả lời.",
   "toast_ai_draft_failed": "Trả lời AI thất bại — đã mở bản nháp trống.",
   "toast_ai_provider_not_configured": "Chưa cấu hình nhà cung cấp AI cho tài khoản này. Thiết lập để dùng trả lời AI.",
-
   "pending_filter_all": "Tất cả",
   "pending_filter_needs_decision": "Cần quyết định",
   "pending_filter_draft_ready": "Bản nháp sẵn sàng",
   "pending_empty": "Không có gì đang chờ — tất cả Agent của bạn đã xử lý xong.",
   "draft_banner_count": "{count, plural, other {# bản nháp AI sẵn sàng để duyệt}}",
   "draft_banner_review_all": "Duyệt tất cả →",
-
   "draft_badge_ready": "Bản nháp sẵn sàng",
   "draft_badge_edited": "Đã chỉnh sửa",
   "draft_badge_review": "Cần duyệt",
   "draft_review_cta": "Duyệt bản nháp AI & gửi →",
   "draft_expires_in": "Hết hạn sau {hours}h",
   "draft_style_match": "Khớp phong cách {score}%",
-
   "draft_panel_title": "Bản nháp AI",
   "draft_panel_original": "Email gốc",
   "draft_original_unavailable": "Email gốc không còn khả dụng",
@@ -40,16 +39,13 @@
   "style_too_long": "Quá dài",
   "style_tone_off": "Giọng văn chưa đúng",
   "toast_style_feedback": "Cảm ơn — đã ghi nhận phản hồi phong cách.",
-
   "toast_draft_sent": "Đã gửi bản nháp.",
   "toast_draft_discarded": "Đã hủy bản nháp.",
   "toast_draft_discarded_undo": "Đã hủy bản nháp — bạn có thể hoàn tác trong 5 giây.",
   "undo": "Hoàn tác",
   "draft_credential_error": "Thông tin xác thực tài khoản đã hết hạn — ủy quyền lại trong Cài đặt.",
   "draft_send_failed": "Gửi thất bại — bản nháp được trả về hàng đợi.",
-
   "thread_ai_draft_chip": "Bản nháp AI",
-
   "draft_show_diff": "Hiển thị khác biệt",
   "draft_hide_diff": "Ẩn khác biệt",
   "draft_diff_label": "Thay đổi so với bản nháp AI gốc",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "Đã hủy gửi.",
   "draft_already_sent": "Đã gửi",
   "draft_autosave_failed": "Tự động lưu thất bại — thay đổi có thể bị mất",
-
   "auth_level_manual": "Manual Only",
   "auth_level_semi": "Semi-Auto",
   "auth_level_full": "Full Auto",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "Hoàn tác",
   "toast_auto_send_cancelled": "Đã hủy — bản nháp chuyển về Đang chờ",
   "toast_auto_send_already_sent": "Đã gửi",
-  "trust_demoted_notice": "Báo cáo gửi nhầm lặp lại — tài khoản này đã được chuyển về Semi-Auto."
+  "trust_demoted_notice": "Báo cáo gửi nhầm lặp lại — tài khoản này đã được chuyển về Semi-Auto.",
+  "e1_card_title": "AI đang soạn trả lời",
+  "e1_card_assistant": "Trợ lý AI",
+  "e1_stage_reading": "Đang đọc",
+  "e1_stage_recalling": "Đang truy hồi",
+  "e1_stage_drafting": "Đang soạn",
+  "e1_stage_writing": "Đang viết",
+  "e1_stage_ready": "Bản nháp đã sẵn sàng",
+  "e1_stage_editing": "Đang chỉnh sửa",
+  "e1_card_subject": "Chủ đề",
+  "e1_card_placeholder": "Viết câu trả lời của bạn…",
+  "e1_card_send": "Gửi",
+  "e1_tone_default": "Mặc định",
+  "e1_tone_concise": "Ngắn gọn",
+  "e1_tone_warmer": "Ấm áp hơn",
+  "e1_tone_formal": "Trang trọng",
+  "e1_card_discard": "Hủy",
+  "e1_card_minimize": "Thu nhỏ",
+  "e1_chip_in_progress": "Bản nháp đang xử lý",
+  "e1_chip_resume": "Tiếp tục"
 }

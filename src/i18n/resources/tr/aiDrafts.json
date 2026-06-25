@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI Yanıtı",
+  "e1_ai_reply_all": "AI ile Tümünü Yanıtla",
+  "e1_ai_reply_options": "AI yanıt seçenekleri",
   "e1_ai_drafting": "AI taslak oluşturuyor…",
   "e1_regenerate": "Yeniden oluştur",
   "e1_regen_hint": "Hâlâ memnun değilseniz yanıtı kendiniz yazmayı düşünün.",
   "toast_ai_draft_failed": "AI yanıtı başarısız oldu — bunun yerine boş taslak açıldı.",
   "toast_ai_provider_not_configured": "Bu hesap için AI sağlayıcı yapılandırılmadı. AI yanıtlarını kullanmak için bir tane ayarlayın.",
-
   "pending_filter_all": "Tümü",
   "pending_filter_needs_decision": "Karar Gerekiyor",
   "pending_filter_draft_ready": "Taslak Hazır",
   "pending_empty": "Bekleyen bir şey yok — tüm agentlarınız güncel.",
   "draft_banner_count": "{count, plural, one {incelemeye hazır # AI taslağı} other {incelemeye hazır # AI taslağı}}",
   "draft_banner_review_all": "Tümünü İncele →",
-
   "draft_badge_ready": "Taslak Hazır",
   "draft_badge_edited": "Düzenlendi",
   "draft_badge_review": "İnceleme Gerekiyor",
   "draft_review_cta": "AI taslağını incele ve gönder →",
   "draft_expires_in": "{hours} saatte sona eriyor",
   "draft_style_match": "%{score} stil uyumu",
-
   "draft_panel_title": "AI Taslağı",
   "draft_panel_original": "Özgün E-posta",
   "draft_original_unavailable": "Özgün e-posta artık mevcut değil",
@@ -40,16 +39,13 @@
   "style_too_long": "Çok uzun",
   "style_tone_off": "Ton uyumsuz",
   "toast_style_feedback": "Teşekkürler — stil geri bildirimi not alındı.",
-
   "toast_draft_sent": "Taslak gönderildi.",
   "toast_draft_discarded": "Taslak silindi.",
   "toast_draft_discarded_undo": "Taslak silindi — 5 saniye içinde geri alabilirsiniz.",
   "undo": "Geri al",
   "draft_credential_error": "Hesap kimlik bilgileri sona erdi — Ayarlar'dan yeniden yetkilendirin.",
   "draft_send_failed": "Gönderim başarısız oldu — taslak kuyruğunuza geri döndü.",
-
   "thread_ai_draft_chip": "AI Taslağı",
-
   "draft_show_diff": "Farkı Göster",
   "draft_hide_diff": "Farkı Gizle",
   "draft_diff_label": "Özgün AI taslağına göre değişiklikler",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "Gönderim iptal edildi.",
   "draft_already_sent": "Zaten gönderildi",
   "draft_autosave_failed": "Otomatik kaydetme başarısız — değişiklikler kaybolabilir",
-
   "auth_level_manual": "Yalnızca Manuel",
   "auth_level_semi": "Yarı Otomatik",
   "auth_level_full": "Tam Otomatik",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "Geri al",
   "toast_auto_send_cancelled": "İptal edildi — taslak Bekleyen'e taşındı",
   "toast_auto_send_already_sent": "Zaten gönderildi",
-  "trust_demoted_notice": "Tekrarlanan yanlış gönderim bildirimleri — bu hesap Yarı Otomatik'e geri alındı."
+  "trust_demoted_notice": "Tekrarlanan yanlış gönderim bildirimleri — bu hesap Yarı Otomatik'e geri alındı.",
+  "e1_card_title": "Yapay zekâ bir yanıt hazırlıyor",
+  "e1_card_assistant": "Yapay Zekâ Asistanı",
+  "e1_stage_reading": "Okuyor",
+  "e1_stage_recalling": "Hatırlıyor",
+  "e1_stage_drafting": "Taslak hazırlıyor",
+  "e1_stage_writing": "Yazıyor",
+  "e1_stage_ready": "Taslak hazır",
+  "e1_stage_editing": "Düzenleniyor",
+  "e1_card_subject": "Konu",
+  "e1_card_placeholder": "Yanıtınızı yazın…",
+  "e1_card_send": "Gönder",
+  "e1_tone_default": "Varsayılan",
+  "e1_tone_concise": "Öz",
+  "e1_tone_warmer": "Daha sıcak",
+  "e1_tone_formal": "Resmi",
+  "e1_card_discard": "At",
+  "e1_card_minimize": "Küçült",
+  "e1_chip_in_progress": "Taslak sürüyor",
+  "e1_chip_resume": "Devam et"
 }

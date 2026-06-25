@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "מענה AI",
+  "e1_ai_reply_all": "תשובת AI לכולם",
+  "e1_ai_reply_options": "אפשרויות תשובת AI",
   "e1_ai_drafting": "ה-AI מנסח…",
   "e1_regenerate": "צור מחדש",
   "e1_regen_hint": "אם עדיין אינך מרוצה, שקול לכתוב את התשובה בעצמך.",
   "toast_ai_draft_failed": "מענה ה-AI נכשל — נפתחה טיוטה ריקה במקום.",
   "toast_ai_provider_not_configured": "לא הוגדר ספק AI עבור חשבון זה. הגדר אחד כדי להשתמש במענה AI.",
-
   "pending_filter_all": "הכול",
   "pending_filter_needs_decision": "דורש החלטה",
   "pending_filter_draft_ready": "טיוטה מוכנה",
   "pending_empty": "אין פריטים ממתינים — ה-Agents שלך השלימו הכול.",
   "draft_banner_count": "{count, plural, one {טיוטת AI אחת מוכנה לבדיקה} two {# טיוטות AI מוכנות לבדיקה} many {# טיוטות AI מוכנות לבדיקה} other {# טיוטות AI מוכנות לבדיקה}}",
   "draft_banner_review_all": "בדוק הכול →",
-
   "draft_badge_ready": "טיוטה מוכנה",
   "draft_badge_edited": "נערך",
   "draft_badge_review": "דורש בדיקה",
   "draft_review_cta": "בדוק טיוטת AI ושלח →",
   "draft_expires_in": "פג תוקף בעוד {hours} שעות",
   "draft_style_match": "{score}% התאמת סגנון",
-
   "draft_panel_title": "טיוטת AI",
   "draft_panel_original": "הדואר המקורי",
   "draft_original_unavailable": "הדואר המקורי אינו זמין עוד",
@@ -40,16 +39,13 @@
   "style_too_long": "ארוך מדי",
   "style_tone_off": "טון לא מתאים",
   "toast_style_feedback": "תודה — משוב הסגנון נרשם.",
-
   "toast_draft_sent": "הטיוטה נשלחה.",
   "toast_draft_discarded": "הטיוטה נמחקה.",
   "toast_draft_discarded_undo": "הטיוטה נמחקה — ניתן לבטל למשך 5 שניות.",
   "undo": "בטל",
   "draft_credential_error": "אישורי החשבון פגו — בצע הרשאה מחדש בהגדרות.",
   "draft_send_failed": "השליחה נכשלה — הטיוטה חזרה לתור שלך.",
-
   "thread_ai_draft_chip": "טיוטת AI",
-
   "draft_show_diff": "הצג הבדלים",
   "draft_hide_diff": "הסתר הבדלים",
   "draft_diff_label": "שינויים מול טיוטת ה-AI המקורית",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "השליחה בוטלה.",
   "draft_already_sent": "כבר נשלח",
   "draft_autosave_failed": "השמירה האוטומטית נכשלה — ייתכן שהשינויים יאבדו",
-
   "auth_level_manual": "ידני בלבד",
   "auth_level_semi": "חצי-אוטומטי",
   "auth_level_full": "אוטומטי מלא",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "בטל",
   "toast_auto_send_cancelled": "בוטל — הטיוטה הועברה לממתינים",
   "toast_auto_send_already_sent": "כבר נשלח",
-  "trust_demoted_notice": "דיווחים חוזרים על שליחה שגויה — חשבון זה הוחזר לחצי-אוטומטי."
+  "trust_demoted_notice": "דיווחים חוזרים על שליחה שגויה — חשבון זה הוחזר לחצי-אוטומטי.",
+  "e1_card_title": "ה-AI מנסח תשובה",
+  "e1_card_assistant": "עוזר AI",
+  "e1_stage_reading": "קורא",
+  "e1_stage_recalling": "מאחזר",
+  "e1_stage_drafting": "מנסח",
+  "e1_stage_writing": "כותב",
+  "e1_stage_ready": "טיוטה מוכנה",
+  "e1_stage_editing": "עורך",
+  "e1_card_subject": "נושא",
+  "e1_card_placeholder": "כתוב את תשובתך…",
+  "e1_card_send": "שלח",
+  "e1_tone_default": "ברירת מחדל",
+  "e1_tone_concise": "תמציתי",
+  "e1_tone_warmer": "חם יותר",
+  "e1_tone_formal": "רשמי",
+  "e1_card_discard": "בטל",
+  "e1_card_minimize": "מזער",
+  "e1_chip_in_progress": "טיוטה בתהליך",
+  "e1_chip_resume": "המשך"
 }

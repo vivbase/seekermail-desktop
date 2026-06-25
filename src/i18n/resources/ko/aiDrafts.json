@@ -1,25 +1,24 @@
 {
   "e1_ai_reply_btn": "AI 회신",
+  "e1_ai_reply_all": "AI 전체 답장",
+  "e1_ai_reply_options": "AI 답장 옵션",
   "e1_ai_drafting": "AI가 초안을 작성하는 중…",
   "e1_regenerate": "다시 생성",
   "e1_regen_hint": "여전히 만족스럽지 않다면 직접 회신을 작성하는 것을 고려하세요.",
   "toast_ai_draft_failed": "AI 회신 실패 — 대신 빈 초안을 열었습니다.",
   "toast_ai_provider_not_configured": "이 계정에 구성된 AI 제공업체가 없습니다. AI 회신을 사용하려면 하나를 설정하세요.",
-
   "pending_filter_all": "전체",
   "pending_filter_needs_decision": "결정 필요",
   "pending_filter_draft_ready": "초안 준비됨",
   "pending_empty": "대기 중인 항목 없음 — Agent가 모두 처리했습니다.",
   "draft_banner_count": "{count, plural, other {검토 준비된 AI 초안 #개}}",
   "draft_banner_review_all": "모두 검토 →",
-
   "draft_badge_ready": "초안 준비됨",
   "draft_badge_edited": "편집됨",
   "draft_badge_review": "검토 필요",
   "draft_review_cta": "AI 초안 검토 후 보내기 →",
   "draft_expires_in": "{hours}시간 후 만료",
   "draft_style_match": "스타일 일치 {score}%",
-
   "draft_panel_title": "AI 초안",
   "draft_panel_original": "원본 이메일",
   "draft_original_unavailable": "원본 이메일을 더 이상 사용할 수 없음",
@@ -40,16 +39,13 @@
   "style_too_long": "너무 김",
   "style_tone_off": "어조가 어긋남",
   "toast_style_feedback": "감사합니다 — 스타일 피드백이 반영되었습니다.",
-
   "toast_draft_sent": "초안을 보냈습니다.",
   "toast_draft_discarded": "초안을 삭제했습니다.",
   "toast_draft_discarded_undo": "초안 삭제됨 — 5초 동안 실행 취소할 수 있습니다.",
   "undo": "실행 취소",
   "draft_credential_error": "계정 자격 증명이 만료되었습니다 — 설정에서 재인증하세요.",
   "draft_send_failed": "보내기 실패 — 초안이 대기열로 돌아갔습니다.",
-
   "thread_ai_draft_chip": "AI 초안",
-
   "draft_show_diff": "변경 사항 표시",
   "draft_hide_diff": "변경 사항 숨기기",
   "draft_diff_label": "원본 AI 초안 대비 변경 사항",
@@ -61,7 +57,6 @@
   "draft_send_cancelled": "보내기가 취소되었습니다.",
   "draft_already_sent": "이미 보냄",
   "draft_autosave_failed": "자동 저장 실패 — 변경 사항이 손실될 수 있습니다",
-
   "auth_level_manual": "수동 전용",
   "auth_level_semi": "반자동",
   "auth_level_full": "완전 자동",
@@ -82,5 +77,24 @@
   "toast_auto_sent_undo": "실행 취소",
   "toast_auto_send_cancelled": "취소됨 — 초안이 대기 중으로 이동했습니다",
   "toast_auto_send_already_sent": "이미 보냄",
-  "trust_demoted_notice": "반복된 오발송 신고 — 이 계정이 반자동으로 다시 이동되었습니다."
+  "trust_demoted_notice": "반복된 오발송 신고 — 이 계정이 반자동으로 다시 이동되었습니다.",
+  "e1_card_title": "AI가 답장을 작성 중",
+  "e1_card_assistant": "AI 어시스턴트",
+  "e1_stage_reading": "읽는 중",
+  "e1_stage_recalling": "기록 검색 중",
+  "e1_stage_drafting": "초안 작성 중",
+  "e1_stage_writing": "작성 중",
+  "e1_stage_ready": "초안 준비됨",
+  "e1_stage_editing": "편집 중",
+  "e1_card_subject": "제목",
+  "e1_card_placeholder": "답장을 입력하세요…",
+  "e1_card_send": "보내기",
+  "e1_tone_default": "기본",
+  "e1_tone_concise": "간결하게",
+  "e1_tone_warmer": "더 따뜻하게",
+  "e1_tone_formal": "격식 있게",
+  "e1_card_discard": "삭제",
+  "e1_card_minimize": "최소화",
+  "e1_chip_in_progress": "초안 작성 중",
+  "e1_chip_resume": "계속"
 }

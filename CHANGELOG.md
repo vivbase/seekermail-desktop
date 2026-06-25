@@ -34,6 +34,28 @@ uses [Conventional Commits](https://www.conventionalcommits.org/).
 
 ### Added
 
+- **feat(reading): AI Reply now drafts in place — a growing draft card, not a page jump.**
+  Tapping AI Reply (or AI Reply / AI Reply All from the split menu) opens an in-place card
+  above the reading toolbar (`src/components/mail/AiReplyDraftCard.tsx`, UI state in
+  `src/stores/aiReplyCard.ts`): it runs `request_ai_reply`, reveals the draft with a brief
+  skeleton → type-in, then lets you edit, switch tone or regenerate (`regenerate_draft`),
+  send (`approve_draft`), discard (`discard_draft`), minimise to a "Draft in progress" chip,
+  or escape to the full `/compose` editor — replacing the previous navigate-to-/compose
+  hand-off so the reading context is never lost. It reuses the SAME draft object as the
+  Pending review surface (one draft, not two). New non-navigating hook
+  `useGenerateAiReplyInline` (`src/ipc/queries/drafts.ts`); `AiReplyButton` now opens the
+  card instead of navigating. New i18n keys `e1_card_*` / `e1_stage_*` / `e1_tone_*` /
+  `e1_chip_*` across all 21 locales.
+- **feat(reading): AI Reply becomes a scope-aware split button (Reply / Reply All).** The
+  L2 action-bar "AI Reply" control (`src/components/mail/AiReplyButton.tsx`) now shows a
+  caret menu with **AI Reply** (sender only) and **AI Reply All** (sender + Cc) whenever the
+  thread has recipients beyond the sender; single-recipient mail keeps the plain button so
+  the bar never offers a redundant reply-all. The chosen scope flows through
+  `useRequestAiReply` (`src/ipc/queries/drafts.ts`): the AI-written body is identical either
+  way, and reply-all reuses `buildReplyAllSeed` so the recipient set matches a manual Reply
+  all exactly (`ownEmail` excluded). New i18n keys `e1_ai_reply_all` / `e1_ai_reply_options`
+  across all 21 locales. Design mirrored in the knowledge-base prototype
+  `UI/seekermail-unified.html`.
 - **ci(feature-build): Windows compile guard for the OFF-by-default real runtimes.** A
   new `feature-build-windows` job compiles `--features live-net` and
   `--features live-net,local-embed` on `windows-latest`, exercising the
