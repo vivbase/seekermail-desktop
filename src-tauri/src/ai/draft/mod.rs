@@ -13,6 +13,7 @@
 //!   drafts `expired` (T080, F_E6 §4.5).
 
 pub mod cleaner;
+pub mod compose;
 pub mod engine;
 pub mod expiry;
 pub mod prompt_builder;

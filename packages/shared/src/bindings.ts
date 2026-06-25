@@ -295,6 +295,12 @@ export type CapabilityMatrix = { entries: MatrixEntry[] }
 export type CompleteRecommendedOAuthResult = { ok: boolean; providerName: string; modelName: string | null; errorMessage: string | null }
 
 /**
+ * Result of `generate_compose_draft`: the generated body plus whether the
+ * style profile fell back to the generic template (cold start, AI_MODES §6.7).
+ */
+export type ComposeDraftResult = { body: string; styleWasFallback: boolean }
+
+/**
  * Three-tier concession guidance (F_D2 §4.4): what we can concede, what is
  * negotiable, and what must not be conceded.
  */
@@ -515,6 +521,40 @@ export type ExtractionBatchStarted = { pendingCount: number }
  * `extraction:progress` — attachment text-extraction heartbeat (T108).
  */
 export type ExtractionProgressPayload = { processed: number; total: number; indexed: number; skipped: number; errored: number }
+
+/**
+ * Params for `generate_compose_draft` (analysis/57 §7): generate an ephemeral
+ * compose body from the user's intent. `mode` is `"forward"` | `"new"`.
+ * Nothing is persisted — the user reviews and sends manually.
+ */
+export type GenerateComposeDraftParams = { accountId: string; 
+/**
+ * `"forward"` (a cover note above the quote) or `"new"` (the whole body).
+ */
+mode: string; 
+/**
+ * Recipient string (`"Name <email>"` or a bare email) — drives the
+ * greeting and the per-recipient style profile.
+ */
+to: string | null; 
+/**
+ * Forward intent preset id: `handle` | `fyi` | `review` | `delegate` |
+ * `records`.
+ */
+intent: string | null; 
+/**
+ * Optional free-text steer (a point to include, or the new-mail topic).
+ */
+note: string | null; 
+/**
+ * Tone label: `Formal` | `Friendly` | `Brief`.
+ */
+tone: string | null; 
+/**
+ * A trimmed excerpt of the forwarded message, supplied by the client so the
+ * backend needs no mail-body lookup.
+ */
+sourceExcerpt: string | null }
 
 /**
  * `gte:error` — a mail exhausted its embed retries (T031).

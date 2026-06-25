@@ -25,10 +25,10 @@ use crate::keychain::{CredKind, Secret};
 use crate::state::AppState;
 use crate::storage::map_sqlx_err;
 use crate::types::{
-    AccountAiSettings, AiDraft, AiProvider, ApproveDraftResult, ConfiguredProviderInfo,
-    ListAiDraftsParams, ListCloudModelsParams, LocalProviderEndpoint, OllamaModelEntry,
-    RegenerateDraftParams, RequestAiReplyParams, SendMailParams, UpdateAiSettingsParams,
-    VerifyAiProviderParams, VerifyAiProviderResult,
+    AccountAiSettings, AiDraft, AiProvider, ApproveDraftResult, ComposeDraftResult,
+    ConfiguredProviderInfo, GenerateComposeDraftParams, ListAiDraftsParams, ListCloudModelsParams,
+    LocalProviderEndpoint, OllamaModelEntry, RegenerateDraftParams, RequestAiReplyParams,
+    SendMailParams, UpdateAiSettingsParams, VerifyAiProviderParams, VerifyAiProviderResult,
 };
 use crate::util::{now_unix, parse_uuid};
 
@@ -693,6 +693,21 @@ pub async fn regenerate_draft(
     params: RegenerateDraftParams,
 ) -> Result<AiDraft, IpcError> {
     crate::ai::draft::engine::regenerate(&state, &params.id, params.instruction.as_deref())
+        .await
+        .map_err(IpcError::from)
+}
+
+/// Generate an ephemeral compose body from the user's intent (analysis/57 §7).
+/// Backs the compose "AI Draft" affordance for Forward / New modes; nothing is
+/// persisted — the user reviews and sends manually. Errors:
+/// `NOT_FOUND` (account missing), `AI_PROVIDER_UNREACHABLE`,
+/// `AI_CONTEXT_TOO_LONG`, `AI_RATE_LIMITED`.
+#[tauri::command]
+pub async fn generate_compose_draft(
+    state: State<'_, AppState>,
+    params: GenerateComposeDraftParams,
+) -> Result<ComposeDraftResult, IpcError> {
+    crate::ai::draft::compose::generate(&state, &params)
         .await
         .map_err(IpcError::from)
 }

@@ -307,6 +307,8 @@ pub fn export_bindings(out_path: &str) -> anyhow::Result<()> {
     types.register::<crate::types::AiDraft>();
     types.register::<crate::types::RequestAiReplyParams>();
     types.register::<crate::types::RegenerateDraftParams>();
+    types.register::<crate::types::GenerateComposeDraftParams>();
+    types.register::<crate::types::ComposeDraftResult>();
     types.register::<crate::types::DraftReadyPayload>();
 
     // ── Module E — E6 draft queue (T080) + approve/cancel send (T090) ───────

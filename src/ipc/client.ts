@@ -12,12 +12,14 @@ import type {
   AttachmentIndexBuildStatus,
   BackfillStatus,
   CancelSendResult,
+  ComposeDraftResult,
   CreateAccountParams,
   DecisionSummary,
   DiskUsage,
   Draft,
   ExportAiDecisionsParams,
   ExtractionBatchStarted,
+  GenerateComposeDraftParams,
   ListAiDraftsParams,
   ListDecisionsParams,
   ImageAllowScope,
@@ -398,6 +400,12 @@ export type Commands = {
   // compose-draft command of the same name.
   request_ai_reply: { input: { params: RequestAiReplyParams }; output: AiDraft };
   regenerate_draft: { input: { params: RegenerateDraftParams }; output: AiDraft };
+  // Compose "AI Draft" (analysis/57 §7) — ephemeral intent → body text; nothing
+  // persisted (commands::ai::generate_compose_draft).
+  generate_compose_draft: {
+    input: { params: GenerateComposeDraftParams };
+    output: ComposeDraftResult;
+  };
   list_pending_drafts: { input: { params: ListAiDraftsParams }; output: AiDraft[] };
   get_ai_draft: { input: { id: string }; output: AiDraft };
   update_draft_body: { input: { id: string; body_current: string }; output: AiDraft };
@@ -1669,6 +1677,13 @@ const MOCK_RESPONSES: {
 
   // AI drafts (Module E) — stateful: mutations update MOCK_AI_DRAFTS in place.
   request_ai_reply: (args) => mockNewAiDraft(args.params.mailId, "E1_manual"),
+  generate_compose_draft: (args) => ({
+    body:
+      args.params.mode === "new"
+        ? `Hi there,\n\nReaching out about ${args.params.note ?? "this"}. Could you share your availability this week?\n\nThanks,\nYou`
+        : `Hi there,\n\nForwarding the message below for your attention — let me know your thoughts when you have a moment.\n\nThanks,\nYou`,
+    styleWasFallback: true,
+  }),
   regenerate_draft: (args) => {
     const draft = mockFindAiDraft(args.params.id);
     draft.bodyOriginal =

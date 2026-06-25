@@ -295,6 +295,7 @@ export default function Compose() {
       <ComposeFooter
         sender={sender}
         autosave={autosave}
+        mode={mode}
         blockingErrors={blockingErrorMessages}
         warnings={activeWarnings}
         buildParams={buildParams}

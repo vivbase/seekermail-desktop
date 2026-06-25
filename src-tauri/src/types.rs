@@ -1825,6 +1825,39 @@ pub struct RegenerateDraftParams {
     pub instruction: Option<String>,
 }
 
+/// Params for `generate_compose_draft` (analysis/57 §7): generate an ephemeral
+/// compose body from the user's intent. `mode` is `"forward"` | `"new"`.
+/// Nothing is persisted — the user reviews and sends manually.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerateComposeDraftParams {
+    pub account_id: String,
+    /// `"forward"` (a cover note above the quote) or `"new"` (the whole body).
+    pub mode: String,
+    /// Recipient string (`"Name <email>"` or a bare email) — drives the
+    /// greeting and the per-recipient style profile.
+    pub to: Option<String>,
+    /// Forward intent preset id: `handle` | `fyi` | `review` | `delegate` |
+    /// `records`.
+    pub intent: Option<String>,
+    /// Optional free-text steer (a point to include, or the new-mail topic).
+    pub note: Option<String>,
+    /// Tone label: `Formal` | `Friendly` | `Brief`.
+    pub tone: Option<String>,
+    /// A trimmed excerpt of the forwarded message, supplied by the client so the
+    /// backend needs no mail-body lookup.
+    pub source_excerpt: Option<String>,
+}
+
+/// Result of `generate_compose_draft`: the generated body plus whether the
+/// style profile fell back to the generic template (cold start, AI_MODES §6.7).
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ComposeDraftResult {
+    pub body: String,
+    pub style_was_fallback: bool,
+}
+
 /// `draft:ready` payload (T077) — a generated draft landed in `ai_drafts`;
 /// the UI opens the compose window / review queue from these identifiers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]

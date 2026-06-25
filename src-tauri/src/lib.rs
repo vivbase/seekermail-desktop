@@ -431,6 +431,7 @@ pub fn run() {
             // ── E1 manual reply generation (T077, Module E) ──────────────────
             commands::ai::request_ai_reply,
             commands::ai::regenerate_draft,
+            commands::ai::generate_compose_draft,
             // ── E6 draft queue (T080) + approve/cancel send (T090) ───────────
             commands::ai::list_pending_drafts,
             commands::ai::get_ai_draft,

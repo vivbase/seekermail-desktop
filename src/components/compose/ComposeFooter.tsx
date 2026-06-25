@@ -11,6 +11,8 @@ import { useCompose } from "@/stores/compose";
 import { useDeleteDraft } from "@/ipc/queries/drafts";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { DraftSaveBadge } from "./DraftSaveBadge";
+import { AiDraftButton } from "./AiDraftButton";
+import type { ComposeMode } from "./ComposeToolbar";
 
 import type { UseSendMailReturn } from "@/hooks/useSendMail";
 import type { UseDraftAutosaveReturn } from "@/hooks/useDraftAutosave";
@@ -27,6 +29,8 @@ export interface ValidationWarning {
 export interface ComposeFooterProps {
   sender: UseSendMailReturn;
   autosave: UseDraftAutosaveReturn;
+  /** Compose mode — gates the AI Draft affordance (hidden for reply, D3). */
+  mode: ComposeMode;
   /** Blocking validation errors to display (prevent send). */
   blockingErrors: string[];
   /** Soft warnings the user can acknowledge before sending. */
@@ -66,6 +70,7 @@ function formatCountdown(ms: number): string {
 export function ComposeFooter({
   sender,
   autosave,
+  mode,
   blockingErrors,
   warnings,
   buildParams,
@@ -214,6 +219,9 @@ export function ComposeFooter({
         >
           {t("discard")}
         </button>
+
+        {/* AI Draft — intent-capture generation (analysis/57 §7) */}
+        <AiDraftButton mode={mode} />
 
         {/* AI Polish (disabled placeholder, v0.5+) */}
         <button
