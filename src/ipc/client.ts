@@ -422,6 +422,7 @@ export type Commands = {
   // Settings (T050/T051)
   get_setting: { input: { key: string }; output: string | null };
   set_setting: { input: { key: string; value: string }; output: null };
+  set_global_pref: { input: { key: string; value: string }; output: null };
   // Global AI master switch (T067, F_F5 §4.5). Disable every AI capability until
   // a unix-seconds deadline, or null to restore immediately. The fallback router
   // honors `ai.disable_until`; reads go through `get_setting`. Hook: queries/settings.ts.
@@ -444,6 +445,12 @@ export type Commands = {
   };
   start_reindex: { input: { account_id: string | null }; output: string };
   cancel_reindex: { input: { task_id: string }; output: null };
+  // Rebuild the thread-summary / inbox-digest memory layer (P-4). `account_id`
+  // null = all active accounts; returns the number of summaries (re)built.
+  build_thread_summaries: {
+    input: { account_id: string | null; limit: number | null };
+    output: number;
+  };
   preview_sync_range: {
     input: { account_id: string; months: number | null };
     output: SyncRangePreview;
@@ -489,6 +496,12 @@ export type Commands = {
   archive_mail: { input: { mail_id: string }; output: null };
   delete_mail: { input: { mail_id: string }; output: null };
   restore_mail: { input: { mail_id: string }; output: null };
+
+  // Workbench windows (WB-12, Module W) — backed by commands/workbench.rs (T2 multi-window).
+  workbench_open_window: {
+    input: { boot: string; at: { x: number; y: number } | null };
+    output: string;
+  };
 };
 
 export type CommandName = keyof Commands;
@@ -1277,6 +1290,11 @@ const MOCK_RESPONSES: {
   [K in CommandName]: (args: Commands[K]["input"]) => Commands[K]["output"];
 } = {
   ping: () => ({ message: "pong" }),
+  workbench_open_window: () => "mock-window",
+  set_global_pref: (args) => {
+    MOCK_SETTINGS.set(args.key, args.value);
+    return null;
+  },
   list_accounts: () => [SAMPLE_ACCOUNT],
   get_account: () => SAMPLE_ACCOUNT,
   create_account: () => SAMPLE_ACCOUNT,
@@ -1759,6 +1777,7 @@ const MOCK_RESPONSES: {
   start_wipe: () => "mock-wipe-task",
   start_reindex: () => "mock-reindex-task",
   cancel_reindex: () => null,
+  build_thread_summaries: () => 3,
   preview_sync_range: () => ({ mailsBeyondRange: 230 }),
   update_sync_range: () => 0,
 

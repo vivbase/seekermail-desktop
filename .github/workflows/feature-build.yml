@@ -46,9 +46,53 @@ jobs:
       - name: Compile feature-path tests (no run — Keychain prompts block headless)
         run: cargo test --manifest-path src-tauri/Cargo.toml --features live-net,local-embed --locked --no-run
 
+      # Actually RUN the model-free local-embed tests (embedding module only): the
+      # absent-model offline fallback + the GteCorrupt path + the shared embedding
+      # contract. These touch no Keychain and need no 2.2 GB model, so they
+      # exercise the real `local-embed` build instead of only compiling it.
+      - name: Run model-free local-embed tests (embedding module)
+        run: cargo test --manifest-path src-tauri/Cargo.toml --features live-net,local-embed --locked --lib -- embedding::tests embedding::onnx
+
+      # ── hnsw: pure-Rust HNSW ANN backend (analysis/55 §5; no native stack) ──
+      - name: Build --features hnsw
+        run: cargo build --manifest-path src-tauri/Cargo.toml --features hnsw --locked
+
+      - name: Run hnsw vector tests (the ANN path; no Keychain, no model)
+        run: cargo test --manifest-path src-tauri/Cargo.toml --features hnsw --locked --lib -- vector
+
       # ── local-llm: in-process GGUF runtime (llama-cpp-2 needs cmake to build) ─
       - name: Install cmake (llama-cpp-2 build dependency)
         run: brew install cmake || true
 
       - name: Build --features live-net,local-embed,local-llm
         run: cargo build --manifest-path src-tauri/Cargo.toml --features live-net,local-embed,local-llm --locked
+
+  # ── Windows guard (decided 2026-06-24) ──────────────────────────────────────
+  # The Windows release leg ships `--features live-net` today; `local-embed`
+  # stays OFF there until this job proves the ONNX Runtime (`ort` +
+  # onnxruntime-sys) downloads and LINKS on MSVC. `download-binaries` fetches the
+  # runtime at build time, so the COMPILE alone exercises the risky linking path
+  # (the 2.2 GB model is NOT needed to compile). Once this is reliably green,
+  # flip the Windows leg in release.yml to `--features live-net,local-embed` and
+  # add a cached `setup:model` step there (mirroring the macOS leg).
+  feature-build-windows:
+    name: Compile feature paths on Windows (MSVC)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust stable (honours rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install stable
+
+      # ── live-net: real IMAP/SMTP/OAuth transports on MSVC ───────────────────
+      - name: Build --features live-net
+        run: cargo build --manifest-path src-tauri/Cargo.toml --features live-net --locked
+
+      # ── local-embed: the first-ever Windows bge-m3 ONNX link check ──────────
+      - name: Build --features live-net,local-embed
+        run: cargo build --manifest-path src-tauri/Cargo.toml --features live-net,local-embed --locked
+
+      # ── hnsw: pure-Rust HNSW ANN backend compiles on MSVC too ───────────────
+      - name: Build --features hnsw
+        run: cargo build --manifest-path src-tauri/Cargo.toml --features hnsw --locked

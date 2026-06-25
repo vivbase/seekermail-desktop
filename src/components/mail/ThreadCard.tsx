@@ -18,6 +18,8 @@ import {
   useDeleteMail,
 } from "@/ipc/queries/mail";
 import { useAiDraftTriggerMailIds } from "@/ipc/queries/drafts";
+import { openSpecAttr } from "@/lib/openSpec";
+import { useOpenOnDoubleClick } from "@/components/workbench/useOpenOnDoubleClick";
 
 // ── Account color stripe helper ───────────────────────────────────────────────
 
@@ -246,6 +248,8 @@ export function ThreadCard({
     [deleteMail, onDeleted, repMailId, thread.id],
   );
 
+  const openOnDoubleClick = useOpenOnDoubleClick();
+
   // Sender display: use participants[0] or fall back to thread subject words.
   const senderDisplay = thread.participants[0] ?? thread.subject.split(" ").slice(0, 2).join(" ");
 
@@ -266,7 +270,11 @@ export function ThreadCard({
       aria-keyshortcuts="e # s u"
       aria-label={ariaLabel}
       tabIndex={isFocused ? 0 : -1}
+      {...openSpecAttr({ route: { page: "thread", params: { mailId: thread.id } } })}
       onClick={handleClick}
+      onDoubleClick={() =>
+        openOnDoubleClick({ route: { page: "thread", params: { mailId: thread.id } } })
+      }
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();

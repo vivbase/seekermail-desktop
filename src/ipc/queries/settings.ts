@@ -183,7 +183,7 @@ export function useSetTheme() {
     mutationFn: (theme: ThemePreference) => {
       // Apply before the IPC round-trip so the switch feels instant.
       applyTheme(theme);
-      return ipc("set_setting", { key: THEME_SETTING_KEY, value: JSON.stringify(theme) });
+      return ipc("set_global_pref", { key: THEME_SETTING_KEY, value: JSON.stringify(theme) });
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: settingKeys.detail(THEME_SETTING_KEY) }),
   });
@@ -207,7 +207,10 @@ export function useSetFontScale() {
       const clamped = clampFontScale(scale);
       // Apply before the IPC round-trip so the change feels instant.
       applyFontScale(clamped);
-      return ipc("set_setting", { key: FONT_SCALE_SETTING_KEY, value: JSON.stringify(clamped) });
+      return ipc("set_global_pref", {
+        key: FONT_SCALE_SETTING_KEY,
+        value: JSON.stringify(clamped),
+      });
     },
     onSuccess: () =>
       void qc.invalidateQueries({ queryKey: settingKeys.detail(FONT_SCALE_SETTING_KEY) }),
@@ -232,10 +235,40 @@ export function useSetReadingScale() {
       const clamped = clampReadingScale(scale);
       // Apply before the IPC round-trip so the change feels instant.
       applyReadingScale(clamped);
-      return ipc("set_setting", { key: READING_SCALE_SETTING_KEY, value: JSON.stringify(clamped) });
+      return ipc("set_global_pref", {
+        key: READING_SCALE_SETTING_KEY,
+        value: JSON.stringify(clamped),
+      });
     },
     onSuccess: () =>
       void qc.invalidateQueries({ queryKey: settingKeys.detail(READING_SCALE_SETTING_KEY) }),
+  });
+}
+
+// ── Workbench double-click behavior (WB-21) ─────────────────────────────────────
+// Whether double-clicking a surface (mail row, search result, …) opens it in a new TAB or a new
+// WINDOW. Persisted under the ui.* namespace; default "tab".
+export const WORKBENCH_DOUBLE_CLICK_KEY = "ui.workbench_double_click";
+export type DoubleClickAction = "tab" | "window";
+
+/** The persisted double-click action; defaults to "tab" until set. */
+export function useDoubleClickActionSetting() {
+  const query = useAppSetting<DoubleClickAction>(WORKBENCH_DOUBLE_CLICK_KEY);
+  const action: DoubleClickAction = query.data === "window" ? "window" : "tab";
+  return { ...query, action };
+}
+
+/** Persist the double-click action and refresh its query. */
+export function useSetDoubleClickAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (action: DoubleClickAction) =>
+      ipc("set_setting", {
+        key: WORKBENCH_DOUBLE_CLICK_KEY,
+        value: JSON.stringify(action),
+      }),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: settingKeys.detail(WORKBENCH_DOUBLE_CLICK_KEY) }),
   });
 }
 

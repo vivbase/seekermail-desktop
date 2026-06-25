@@ -72,6 +72,18 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
+      # ── Real bge-m3 ONNX weights for `--features local-embed` (T010). The
+      #    merge-gate CI stays model-free; only the shipped bundle needs the
+      #    ~2.2 GB weights, which tauri.conf.json bundles via `resources/*`.
+      #    Cached by the pinned lock so HuggingFace is hit at most once.
+      - name: Cache bge-m3 ONNX weights
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/resources
+          key: bge-m3-${{ hashFiles('src-tauri/resources/model.lock.json') }}
+      - name: Fetch + checksum-verify the embedding model (idempotent)
+        run: pnpm run setup:model
+
       # ── Step 1/6: import the Developer ID certificate ─────────────────────
       - name: Import signing certificate into a throwaway keychain
         env:
@@ -100,7 +112,14 @@ jobs:
           APPLE_SIGNING_IDENTITY: ${{ env.SIGN_IDENTITY }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: pnpm tauri build --target ${{ matrix.target }}
+        # Ship the REAL runtimes (mirrors package.json `tauri:build`):
+        #   live-net    = concrete IMAP/SMTP/OAuth transports
+        #   local-embed = bge-m3 ONNX semantic embeddings
+        # Without these the bundle would silently compile the offline fallback
+        # embedder and the stubbed transport. ort's `copy-dylibs` drops the ONNX
+        # Runtime dylib next to the binary; the inside-out codesign step below
+        # signs it before the .app.
+        run: pnpm tauri build --target ${{ matrix.target }} --features live-net,local-embed
 
       # ── Step 3/6: inside-out re-sign of native libs (dev/05 §1.4 pitfall:
       #     ONNX Runtime / LanceDB dylibs must be signed BEFORE the .app) ─────
@@ -191,7 +210,12 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: pnpm tauri build --target x86_64-pc-windows-msvc
+        # live-net = real IMAP/SMTP/OAuth. local-embed is intentionally NOT
+        # enabled here yet: the Windows ONNX Runtime path is unverified. Turn it
+        # on (and add a cached `setup:model` step like the macOS leg) only once
+        # the `feature-build-windows` guard in feature-build.yml is green; until
+        # then Windows ships the deterministic offline embedder.
+        run: pnpm tauri build --target x86_64-pc-windows-msvc --features live-net
       - name: Authenticode sign + verify the installer
         shell: bash
         env:

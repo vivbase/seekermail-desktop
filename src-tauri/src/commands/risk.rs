@@ -35,5 +35,8 @@ pub async fn resolve_risk_event(
 ) -> Result<(), IpcError> {
     risk_event_repo::resolve(state.storage.db(), &params)
         .await
-        .map_err(IpcError::from)
+        .map_err(IpcError::from)?;
+    // Tell every other window to clear this risk from its T4 banner (WB-16).
+    state.events.risk_resolved(&params.id);
+    Ok(())
 }

@@ -39,3 +39,45 @@ export function parseMessageText(content: string): string {
     return "";
   }
 }
+
+/** How a grounded agent reply was assembled by the Mailbox Context Engine —
+ *  mirrors the Rust `RetrievalReport` (camelCase). Embedded in an agent text
+ *  message's `content` so the UI can show an honest "what was searched" chip
+ *  instead of a silent empty answer (analysis/54 §3.4). */
+export type RetrievalState = {
+  /** `false` when the semantic index/embedder could not run at all. */
+  semanticAvailable: boolean;
+  /** Semantic hits used. */
+  semanticHits: number;
+  /** Recent-mail (temporal) hits used. */
+  temporalHits: number;
+  /** Computed facts used (counts, top senders). */
+  aggregateFacts: number;
+  /** Precomputed thread summaries used (memory leg). */
+  memoryHits: number;
+  /** Mails already embedded into the semantic index. */
+  indexedMails: number;
+  /** Stored, non-deleted mails — the coverage denominator. */
+  totalMails: number;
+};
+
+/** Read the optional `retrieval` state out of an agent message body; `null`
+ *  when absent (fallback notes, older messages) or on any parse failure. */
+export function parseRetrievalState(content: string): RetrievalState | null {
+  try {
+    const parsed = JSON.parse(content) as { retrieval?: Partial<RetrievalState> };
+    const r = parsed.retrieval;
+    if (!r || typeof r !== "object") return null;
+    return {
+      semanticAvailable: Boolean(r.semanticAvailable),
+      semanticHits: Number(r.semanticHits ?? 0),
+      temporalHits: Number(r.temporalHits ?? 0),
+      aggregateFacts: Number(r.aggregateFacts ?? 0),
+      memoryHits: Number(r.memoryHits ?? 0),
+      indexedMails: Number(r.indexedMails ?? 0),
+      totalMails: Number(r.totalMails ?? 0),
+    };
+  } catch {
+    return null;
+  }
+}

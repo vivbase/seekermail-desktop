@@ -66,5 +66,10 @@
   "notification_query_title": "Bir soru kararınızı bekliyor",
   "notification_query_body": "Bir agent girdinize ihtiyaç duyuyor. İncelemek için Bekleyen listesini açın.",
   "notification_risk_title": "Risk uyarısı",
-  "notification_risk_body": "Bekleyen listesinde incelemenizi gerektiren bir risk var."
+  "notification_risk_body": "Bekleyen listesinde incelemenizi gerektiren bir risk var.",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

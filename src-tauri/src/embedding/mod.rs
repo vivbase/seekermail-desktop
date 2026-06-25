@@ -330,6 +330,37 @@ mod tests {
         assert_eq!(a, b, "same text must yield identical vectors");
     }
 
+    /// Under `--features local-embed`, a build with no bundled model must NOT
+    /// crash: it falls back to the deterministic offline backend (09 §4) and the
+    /// embedding contract still holds. Runs only in the feature-build CI lane; the
+    /// default build doesn't compile it (the `ort` stack and model aren't there).
+    #[cfg(feature = "local-embed")]
+    #[test]
+    fn local_embed_without_model_falls_back_to_offline() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().to_path_buf();
+        let paths = crate::config::Paths {
+            db: root.join("seekermail.db"),
+            vectors: root.join("vectors"),
+            attachments: root.join("attachments"),
+            logs: root.join("logs"),
+            models: root.join("models"),
+            resources: root.join("models"),
+            root,
+        };
+        let embedder = Embedder::load(&paths);
+        assert!(
+            embedder.is_offline(),
+            "absent bundled model must degrade to the offline backend, never crash"
+        );
+        let v = embedder.embed("contract renewal indemnity terms").unwrap();
+        assert_eq!(v.len(), DIM);
+        assert!(
+            approx(l2(&v), 1.0, 1e-3),
+            "fallback vectors stay L2-normalised"
+        );
+    }
+
     #[test]
     fn batch_matches_single() {
         let e = Embedder {

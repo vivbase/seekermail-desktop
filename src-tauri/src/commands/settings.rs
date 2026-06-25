@@ -6,6 +6,8 @@
 //! the webview. `apply_privacy_policy` (T051) validates the two privacy enums,
 //! persists them, and logs a content-free `privacy_policy_changed` event.
 
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use tauri::State;
 
 use crate::error::{AppError, AppResult, IpcError};
@@ -24,6 +26,18 @@ pub const REMOTE_IMAGE_POLICY_KEY: &str = "privacy.remote_image_policy";
 pub const THEME_KEY: &str = "ui.theme";
 /// `app_settings` key for the analysis-25 UI scale (text size) preference.
 pub const FONT_SCALE_KEY: &str = "ui.font_scale";
+/// `app_settings` key for the analysis-25 email-body reading scale.
+pub const READING_FONT_SCALE_KEY: &str = "ui.reading_font_scale";
+
+/// Global appearance prefs (WB-13/15): a change in one window must reach the
+/// others. Writing one of these via [`set_global_pref`] bumps [`PREFS_REVISION`]
+/// and broadcasts `workbench:prefs_invalidated`. Per-account or volatile `ui.*`
+/// keys (e.g. `ui.workbench_layout`) are deliberately excluded.
+const GLOBAL_PREF_KEYS: &[&str] = &[THEME_KEY, FONT_SCALE_KEY, READING_FONT_SCALE_KEY];
+
+/// Process-wide monotonic revision so each window can drop stale prefs
+/// broadcasts (WB-14 `RevisionGate`). Every window shares one process.
+static PREFS_REVISION: AtomicU64 = AtomicU64::new(0);
 
 fn validate_key(key: &str) -> AppResult<()> {
     if ALLOWED_KEY_PREFIXES.iter().any(|p| key.starts_with(p)) {
@@ -49,6 +63,21 @@ async fn do_set_setting(state: &AppState, key: &str, value: &str) -> AppResult<(
     // Key only — values may eventually carry user data; the key never does (09 §5).
     tracing::info!(event = "setting_changed", key = key, "app setting updated");
     Ok(())
+}
+
+/// Persist a global appearance pref, then bump the revision and broadcast
+/// `workbench:prefs_invalidated` so the other windows re-read (WB-13/15). Rejects
+/// any key that is not a known global pref. Returns the new revision.
+async fn do_set_global_pref(state: &AppState, key: &str, value: &str) -> AppResult<u64> {
+    if !GLOBAL_PREF_KEYS.contains(&key) {
+        return Err(AppError::Validation(format!(
+            "not a global appearance pref: {key}"
+        )));
+    }
+    do_set_setting(state, key, value).await?;
+    let revision = PREFS_REVISION.fetch_add(1, Ordering::Relaxed) + 1;
+    state.events.prefs_invalidated(revision);
+    Ok(revision)
 }
 
 async fn do_apply_privacy_policy(
@@ -153,6 +182,21 @@ pub async fn set_setting(
 ) -> Result<(), IpcError> {
     do_set_setting(&state, &key, &value)
         .await
+        .map_err(IpcError::from)
+}
+
+/// Upsert a global appearance pref (theme / UI scale / reading scale) and notify
+/// the other windows (WB-13/15). Behaves like [`set_setting`] but only accepts
+/// global-pref keys and broadcasts an invalidation so every window stays in sync.
+#[tauri::command]
+pub async fn set_global_pref(
+    state: State<'_, AppState>,
+    key: String,
+    value: String,
+) -> Result<(), IpcError> {
+    do_set_global_pref(&state, &key, &value)
+        .await
+        .map(|_| ())
         .map_err(IpcError::from)
 }
 
@@ -296,5 +340,24 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(initial_font_scale(&state).await, 1.0);
+    }
+
+    #[tokio::test]
+    async fn set_global_pref_persists_and_rejects_non_global_keys() {
+        let (state, _rx) = AppState::test_state().await;
+        // A global pref persists and yields a positive, monotonic revision.
+        let rev = do_set_global_pref(&state, THEME_KEY, "\"dark\"")
+            .await
+            .unwrap();
+        assert!(rev >= 1);
+        assert_eq!(
+            do_get_setting(&state, THEME_KEY).await.unwrap().as_deref(),
+            Some("\"dark\"")
+        );
+        // A non-global `ui.*` key is rejected even though `set_setting` allows it.
+        let err = do_set_global_pref(&state, "ui.workbench_layout", "\"x\"")
+            .await
+            .unwrap_err();
+        assert_eq!(err.code(), ErrorCode::Validation);
     }
 }

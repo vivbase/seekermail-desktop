@@ -8,10 +8,11 @@
 import { useTranslation } from "react-i18next";
 import type { Account } from "@shared/bindings";
 
-import { parseMessageText, type ImMessage } from "@/ipc/im";
+import { parseMessageText, parseRetrievalState, type ImMessage } from "@/ipc/im";
 import AgentAvatar from "./AgentAvatar";
 import AgentNameChip from "./AgentNameChip";
 import QueryCardEmbed from "./QueryCardEmbed";
+import RetrievalStateChip from "./RetrievalStateChip";
 
 interface MessageBubbleProps {
   message: ImMessage;
@@ -48,7 +49,10 @@ export default function MessageBubble({ message, account }: MessageBubbleProps) 
     );
   }
 
-  // Agent message (left/start aligned).
+  // Agent message (left/start aligned). A grounded reply carries its retrieval
+  // state so we can show an honest "what was searched" chip under the text.
+  const retrieval =
+    message.messageType === "query_card" ? null : parseRetrievalState(message.content);
   return (
     <div className="flex">
       <div tabIndex={0} className="me-auto flex max-w-[75%] gap-2">
@@ -81,6 +85,7 @@ export default function MessageBubble({ message, account }: MessageBubbleProps) 
               <p className="whitespace-pre-wrap font-body text-sm text-p10">
                 {parseMessageText(message.content)}
               </p>
+              {retrieval ? <RetrievalStateChip state={retrieval} /> : null}
             </div>
           )}
         </div>

@@ -66,5 +66,10 @@
   "notification_query_title": "あなたの判断が必要な質問があります",
   "notification_query_body": "Agent があなたの入力を必要としています。保留中の一覧を開いてレビューしてください。",
   "notification_risk_title": "リスク警告",
-  "notification_risk_body": "保留中の一覧にあなたのレビューが必要なリスクがあります。"
+  "notification_risk_body": "保留中の一覧にあなたのレビューが必要なリスクがあります。",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

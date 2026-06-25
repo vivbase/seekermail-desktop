@@ -17,6 +17,32 @@ uses [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **fix(release): production builds now ship the REAL runtimes (real network + real
+  semantic embeddings).** The macOS release leg (`.github/workflows/release.yml`) ran a
+  bare `pnpm tauri build` with **no `--features`** and never fetched the embedding model,
+  so signed/notarized DMGs silently shipped the **stubbed transport _and_ the
+  deterministic offline (bag-of-words) embedder** — no real IMAP/SMTP and no real bge-m3
+  semantic search — even though the inside-out codesign step already signed the ONNX
+  Runtime dylib (proving the real runtimes were intended; the flags had simply been
+  dropped). The macOS leg now fetches + checksum-verifies the bge-m3 weights through a
+  lock-cached `pnpm run setup:model` (bundled via `tauri.conf.json` `resources/*`) and
+  builds with `--features live-net,local-embed`. Without this, every shipped build
+  defeated the local-first AI value proposition — semantic search and AI reply context
+  ran on a hash, not a model.
+
+### Added
+
+- **ci(feature-build): Windows compile guard for the OFF-by-default real runtimes.** A
+  new `feature-build-windows` job compiles `--features live-net` and
+  `--features live-net,local-embed` on `windows-latest`, exercising the
+  `ort`/onnxruntime-sys link path on MSVC (the 2.2 GB model is not needed to compile).
+  The Windows release leg currently ships `--features live-net` (real IMAP/SMTP) only;
+  Windows `local-embed` stays off until this guard is reliably green, at which point the
+  release leg flips to `live-net,local-embed` and gains a cached `setup:model` step like
+  macOS.
+
 ## [0.6.0-beta] - 2026-06-24
 
 Wires the previously-stubbed mail pipeline end-to-end: the app now **fetches real

@@ -3,6 +3,9 @@
 // lives on the Team page). The T4 risk banner stays pinned above everything; the
 // Cmd/Ctrl+K shortcut is registered here and navigates to the /search page so search
 // is reachable from anywhere (Search is now a first-class route, not an overlay).
+//
+// NOTE: superseded as the live shell by WorkbenchShell (WB-09 v2, Model S per-tab tabs).
+// Kept as the single-page fallback (still covered by shell.test.tsx).
 import { Suspense, useEffect } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";

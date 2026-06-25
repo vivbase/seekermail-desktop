@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { useAccounts, useDiskUsage } from "@/ipc/queries/accounts";
+import { useBuildThreadSummaries } from "@/ipc/queries/memory";
 import { formatBytes } from "@/lib/formatBytes";
 
 // ── Storage row ───────────────────────────────────────────────────────────────
@@ -56,6 +57,36 @@ function HubLink({
   );
 }
 
+// ── Rebuild-memory action (P-4) ───────────────────────────────────────────────
+
+function RebuildMemoryCard() {
+  const { t } = useTranslation("settings");
+  const build = useBuildThreadSummaries();
+
+  const label = build.isPending
+    ? t("data_memory_running")
+    : build.isSuccess
+      ? t("data_memory_done", { count: build.data })
+      : t("data_memory_action");
+
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-card border border-divider bg-surface px-4 py-4">
+      <div className="flex flex-col gap-0.5">
+        <p className="font-ui text-sm font-medium text-p9">{t("data_memory_title")}</p>
+        <p className="font-body text-xs leading-relaxed text-p8">{t("data_memory_desc")}</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => build.mutate(null)}
+        disabled={build.isPending}
+        className="shrink-0 rounded-chip border border-divider bg-parchment px-3 py-1.5 font-ui text-xs text-p9 transition-colors hover:bg-p4 disabled:opacity-60"
+      >
+        {label}
+      </button>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function DataSettings() {
@@ -102,6 +133,7 @@ export default function DataSettings() {
           title={t("data_link_reindex")}
           description={t("data_link_reindex_desc")}
         />
+        <RebuildMemoryCard />
         <HubLink
           to="/settings/data/sync-range"
           title={t("data_link_sync_range")}

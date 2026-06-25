@@ -28,11 +28,12 @@
 //! **Logging red-line (dev/09 §5):** this module logs identifiers and counts
 //! only — never `body_text`, snippets, or any other mail content.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use sqlx::Row;
 
 use crate::error::{AppError, AppResult};
+use crate::search::fts5;
 use crate::state::AppState;
 use crate::util::truncate_chars;
 use crate::vector::AnnFilter;
@@ -55,8 +56,9 @@ pub const DEFAULT_MIN_SCORE: f32 = 0.35;
 const ANN_RECALL_FACTOR: usize = 3;
 /// Same-thread mails included, newest first, trigger excluded (F_D1 §4.2).
 const THREAD_MAILS_LIMIT: i64 = 5;
-/// Knowledge-chunk snippet length in characters (card §3).
-const CHUNK_SNIPPET_CHARS: usize = 200;
+/// Knowledge-chunk snippet length in characters (card §3). `pub(crate)` so the
+/// MCE question path hydrates semantic items to the same snippet length.
+pub(crate) const CHUNK_SNIPPET_CHARS: usize = 200;
 /// Per-mail body cap for thread snippets, so one verbose reply can't starve the
 /// rest of the thread out of the budget. The target mail is never capped here.
 const THREAD_BODY_CHARS: usize = 800;
@@ -310,42 +312,115 @@ pub async fn assemble_role_context(
     })
 }
 
-/// Two-stage GTE retrieval: SQLite pre-filter (account, not the trigger, not
-/// archived/deleted) → vector ANN at `top_k * 3` chunk recall → per-mail
-/// max-score aggregation → threshold → top-K → snippet hydration.
-async fn retrieve_chunks(
+/// One mail ranked by the semantic leg, before any rendering: the mail id, the
+/// index of its best-scoring chunk, and that chunk's cosine score. This is the
+/// raw output of leg B; each caller hydrates whatever shape it needs from it.
+#[derive(Debug, Clone)]
+pub(crate) struct ScoredMail {
+    pub mail_id: String,
+    pub chunk_index: i32,
+    pub score: f32,
+}
+
+/// Hybrid retrieval leg B (analysis/54 §3.2 + analysis/55 §5), decoupled from any
+/// caller's shape. Runs two retrievers over the same active scope and fuses them:
+///   * **dense** — vector ANN (per-mail max cosine, gated by the `min_score`
+///     floor);
+///   * **sparse** — FTS5 / BM25 keyword probe over the same mailbox.
+///
+/// Reciprocal rank fusion merges the two into one score-descending top-K of
+/// [`ScoredMail`]s (fused score normalised to (0, 1]); hydration is the caller's
+/// job. Either signal alone can surface a mail, so exact terms / names / ids the
+/// embedding blurs and topics the keywords miss both get found — one path, two
+/// signals.
+///
+/// Both the anchored reply path ([`assemble_role_context`], which excludes the
+/// trigger mail so it can never ground itself) and the anchorless chat path
+/// (the MCE question path, which has nothing to exclude) call this, so there is
+/// exactly **one** semantic retrieval implementation in the product — the whole
+/// point of folding the two fetch paths into one engine.
+pub(crate) async fn retrieve_scored(
     state: &AppState,
-    params: &RoleContextParams,
-    target: &MailSnippet,
-) -> AppResult<Vec<KnowledgeChunk>> {
+    account_id: &str,
+    query_text: &str,
+    exclude_mail_id: Option<&str>,
+    top_k: usize,
+    min_score: f32,
+) -> AppResult<Vec<ScoredMail>> {
+    // Each leg recalls a wider pool than the final top_k, so a mail ranked by
+    // only one signal still gets a fair chance in the fusion.
+    let pool = top_k.saturating_mul(ANN_RECALL_FACTOR).max(top_k).max(1);
+
+    // Leg B1 — dense vector ranking (cosine, gated by the score floor).
+    let dense = retrieve_dense(
+        state,
+        account_id,
+        query_text,
+        exclude_mail_id,
+        pool,
+        min_score,
+    )
+    .await?;
+
+    // Leg B2 — sparse BM25 ranking over the same active scope: a keyword probe so
+    // exact terms, names, ids, and rare tokens the embedding blurs still surface.
+    let sparse = fts5::bm25_ranked_ids(
+        state.storage.db().pool(),
+        account_id,
+        exclude_mail_id,
+        query_text,
+        pool,
+    )
+    .await?;
+
+    // Fuse the two rankings into one ordered top-K (reciprocal rank fusion).
+    Ok(fuse_rrf(dense, sparse, top_k))
+}
+
+/// Leg B1 — dense (vector) retrieval: SQLite pre-filter (account, optional
+/// `exclude`, not archived/deleted) → vector ANN at `pool * 3` chunk recall →
+/// per-mail max cosine → `min_score` floor → ranked by cosine, capped at `pool`.
+/// Each [`ScoredMail`] carries its per-mail best-chunk index and cosine; the
+/// fuser later replaces the score with the fused value.
+async fn retrieve_dense(
+    state: &AppState,
+    account_id: &str,
+    query_text: &str,
+    exclude_mail_id: Option<&str>,
+    pool: usize,
+    min_score: f32,
+) -> AppResult<Vec<ScoredMail>> {
     let db = state.storage.db().pool();
 
     // Stage 1 — SQLite pre-filter (card §3 step 2; no date restriction).
-    let candidate_rows = sqlx::query(
-        "SELECT id FROM mails WHERE account_id = ? AND id != ? \
-         AND is_archived = 0 AND is_deleted = 0",
-    )
-    .bind(&params.account_id)
-    .bind(&params.mail_id)
+    let candidate_rows = match exclude_mail_id {
+        Some(exclude) => sqlx::query(
+            "SELECT id FROM mails WHERE account_id = ? AND id != ? \
+             AND is_archived = 0 AND is_deleted = 0",
+        )
+        .bind(account_id)
+        .bind(exclude),
+        None => sqlx::query(
+            "SELECT id FROM mails WHERE account_id = ? \
+             AND is_archived = 0 AND is_deleted = 0",
+        )
+        .bind(account_id),
+    }
     .fetch_all(db)
     .await
     .map_err(crate::storage::map_sqlx_err)?;
     if candidate_rows.is_empty() {
         return Ok(Vec::new());
     }
-    let candidates: std::collections::HashSet<String> = candidate_rows
+    let candidates: HashSet<String> = candidate_rows
         .iter()
         .map(|r| r.get::<String, _>("id"))
         .collect();
 
-    // Embed "subject + body head" as the query (local ONNX, never a provider).
-    let query_text = truncate_chars(
-        &format!("{}\n{}", target.subject, target.body),
-        EMBED_QUERY_CHARS,
-    );
+    // Embed the query head (local ONNX, never a provider).
     let query_vec = state
         .embedder
-        .embed_blocking(query_text)
+        .embed_blocking(truncate_chars(query_text, EMBED_QUERY_CHARS))
         .await
         .map_err(|e| AppError::AiUnreachable(format!("context embed failed: {e}")))?;
 
@@ -357,9 +432,9 @@ async fn retrieve_chunks(
         .vectors()
         .ann(
             &query_vec,
-            params.top_k.saturating_mul(ANN_RECALL_FACTOR).max(1),
+            pool.saturating_mul(ANN_RECALL_FACTOR).max(1),
             AnnFilter {
-                account_id: Some(params.account_id.clone()),
+                account_id: Some(account_id.to_string()),
                 date_from: None,
                 date_to: None,
             },
@@ -372,7 +447,7 @@ async fn retrieve_chunks(
     // Aggregate chunks → best chunk per mail; gate by candidates + min_score.
     let mut best: HashMap<String, (i32, f32)> = HashMap::new();
     for h in &hits {
-        if h.score < params.min_score || !candidates.contains(&h.mail_id) {
+        if h.score < min_score || !candidates.contains(&h.mail_id) {
             continue;
         }
         let entry = best
@@ -382,28 +457,119 @@ async fn retrieve_chunks(
             *entry = (chunk_index_of(&h.chunk_id), h.score);
         }
     }
-    if best.is_empty() {
+
+    let mut ranked: Vec<ScoredMail> = best
+        .into_iter()
+        .map(|(mail_id, (chunk_index, score))| ScoredMail {
+            mail_id,
+            chunk_index,
+            score,
+        })
+        .collect();
+    // Deterministic order: cosine desc, then mail_id asc on ties (M10).
+    ranked.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then(a.mail_id.cmp(&b.mail_id))
+    });
+    ranked.truncate(pool);
+    Ok(ranked)
+}
+
+/// Damping constant for reciprocal rank fusion (the standard k = 60).
+const RRF_K: f32 = 60.0;
+
+/// Fuse the dense and sparse rankings into one ordered list (reciprocal rank
+/// fusion, analysis/55 §5). A mail's fused weight sums `1 / (RRF_K + rank)` over
+/// each list it appears in (rank 0-based), so agreement between the two signals
+/// lifts a mail while either signal alone still surfaces it. The weight is
+/// normalised to (0, 1] (best = 1.0) so the score stays a comparable relevance
+/// proxy and the downstream score-descending invariant holds. The dense best-
+/// chunk index is preserved; sparse-only hits carry chunk 0. Deterministic: ties
+/// break on `mail_id`.
+fn fuse_rrf(dense: Vec<ScoredMail>, sparse: Vec<String>, top_k: usize) -> Vec<ScoredMail> {
+    if dense.is_empty() && sparse.is_empty() {
+        return Vec::new();
+    }
+
+    let mut weight: HashMap<String, f32> = HashMap::new();
+    let mut chunk_of: HashMap<String, i32> = HashMap::new();
+    let mut order: Vec<String> = Vec::new();
+
+    for (rank, d) in dense.iter().enumerate() {
+        chunk_of.insert(d.mail_id.clone(), d.chunk_index);
+        *weight.entry(d.mail_id.clone()).or_insert(0.0) += 1.0 / (RRF_K + rank as f32);
+        order.push(d.mail_id.clone());
+    }
+    for (rank, id) in sparse.iter().enumerate() {
+        if !weight.contains_key(id) {
+            order.push(id.clone());
+        }
+        *weight.entry(id.clone()).or_insert(0.0) += 1.0 / (RRF_K + rank as f32);
+    }
+
+    let max = weight
+        .values()
+        .copied()
+        .fold(f32::MIN, f32::max)
+        .max(f32::MIN_POSITIVE);
+    let mut ranked: Vec<ScoredMail> = order
+        .into_iter()
+        .map(|mail_id| {
+            let score = (weight[&mail_id] / max).clamp(0.0, 1.0);
+            let chunk_index = chunk_of.get(&mail_id).copied().unwrap_or(0);
+            ScoredMail {
+                mail_id,
+                chunk_index,
+                score,
+            }
+        })
+        .collect();
+    ranked.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then(a.mail_id.cmp(&b.mail_id))
+    });
+    ranked.truncate(top_k);
+    ranked
+}
+
+/// Anchored leg B: build the semantic query from the trigger mail, then hydrate
+/// the ranked hits into [`KnowledgeChunk`]s (200-char snippet + date) for the
+/// reply/analysis prompt. A behaviour-preserving wrapper over [`retrieve_scored`].
+async fn retrieve_chunks(
+    state: &AppState,
+    params: &RoleContextParams,
+    target: &MailSnippet,
+) -> AppResult<Vec<KnowledgeChunk>> {
+    // Embed "subject + body head" as the query (truncation happens inside).
+    let query_text = format!("{}\n{}", target.subject, target.body);
+    let ranked = retrieve_scored(
+        state,
+        &params.account_id,
+        &query_text,
+        Some(&params.mail_id),
+        params.top_k,
+        params.min_score,
+    )
+    .await?;
+    if ranked.is_empty() {
         return Ok(Vec::new());
     }
 
-    // Top-K mails by score.
-    let mut ranked: Vec<(String, i32, f32)> = best
-        .into_iter()
-        .map(|(mail_id, (idx, score))| (mail_id, idx, score))
-        .collect();
-    ranked.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
-    ranked.truncate(params.top_k);
-
     // Hydrate snippet + date_sent from SQLite (the snippet column is already
     // the 200-char preview written at ingest).
+    let db = state.storage.db().pool();
     let placeholders = vec!["?"; ranked.len()].join(",");
     let sql = format!(
         "SELECT id, COALESCE(snippet, '') AS snippet, date_sent \
          FROM mails WHERE id IN ({placeholders})"
     );
     let mut q = sqlx::query(&sql);
-    for (mail_id, _, _) in &ranked {
-        q = q.bind(mail_id);
+    for sm in &ranked {
+        q = q.bind(&sm.mail_id);
     }
     let rows = q
         .fetch_all(db)
@@ -421,12 +587,12 @@ async fn retrieve_chunks(
 
     Ok(ranked
         .into_iter()
-        .filter_map(|(mail_id, chunk_index, score)| {
-            meta.remove(&mail_id)
+        .filter_map(|sm| {
+            meta.remove(&sm.mail_id)
                 .map(|(snippet, date_sent)| KnowledgeChunk {
-                    mail_id,
-                    chunk_index,
-                    score,
+                    mail_id: sm.mail_id,
+                    chunk_index: sm.chunk_index,
+                    score: sm.score,
                     snippet: truncate_chars(&snippet, CHUNK_SNIPPET_CHARS),
                     date_sent,
                 })
@@ -490,8 +656,13 @@ async fn fetch_contact_history(
     }))
 }
 
-/// Persona line from the account's role columns (dev/06 §5 item 1).
-fn build_role_preamble(email: &str, role_type: &str, role_description: Option<&str>) -> String {
+/// Persona line from the account's role columns (dev/06 §5 item 1). `pub(crate)`
+/// so the MCE can build the same persona for the anchorless question path.
+pub(crate) fn build_role_preamble(
+    email: &str,
+    role_type: &str,
+    role_description: Option<&str>,
+) -> String {
     let mut preamble =
         format!("You are the dedicated {role_type} assistant for the mailbox {email}.");
     if let Some(description) = role_description {
@@ -505,8 +676,9 @@ fn build_role_preamble(email: &str, role_type: &str, role_description: Option<&s
 }
 
 /// Conservative token estimate: 1 token ≈ 4 bytes (card §6); never zero so an
-/// item always carries a cost.
-fn estimate_tokens(s: &str) -> usize {
+/// item always carries a cost. `pub(crate)` so the MCE packs to the same budget
+/// arithmetic as the anchored path.
+pub(crate) fn estimate_tokens(s: &str) -> usize {
     (s.len() / 4).max(1)
 }
 
@@ -701,6 +873,97 @@ mod tests {
         assert_eq!(ctx.safety_preamble, SAFETY_PREAMBLE);
         assert_eq!(ctx.target_mail.body, TRIGGER_BODY, "target body untouched");
         assert!(ctx.total_tokens_used <= p.token_budget);
+    }
+
+    #[test]
+    fn fuse_rrf_combines_dense_and_sparse() {
+        let dense = vec![
+            ScoredMail {
+                mail_id: "a".into(),
+                chunk_index: 2,
+                score: 0.9,
+            },
+            ScoredMail {
+                mail_id: "b".into(),
+                chunk_index: 1,
+                score: 0.5,
+            },
+        ];
+        let sparse = vec!["b".to_string(), "c".to_string()];
+
+        let fused = fuse_rrf(dense, sparse, 10);
+        let ids: Vec<&str> = fused.iter().map(|s| s.mail_id.as_str()).collect();
+
+        // All three surface; the mail both signals agree on ranks first.
+        assert_eq!(fused.len(), 3);
+        assert_eq!(ids[0], "b", "agreement across dense + sparse wins");
+        assert!(ids.contains(&"a") && ids.contains(&"c"));
+        // Best score normalised to 1.0; everything stays in (0, 1], descending.
+        assert!((fused[0].score - 1.0).abs() < 1e-6);
+        assert!(fused.iter().all(|s| s.score > 0.0 && s.score <= 1.0));
+        for pair in fused.windows(2) {
+            assert!(pair[0].score >= pair[1].score);
+        }
+        // Dense best-chunk index preserved; sparse-only hit carries 0.
+        assert_eq!(
+            fused.iter().find(|s| s.mail_id == "b").unwrap().chunk_index,
+            1
+        );
+        assert_eq!(
+            fused.iter().find(|s| s.mail_id == "c").unwrap().chunk_index,
+            0
+        );
+    }
+
+    #[test]
+    fn fuse_rrf_empty_inputs_yield_empty() {
+        assert!(fuse_rrf(Vec::new(), Vec::new(), 10).is_empty());
+    }
+
+    #[tokio::test]
+    async fn hybrid_surfaces_keyword_only_mail() {
+        let (state, _rx) = AppState::test_state().await;
+        seed_account(&state, "a", "work", None).await;
+        // A topically-related mail WITH a vector — the dense leg can find it.
+        seed_mail(
+            &state,
+            "vec",
+            "a",
+            None,
+            "peer@x.com",
+            "quarterly budget revenue report",
+            now_unix(),
+        )
+        .await;
+        index_mail(&state, "vec", "a", &["quarterly budget revenue report"]).await;
+        // A keyword-only mail with NO vector — the dense leg can never return it,
+        // so its presence proves the sparse BM25 leg is doing the work.
+        seed_mail(
+            &state,
+            "kw",
+            "a",
+            None,
+            "peer@x.com",
+            "the zephyrite ledger reconciliation",
+            now_unix() - 50,
+        )
+        .await;
+
+        let ranked = retrieve_scored(
+            &state,
+            "a",
+            "zephyrite reconciliation",
+            None,
+            10,
+            DEFAULT_MIN_SCORE,
+        )
+        .await
+        .unwrap();
+        let ids: Vec<&str> = ranked.iter().map(|s| s.mail_id.as_str()).collect();
+        assert!(
+            ids.contains(&"kw"),
+            "BM25 leg surfaces a keyword-only mail the vector index misses"
+        );
     }
 
     #[tokio::test]

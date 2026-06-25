@@ -36,6 +36,11 @@ pub mod name {
     pub const AUTO_LOOP_DETECTED: &str = "auto:loop_detected";
     pub const PIPELINE_ERROR: &str = "pipeline:error";
     pub const RISK_ALERT: &str = "risk:alert";
+    /// A risk event was resolved/dismissed in one window (WB-16) — every window
+    /// clears it from its T4 banner.
+    pub const RISK_RESOLVED: &str = "risk:resolved";
+    /// A global appearance pref changed in one window (WB-13/14) — others re-read.
+    pub const WORKBENCH_PREFS_INVALIDATED: &str = "workbench:prefs_invalidated";
     pub const QUERY_NEW: &str = "query:new";
     pub const QUERY_EXPIRED: &str = "query:expired";
 }

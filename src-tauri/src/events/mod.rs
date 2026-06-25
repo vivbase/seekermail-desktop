@@ -15,8 +15,9 @@ use crate::types::{
     DraftDiscardedPayload, DraftReadyPayload, DraftUpdatedPayload, ErrorCode,
     ExportCompletePayload, ExportErrorPayload, ExportProgressPayload, GteErrorPayload,
     GteFinishedPayload, GteProgressPayload, MailSummary, MailUpdatedPayload, PipelineErrorPayload,
-    QueryExpiredPayload, QueryNewPayload, RiskAlertPayload, SyncCompletePayload, SyncErrorPayload,
-    SyncProgressPayload, SyncStartedPayload, WipeCompletePayload, WipeProgressPayload,
+    PrefsInvalidatedPayload, QueryExpiredPayload, QueryNewPayload, RiskAlertPayload,
+    RiskResolvedPayload, SyncCompletePayload, SyncErrorPayload, SyncProgressPayload,
+    SyncStartedPayload, WipeCompletePayload, WipeProgressPayload,
 };
 use types::name;
 
@@ -378,6 +379,28 @@ impl Emitter {
                 mail_id: mail_id.to_string(),
                 account_id: account_id.to_string(),
             },
+        );
+    }
+
+    /// A risk event was resolved/dismissed (WB-16) — every window clears it from
+    /// its T4 banner. Identifier only.
+    pub fn risk_resolved(&self, risk_event_id: &str) {
+        self.emit(
+            name::RISK_RESOLVED,
+            RiskResolvedPayload {
+                risk_event_id: risk_event_id.to_string(),
+            },
+        );
+    }
+
+    // ── workbench:* (WB-13/14, Model S cross-window prefs) ────────────────────
+
+    /// A global appearance pref changed in one window; others re-read at/after
+    /// `revision` (WB-13). Broadcast to every webview.
+    pub fn prefs_invalidated(&self, revision: u64) {
+        self.emit(
+            name::WORKBENCH_PREFS_INVALIDATED,
+            PrefsInvalidatedPayload { revision },
         );
     }
 

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import { openSpecAttr } from "@/lib/openSpec";
 import { useAnswerQuery, useSkipQuery } from "@/ipc/queries/queries";
 import {
   parseQaCard,
@@ -114,6 +115,9 @@ export function DecisionCard({ query }: DecisionCardProps) {
   return (
     <div
       data-type="decision"
+      {...(query.mailId
+        ? openSpecAttr({ route: { page: "thread", params: { mailId: query.mailId } } })
+        : {})}
       className="rounded-card border border-divider bg-surface p-4 shadow-card [border-inline-start-width:3px]"
       style={{ borderInlineStartColor: borderVar(query.status, isT4, errored) }}
     >

@@ -150,6 +150,12 @@ pub async fn poll_once(state: &AppState, account_id: &str) -> AppResult<u32> {
         .set_last_synced(account_id, now_unix())
         .await?;
     state.events.sync_complete(account_id, sent);
+    // New mail may have created or grown threads — refresh a few thread
+    // summaries off the critical path so the agent's "memory" stays current
+    // (analysis/54 §3.5, P-4). Best-effort, provider-gated; never blocks sync.
+    if sent > 0 {
+        crate::ai::memory::spawn_summary_build(state, account_id);
+    }
     Ok(sent)
 }
 

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import type { AttachmentHit, ScoreLabel, SearchResult } from "@shared/bindings";
 import { cn } from "@/lib/cn";
+import { openSpecAttr } from "@/lib/openSpec";
 
 // ── Relative date formatter ───────────────────────────────────────────────────
 
@@ -131,6 +132,7 @@ export function SearchResultCard(props: SearchResultCardProps) {
   return (
     <button
       type="button"
+      {...openSpecAttr({ route: { page: "thread", params: { mailId: result.mailId } } })}
       onClick={onClick}
       aria-selected={selected}
       className={cn(

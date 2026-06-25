@@ -37,6 +37,17 @@ export function applyFontScale(scale: number): void {
   document.documentElement.style.setProperty("--ui-scale", String(clampFontScale(scale)));
 }
 
+/** Read the live `--ui-scale` (the multiplier `#root` is zoomed by) from the DOM.
+ *  Used to map viewport pointer coordinates into the zoomed coordinate space — e.g.
+ *  to place a right-click menu exactly at the cursor (a `position: fixed` offset is
+ *  itself scaled by the ancestor `zoom`, so the raw clientX/Y would land off-target). */
+export function currentUiScale(): number {
+  if (typeof document === "undefined") return DEFAULT_FONT_SCALE;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue("--ui-scale");
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_FONT_SCALE;
+}
+
 /** The scale to paint before the IPC read resolves (boot path). */
 export function initialFontScaleHint(): number {
   const injected = typeof window !== "undefined" ? window.__INITIAL_FONT_SCALE__ : undefined;

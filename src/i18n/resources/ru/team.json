@@ -66,5 +66,10 @@
   "notification_query_title": "Вопрос требует вашего решения",
   "notification_query_body": "Agent ожидает вашего ответа. Откройте список «Ожидающих».",
   "notification_risk_title": "Предупреждение о риске",
-  "notification_risk_body": "Риск требует вашей проверки в списке «Ожидающих»."
+  "notification_risk_body": "Риск требует вашей проверки в списке «Ожидающих».",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

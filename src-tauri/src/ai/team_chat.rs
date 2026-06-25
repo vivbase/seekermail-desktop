@@ -1,8 +1,11 @@
 //! Agent-IM (TEAM) channel intelligent reply — the "agent assistant" (F_I5).
 //!
 //! When a human posts a text message to the shared TEAM channel, one agent
-//! answers in-channel. The reply is grounded in the operator's own mail: the
-//! agent first runs a local GTE semantic search over its account, and any hit
+//! answers in-channel. The reply is grounded in the operator's own mail through
+//! the shared Mailbox Context Engine (analysis/54, P-1): the agent asks the MCE
+//! to assemble a budget-packed, provenance-tracked context bundle for the
+//! question, so the chat path now runs the *same* semantic retrieval, budget
+//! arithmetic, and citation as the reply path — no second fetch logic. Any hit
 //! above the score threshold is packed into the prompt so the agent can answer
 //! questions like "are there any transaction-related emails?". With no relevant
 //! hit it answers as a general assistant (the "both" behaviour: search when the
@@ -31,17 +34,23 @@ use serde_json::json;
 
 use crate::account::AccountService;
 use crate::ai::audit::{decision_type, AuditEntry};
+use crate::ai::mce::{
+    ContextItem, ContextItemKind, MailboxContextEngine, QuestionParams, RetrievalReport,
+};
 use crate::ai::provider::ProviderError;
 use crate::ai::types::{Capability, ChatMessage, ChatRequest, ChatRole};
 use crate::error::AppError;
 use crate::state::AppState;
 use crate::storage::im_repo;
-use crate::types::{Account, ImMessage, SearchResult, SemanticSearchParams};
+use crate::types::{Account, ImMessage};
 
 /// How many of the most recent channel messages feed the conversation context.
 const HISTORY_TURNS: i64 = 12;
-/// How many semantic-search hits are packed into the prompt as mail context.
-const SEARCH_HITS: u32 = 6;
+/// How many semantic hits the MCE may pack into the prompt as mail context.
+const SEARCH_HITS: usize = 6;
+/// Share of the model window spent on mail context — the same thread-context
+/// budget the reply path uses (T079 §3: ≤ 60 %).
+const CONTEXT_BUDGET_PCT: usize = 60;
 /// Upper bound on the agent's reply length (tokens).
 const REPLY_MAX_TOKENS: u32 = 800;
 /// Chat temperature — a touch warmer than drafting (0.3), still grounded.
@@ -78,12 +87,9 @@ async fn generate_and_post(state: &AppState, user_text: &str) {
         return;
     };
 
-    // 1) Ground the answer in the operator's own mail (best-effort, local).
-    let hits = search_mail(state, &agent.id, user_text).await;
-
-    // 2) Resolve the BYO provider for this agent. A missing/unconfigured
-    //    provider is the common first-run case — answer with a helpful nudge
-    //    instead of staying silent.
+    // 1) Resolve the BYO provider first. A missing/unconfigured provider is the
+    //    common first-run case — answer with a helpful nudge instead of staying
+    //    silent, and skip the (now pointless) retrieval when we can't generate.
     let client = match state.ai.resolve(&agent.id, Capability::Summarize).await {
         Ok(client) => client,
         Err(err) => {
@@ -97,7 +103,36 @@ async fn generate_and_post(state: &AppState, user_text: &str) {
         }
     };
 
-    // 3) Build the request: persona + (optional) mail context as the system
+    // 2) Ground the answer in the operator's own mail through the shared Mailbox
+    //    Context Engine (analysis/54): same semantic retrieval, budget packing,
+    //    and provenance as the reply path. The context budget is the same
+    //    thread-context share of the model window the reply path uses.
+    let token_budget = client.context_window() * CONTEXT_BUDGET_PCT / 100;
+    let mut question =
+        QuestionParams::new(user_text, &agent.id, token_budget, Capability::Summarize);
+    question.top_k = SEARCH_HITS;
+    // Interactive chat opts into the slow planner so paraphrased / non-English
+    // questions the keyword router misses still reach the right legs (P-5).
+    question.allow_model_planner = true;
+    let (items, knowledge_refs, report) = match MailboxContextEngine::new(state)
+        .assemble_for_question(&question)
+        .await
+    {
+        Ok(ctx) => (ctx.items, ctx.knowledge_refs, ctx.report),
+        Err(err) => {
+            // The engine only errors on a vanished account or a DB fault; keep
+            // answering from the conversation rather than dropping the reply.
+            tracing::debug!(
+                event = "team_reply_context_failed",
+                account_id = %agent.id,
+                code = err.code().as_wire(),
+                "context engine failed; answering without mail context"
+            );
+            (Vec::new(), Vec::new(), RetrievalReport::default())
+        }
+    };
+
+    // 3) Build the request: persona + grounded mail context as the system
     //    preamble, recent turns as the conversation.
     let model = state
         .ai
@@ -108,7 +143,7 @@ async fn generate_and_post(state: &AppState, user_text: &str) {
         .unwrap_or_default();
     let mut req = ChatRequest {
         model: model.clone(),
-        system: build_system_prompt(&agent, &hits),
+        system: build_system_prompt(&agent, &items, &report),
         messages: build_messages(state, user_text).await,
         max_tokens: REPLY_MAX_TOKENS,
         temperature: REPLY_TEMPERATURE,
@@ -138,8 +173,14 @@ async fn generate_and_post(state: &AppState, user_text: &str) {
         return;
     }
 
-    // 5) Post the agent's reply to the shared channel.
-    post_agent_text(state, &agent.id, &reply).await;
+    // 5) Post the agent's reply. A grounded model answer carries its retrieval
+    //    state (what was searched + index coverage) so the TEAM UI can show it;
+    //    the fallback/error notes are not grounded answers and stay plain.
+    if audit.is_some() {
+        post_agent_reply(state, &agent.id, &reply, &report).await;
+    } else {
+        post_agent_text(state, &agent.id, &reply).await;
+    }
 
     // 6) Audit a model-generated reply (E7 coverage for the TEAM channel).
     //    Identifiers, counts, and token figures only — never message text or
@@ -154,9 +195,9 @@ async fn generate_and_post(state: &AppState, user_text: &str) {
             action_description: "Agent answered a message in the shared TEAM channel.".into(),
             result_description: format!(
                 "Posted an in-channel reply grounded in {} matching email(s).",
-                hits.len()
+                knowledge_refs.len()
             ),
-            knowledge_refs: hits.iter().map(|h| h.mail_id.clone()).collect(),
+            knowledge_refs: knowledge_refs.clone(),
             knowledge_summary: None,
             ai_model: Some(model_used),
             input_tokens: Some(i64::from(usage.prompt_tokens)),
@@ -176,7 +217,7 @@ async fn generate_and_post(state: &AppState, user_text: &str) {
     tracing::info!(
         event = "team_reply_posted",
         account_id = %agent.id,
-        grounded_in = hits.len(),
+        grounded_in = knowledge_refs.len(),
         "team agent reply posted"
     );
 }
@@ -211,37 +252,11 @@ async fn pick_responder(state: &AppState, user_text: &str) -> Option<Account> {
     accounts.into_iter().next()
 }
 
-/// Best-effort GTE semantic search over the agent's own mailbox. Errors (no
-/// index yet, embedder offline, …) degrade to "no context": the agent then
-/// answers as a general assistant.
-async fn search_mail(state: &AppState, account_id: &str, query: &str) -> Vec<SearchResult> {
-    let params = SemanticSearchParams {
-        query: query.to_string(),
-        account_id: Some(account_id.to_string()),
-        account_filter: None,
-        date_from: None,
-        date_to: None,
-        // `None` → the 0.35 default, so only genuinely relevant mail is cited.
-        min_score: None,
-        limit: SEARCH_HITS,
-        offset: 0,
-    };
-    match crate::search::ann::search_semantic(state, &params).await {
-        Ok(page) => page.items,
-        Err(err) => {
-            tracing::debug!(
-                event = "team_reply_search_skipped",
-                error = %err,
-                "semantic search unavailable for team reply; answering without mail context"
-            );
-            Vec::new()
-        }
-    }
-}
-
 /// Assemble the system preamble: the agent's persona, the behaviour rules, and
-/// either the retrieved mail context or an explicit "no matches" note.
-fn build_system_prompt(agent: &Account, hits: &[SearchResult]) -> String {
+/// either the engine's retrieved mail context or an honest note on why there is
+/// none — distinguishing "no matching emails" from "the index couldn't run"
+/// (analysis/54 §3.4), so the agent never gives a misleading silent empty.
+fn build_system_prompt(agent: &Account, items: &[ContextItem], report: &RetrievalReport) -> String {
     let mut prompt = format!(
         "You are {name}, an AI assistant (a \"digital employee\") inside SeekerMail, a \
          local-first email client. You operate the mailbox {email}.\n",
@@ -266,35 +281,103 @@ fn build_system_prompt(agent: &Account, hits: &[SearchResult]) -> String {
          - When relevant emails are listed below, ground your answer in them and cite the \
          sender, subject, and date. If they do not contain the answer, say so plainly.\n",
     );
-    if hits.is_empty() {
-        prompt.push_str(
-            "\nNo emails from this mailbox matched the operator's message. Answer from the \
-             conversation alone, and if the operator expected mail-based facts, tell them you \
-             found no matching emails.\n",
-        );
-    } else {
-        prompt.push_str(&format!(
-            "\nRelevant emails from {email} (most relevant first):\n",
-            email = agent.email
-        ));
-        for (idx, hit) in hits.iter().enumerate() {
-            prompt.push_str(&format!("{}. {}\n", idx + 1, format_hit(hit)));
+    // Three renderings: computed facts (counts, top senders) as plain bullets,
+    // precomputed thread summaries as one-line bullets, and individual emails
+    // (recent / semantic) as cited lines.
+    let facts: Vec<&ContextItem> = items
+        .iter()
+        .filter(|i| i.kind == ContextItemKind::Aggregate)
+        .collect();
+    let contacts: Vec<&ContextItem> = items
+        .iter()
+        .filter(|i| i.kind == ContextItemKind::Sender)
+        .collect();
+    let memory: Vec<&ContextItem> = items
+        .iter()
+        .filter(|i| i.kind == ContextItemKind::Memory)
+        .collect();
+    let emails: Vec<&ContextItem> = items
+        .iter()
+        .filter(|i| {
+            !matches!(
+                i.kind,
+                ContextItemKind::Aggregate | ContextItemKind::Memory | ContextItemKind::Sender
+            )
+        })
+        .collect();
+
+    if facts.is_empty() && contacts.is_empty() && memory.is_empty() && emails.is_empty() {
+        if report.semantic_available {
+            prompt.push_str(
+                "\nNo emails from this mailbox matched the operator's message. Answer from the \
+                 conversation alone, and if the operator expected mail-based facts, tell them you \
+                 found no matching emails.\n",
+            );
+        } else {
+            prompt.push_str(
+                "\nThe local mail index could not be searched right now, so no emails were \
+                 retrieved. Answer from the conversation alone, and tell the operator you \
+                 couldn't search their mail this time rather than implying there is none.\n",
+            );
         }
+    } else {
+        if !facts.is_empty() {
+            prompt.push_str("\nMailbox facts (computed from the local index):\n");
+            for fact in &facts {
+                prompt.push_str(&format!("- {}\n", fact.content.trim()));
+            }
+        }
+        if !contacts.is_empty() {
+            prompt.push_str("\nKnown contacts (from your local relationship history):\n");
+            for item in &contacts {
+                prompt.push_str(&format!("- {}\n", item.content.trim()));
+            }
+        }
+        if !memory.is_empty() {
+            prompt
+                .push_str("\nRecent thread summaries (one line per conversation, newest first):\n");
+            for item in &memory {
+                prompt.push_str(&format!("- {}\n", item.content.trim()));
+            }
+        }
+        if !emails.is_empty() {
+            prompt.push_str(&format!(
+                "\nRelevant emails from {email} (most relevant first):\n",
+                email = agent.email
+            ));
+            for (idx, item) in emails.iter().enumerate() {
+                prompt.push_str(&format!("{}. {}\n", idx + 1, format_item(item)));
+            }
+        }
+    }
+
+    // Honest coverage note for topic answers while the index is still building:
+    // a semantic answer over a partial index can miss older mail (analysis/54
+    // §3.4). Counts and recent-mail answers read the full mails table, so this
+    // applies only when the semantic leg carried the answer (no aggregate/
+    // temporal facts present).
+    if report.semantic_available
+        && report.total_mails > 0
+        && report.indexed_mails < report.total_mails
+        && report.temporal_hits == 0
+        && report.aggregate_facts == 0
+        && report.memory_hits == 0
+    {
+        prompt.push_str(&format!(
+            "\nNote: only {indexed} of {total} emails in this mailbox are indexed for semantic \
+             search so far, so a topic-based answer may be incomplete — tell the operator if their \
+             question may depend on mail that isn't indexed yet.\n",
+            indexed = report.indexed_mails,
+            total = report.total_mails,
+        ));
     }
     prompt
 }
 
-/// One mail hit as a single grounding line: subject, sender, date, snippet.
-fn format_hit(hit: &SearchResult) -> String {
-    let sender = hit
-        .from_name
-        .as_deref()
-        .map(str::trim)
-        .filter(|name| !name.is_empty())
-        .map(|name| format!("{name} <{}>", hit.from_email))
-        .unwrap_or_else(|| hit.from_email.clone());
+/// One context item as a single grounding line: subject, sender, date, snippet.
+fn format_item(item: &ContextItem) -> String {
     let subject = {
-        let trimmed = hit.subject.trim();
+        let trimmed = item.subject.trim();
         if trimmed.is_empty() {
             "(no subject)"
         } else {
@@ -303,8 +386,9 @@ fn format_hit(hit: &SearchResult) -> String {
     };
     format!(
         "\"{subject}\" — from {sender}, {date}. {snippet}",
-        date = format_date(hit.date_sent),
-        snippet = hit.snippet.trim(),
+        sender = item.from_email,
+        date = format_date(item.date_sent),
+        snippet = item.content.trim(),
     )
 }
 
@@ -379,16 +463,16 @@ fn extract_text(content: &str) -> Option<String> {
     }
 }
 
-/// Insert one agent text message into the shared channel (best-effort).
-async fn post_agent_text(state: &AppState, account_id: &str, text: &str) {
-    let content = json!({ "text": text }).to_string();
+/// Insert one agent text message (already-serialised JSON content) into the
+/// shared channel (best-effort).
+async fn insert_agent_message(state: &AppState, account_id: &str, content: &str) {
     if let Err(err) = im_repo::insert_message(
         state.storage.db(),
         im_repo::MAIN_CHANNEL,
         "agent",
         account_id,
         "text",
-        &content,
+        content,
         None,
         None,
     )
@@ -401,6 +485,38 @@ async fn post_agent_text(state: &AppState, account_id: &str, text: &str) {
             "failed to post agent reply to the team channel"
         );
     }
+}
+
+/// Post a plain agent text message (fallback notes, provider errors).
+async fn post_agent_text(state: &AppState, account_id: &str, text: &str) {
+    insert_agent_message(state, account_id, &json!({ "text": text }).to_string()).await;
+}
+
+/// Post a grounded agent reply carrying its retrieval state, so the TEAM UI can
+/// render an honest "what was searched" chip under the answer (analysis/54
+/// §3.4). The state mirrors the MCE [`RetrievalReport`] in camelCase, alongside
+/// the `text` field every agent message carries.
+async fn post_agent_reply(
+    state: &AppState,
+    account_id: &str,
+    text: &str,
+    report: &RetrievalReport,
+) {
+    let content = json!({
+        "text": text,
+        "retrieval": {
+            "semanticAvailable": report.semantic_available,
+            "semanticHits": report.semantic_hits,
+            "temporalHits": report.temporal_hits,
+            "aggregateFacts": report.aggregate_facts,
+            "memoryHits": report.memory_hits,
+            "senderHits": report.sender_hits,
+            "indexedMails": report.indexed_mails,
+            "totalMails": report.total_mails,
+        }
+    })
+    .to_string();
+    insert_agent_message(state, account_id, &content).await;
 }
 
 /// Trim the reply and strip a single wrapping ``` code fence if the model
@@ -471,7 +587,7 @@ mod tests {
     use crate::ai::mock::MockProvider;
     use crate::ai::types::{ChatResponse, FinishReason, TokenUsage};
     use crate::storage::im_repo;
-    use crate::types::{AiProvider, ScoreLabel};
+    use crate::types::AiProvider;
     use crate::util::{new_uuid, now_unix};
 
     /// Insert an account row (active; primary only when asked) and, optionally,
@@ -563,6 +679,9 @@ mod tests {
     async fn happy_path_posts_agent_reply_with_model_text() {
         let (state, _rx) = AppState::test_state().await;
         let mock = Arc::new(MockProvider::healthy(AiProvider::Openai));
+        // Non-keyword question → the slow planner classifies first (P-5), then
+        // the reply call answers, so the mock serves two responses.
+        mock.push_chat(ok_response("{\"intent\":\"topic\"}"));
         mock.push_chat(ok_response("No transaction emails in the last week."));
         state.ai.register(mock.clone());
         seed_agent(&state, "Agentboy", true, Some("openai")).await;
@@ -588,6 +707,8 @@ mod tests {
     async fn successful_reply_writes_a_team_reply_audit_row() {
         let (state, _rx) = AppState::test_state().await;
         let mock = Arc::new(MockProvider::healthy(AiProvider::Openai));
+        // Planner classification first (P-5), then the reply call.
+        mock.push_chat(ok_response("{\"intent\":\"topic\"}"));
         mock.push_chat(ok_response("No transaction emails in the last week."));
         state.ai.register(mock.clone());
         seed_agent(&state, "Agentboy", true, Some("openai")).await;
@@ -603,6 +724,35 @@ mod tests {
         .unwrap();
         assert_eq!(decision_type, "team_reply");
         assert_eq!(impact, "context");
+    }
+
+    #[tokio::test]
+    async fn successful_reply_embeds_retrieval_state() {
+        let (state, _rx) = AppState::test_state().await;
+        let mock = Arc::new(MockProvider::healthy(AiProvider::Openai));
+        mock.push_chat(ok_response("Here is your summary."));
+        state.ai.register(mock.clone());
+        seed_agent(&state, "Agentboy", true, Some("openai")).await;
+
+        generate_and_post(&state, "summarize my inbox").await;
+
+        // The agent message content carries a `retrieval` object next to `text`
+        // so the UI can render the honest "what was searched" chip (P-3).
+        let all = im_repo::list_messages(state.storage.db(), None, None, Some(50), Some(0))
+            .await
+            .unwrap();
+        let agent_msg = all
+            .items
+            .iter()
+            .find(|m| m.sender_type == "agent" && m.message_type == "text")
+            .expect("an agent reply was posted");
+        let parsed: serde_json::Value = serde_json::from_str(&agent_msg.content).unwrap();
+        assert_eq!(parsed["text"], "Here is your summary.");
+        let retrieval = &parsed["retrieval"];
+        assert!(retrieval.is_object(), "retrieval state is embedded");
+        assert_eq!(retrieval["semanticAvailable"], serde_json::json!(true));
+        assert!(retrieval.get("indexedMails").is_some());
+        assert!(retrieval.get("totalMails").is_some());
     }
 
     #[tokio::test]
@@ -757,28 +907,84 @@ mod tests {
             created_at: 0,
             updated_at: 0,
         };
-        let hit = SearchResult {
+        let item = ContextItem {
+            kind: ContextItemKind::Semantic,
             mail_id: "m1".into(),
-            account_id: "a".into(),
             subject: "Invoice #42 payment".into(),
-            from_name: Some("Vendor Co".into()),
             from_email: "billing@vendor.co".into(),
             date_sent: 1_700_000_000,
-            snippet: "Your invoice is attached.".into(),
-            score: 0.71,
-            score_label: ScoreLabel::High,
-            highlights: Vec::new(),
+            content: "Your invoice is attached.".into(),
+            score: Some(0.71),
+        };
+        let report = RetrievalReport {
+            semantic_hits: 1,
+            semantic_available: true,
+            ..Default::default()
         };
 
-        let with_hits = build_system_prompt(&agent, std::slice::from_ref(&hit));
+        let with_hits = build_system_prompt(&agent, std::slice::from_ref(&item), &report);
         assert!(with_hits.contains("You are Alex"));
         assert!(with_hits.contains("Coordinate vendor contracts."));
         assert!(with_hits.contains("Invoice #42 payment"));
         assert!(with_hits.contains("billing@vendor.co"));
         assert!(with_hits.contains("2023-11-14")); // 1_700_000_000 → 2023-11-14 UTC
 
-        let no_hits = build_system_prompt(&agent, &[]);
+        // Aggregate facts render as plain bullets, not cited email lines.
+        let fact = ContextItem {
+            kind: ContextItemKind::Aggregate,
+            mail_id: String::new(),
+            subject: String::new(),
+            from_email: String::new(),
+            date_sent: 0,
+            content: "Unread emails in the inbox: 7.".into(),
+            score: None,
+        };
+        let with_facts = build_system_prompt(&agent, std::slice::from_ref(&fact), &report);
+        assert!(with_facts.contains("Mailbox facts"));
+        assert!(with_facts.contains("Unread emails in the inbox: 7."));
+
+        // Memory items (precomputed thread summaries) get their own heading.
+        let memory_item = ContextItem {
+            kind: ContextItemKind::Memory,
+            mail_id: String::new(),
+            subject: String::new(),
+            from_email: String::new(),
+            date_sent: 0,
+            content: "Acme renewal pending sign-off.".into(),
+            score: None,
+        };
+        let with_memory = build_system_prompt(&agent, std::slice::from_ref(&memory_item), &report);
+        assert!(with_memory.contains("Recent thread summaries"));
+        assert!(with_memory.contains("Acme renewal pending sign-off."));
+
+        // Sender (leg D) items get their own "Known contacts" heading.
+        let contact_item = ContextItem {
+            kind: ContextItemKind::Sender,
+            mail_id: String::new(),
+            subject: String::new(),
+            from_email: "alice@acme.com".into(),
+            date_sent: 0,
+            content: "Contact alice@acme.com (Acme): 42 exchanges, you replied 30, trust 0.80."
+                .into(),
+            score: None,
+        };
+        let with_contact =
+            build_system_prompt(&agent, std::slice::from_ref(&contact_item), &report);
+        assert!(with_contact.contains("Known contacts"));
+        assert!(with_contact.contains("Contact alice@acme.com"));
+
+        // Index ran, found nothing → "no matching emails".
+        let available = RetrievalReport {
+            semantic_available: true,
+            ..Default::default()
+        };
+        let no_hits = build_system_prompt(&agent, &[], &available);
         assert!(no_hits.contains("No emails from this mailbox matched"));
+
+        // Index couldn't run → honest "couldn't search" note, not "no emails".
+        let unavailable = RetrievalReport::default();
+        let no_index = build_system_prompt(&agent, &[], &unavailable);
+        assert!(no_index.contains("could not be searched"));
     }
 
     #[test]

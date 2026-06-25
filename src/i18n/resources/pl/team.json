@@ -66,5 +66,10 @@
   "notification_query_title": "Pytanie wymaga Twojej decyzji",
   "notification_query_body": "Agent potrzebuje Twojej odpowiedzi. Otwórz listę Oczekujących, aby przejrzeć.",
   "notification_risk_title": "Alert ryzyka",
-  "notification_risk_body": "Ryzyko wymaga Twojej recenzji na liście Oczekujących."
+  "notification_risk_body": "Ryzyko wymaga Twojej recenzji na liście Oczekujących.",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

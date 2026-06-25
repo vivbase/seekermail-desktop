@@ -48,6 +48,8 @@ export type IpcEventName =
   | "gte:finished"
   | "gte:error"
   | "risk:alert"
+  | "risk:resolved"
+  | "workbench:prefs_invalidated"
   | "query:new"
   | "query:expired"
   | "draft:ready"
@@ -140,6 +142,15 @@ export function registerIpcEvents(qc: QueryClient): () => void {
     void qc.invalidateQueries({ queryKey: ["riskEvents"] });
     void qc.invalidateQueries({ queryKey: ["pendingQueries"] });
     void notifications.notifyRiskAlert();
+  });
+  // A risk was resolved/dismissed in another window (WB-16) → clear it here too.
+  on<{ riskEventId: string }>("risk:resolved", () => {
+    void qc.invalidateQueries({ queryKey: ["riskEvents"] });
+    void qc.invalidateQueries({ queryKey: ["pendingQueries"] });
+  });
+  // Another window changed a global appearance pref (WB-13/15) → re-read settings.
+  on<{ revision: number }>("workbench:prefs_invalidated", () => {
+    void qc.invalidateQueries({ queryKey: ["appSetting"] });
   });
   // Agent-IM proactive queries (T101). The backend emit lands with v0.6
   // (T095/T097); these listeners are wired now so the sidebar badge, Pending

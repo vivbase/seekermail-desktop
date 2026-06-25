@@ -11,9 +11,10 @@
 //! 2. **Style block** — T076 [`build_style_block`] from the stored
 //!    `account_ai_settings.style_profile`, appended to the system block; the
 //!    cold-start fallback is reported through `BuiltPrompt::style_was_fallback`.
-//! 3. **Context messages** — GTE snippets (≤ 3 × 200 chars, prepended), the
-//!    latest 3 same-thread mails newest-first (bodies ≤ 500 chars), then the
-//!    trigger mail (body ≤ 2 000 chars).
+//! 3. **Context messages** — the long-term memory layer first (this thread's
+//!    summary + the mailbox digest, analysis/55 §4), then GTE snippets
+//!    (≤ 3 × 200 chars), the latest 3 same-thread mails newest-first
+//!    (bodies ≤ 500 chars), then the trigger mail (body ≤ 2 000 chars).
 //! 4. **Task message** — the reply instruction, plus the user's optional
 //!    extra instruction.
 //!
@@ -28,7 +29,8 @@
 
 use uuid::Uuid;
 
-use crate::ai::context::{assemble_role_context, RoleContextParams};
+use crate::ai::context::RoleContextParams;
+use crate::ai::mce::{ContextItemKind, MailboxContextEngine};
 use crate::ai::style::{build_style_block, load_style_profile, StyleProfileJson};
 use crate::ai::types::{Capability, ChatMessage, ChatRequest, ChatRole};
 use crate::error::{AppError, AppResult};
@@ -55,12 +57,19 @@ const TRIGGER_BODY_PROMPT_CHARS: usize = 2_000;
 const GTE_SNIPPETS_MAX: usize = 3;
 /// Per-snippet character cap.
 const GTE_SNIPPET_CHARS: usize = 200;
+/// Long-term memory items injected (this thread's summary + the inbox digest),
+/// in the order the engine packed them (analysis/55 §4).
+const MEMORY_ITEMS_MAX: usize = 4;
+/// Per-memory character cap — a one-line thread summary or a short digest
+/// paragraph.
+const MEMORY_SNIPPET_CHARS: usize = 400;
 
 const SEMI_AUTO_NOTE: &str =
     "This is a pre-generated draft for semi-auto mode. The user will review before sending.";
 const SAFETY_NOTE: &str = "Never include commitments about money, deadlines, or legal terms \
 unless they appear in the original email.";
 const GTE_CONTEXT_PREFIX: &str = "Relevant context from past correspondence:";
+const MEMORY_CONTEXT_PREFIX: &str = "What you already know (long-term memory):";
 const BASE_TASK: &str = "Please draft a professional and appropriate reply to the above email, \
 in the same language as the original.";
 
@@ -160,7 +169,12 @@ impl DraftPromptBuilder {
             Capability::DraftReply,
         );
         params.thread_id = thread_id;
-        let ctx = assemble_role_context(state, &params).await?;
+        // Reply drafting goes through the shared engine (analysis/54 §4): the
+        // anchored adapter returns the unified AssembledContext.
+        let ctx = MailboxContextEngine::new(state)
+            .assemble_for_mail(&params)
+            .await?;
+        let target = ctx.target().ok_or(AppError::NotFound)?;
 
         // Style block (T076) from the stored profile; missing or unreadable
         // profiles fall back without blocking generation (AI_MODES §6.7).
@@ -192,11 +206,24 @@ impl DraftPromptBuilder {
 
         // ── Context messages (T079 §3 section 3) ────────────────────────────
         let mut messages: Vec<ChatMessage> = Vec::new();
+        // Long-term memory first (analysis/55 §4): this thread's summary + the
+        // mailbox digest, so the draft is framed by what the agent already knows
+        // before it reads the specific snippets and mails below.
+        let memories: Vec<String> = ctx
+            .items_of(ContextItemKind::Memory)
+            .take(MEMORY_ITEMS_MAX)
+            .map(|m| truncate_chars(&m.content, MEMORY_SNIPPET_CHARS))
+            .collect();
+        if !memories.is_empty() {
+            messages.push(ChatMessage {
+                role: ChatRole::User,
+                content: format!("{MEMORY_CONTEXT_PREFIX}\n{}", memories.join("\n---\n")),
+            });
+        }
         let snippets: Vec<String> = ctx
-            .chunks
-            .iter()
+            .items_of(ContextItemKind::Semantic)
             .take(GTE_SNIPPETS_MAX)
-            .map(|c| truncate_chars(&c.snippet, GTE_SNIPPET_CHARS))
+            .map(|c| truncate_chars(&c.content, GTE_SNIPPET_CHARS))
             .collect();
         if !snippets.is_empty() {
             messages.push(ChatMessage {
@@ -204,14 +231,17 @@ impl DraftPromptBuilder {
                 content: format!("{GTE_CONTEXT_PREFIX}\n{}", snippets.join("\n---\n")),
             });
         }
-        for mail in ctx.thread_mails.iter().take(THREAD_MAILS_IN_PROMPT) {
+        for mail in ctx
+            .items_of(ContextItemKind::Thread)
+            .take(THREAD_MAILS_IN_PROMPT)
+        {
             messages.push(ChatMessage {
                 role: ChatRole::User,
                 content: format!(
                     "From: {}\nSubject: {}\n\n{}",
                     mail.from_email,
                     mail.subject,
-                    truncate_chars(&mail.body, THREAD_BODY_PROMPT_CHARS)
+                    truncate_chars(&mail.content, THREAD_BODY_PROMPT_CHARS)
                 ),
             });
         }
@@ -219,9 +249,9 @@ impl DraftPromptBuilder {
             role: ChatRole::User,
             content: format!(
                 "From: {}\nSubject: {}\n\n{}",
-                ctx.target_mail.from_email,
-                ctx.target_mail.subject,
-                truncate_chars(&ctx.target_mail.body, TRIGGER_BODY_PROMPT_CHARS)
+                target.from_email,
+                target.subject,
+                truncate_chars(&target.content, TRIGGER_BODY_PROMPT_CHARS)
             ),
         });
 
@@ -615,6 +645,71 @@ mod tests {
             .iter()
             .find(|m| m.content.starts_with(GTE_CONTEXT_PREFIX));
         assert!(gte_message.is_some(), "GTE snippets must be prepended");
+    }
+
+    #[tokio::test]
+    async fn memory_layer_is_injected_into_the_prompt() {
+        use crate::storage::inbox_digest_repo::{self, InboxDigestInput};
+        use crate::storage::thread_summary_repo::{self, ThreadSummaryInput};
+
+        let (state, _rx) = AppState::test_state().await;
+        register_mock(&state);
+        let account = seed_account(&state, Some("Handle vendor correspondence.")).await;
+        seed_thread(&state, "t1", &account).await;
+        seed_mail(
+            &state,
+            "trigger",
+            &account,
+            Some("t1"),
+            TRIGGER_BODY,
+            now_unix(),
+        )
+        .await;
+
+        thread_summary_repo::upsert(
+            state.storage.db(),
+            &ThreadSummaryInput {
+                thread_id: "t1".into(),
+                account_id: account.clone(),
+                summary: "Acme renewal: pricing agreed, indemnity clause still open.".into(),
+                key_entities: vec!["Acme".into()],
+                mail_count: 1,
+                latest_date: now_unix(),
+                model: Some("gpt-4o".into()),
+            },
+        )
+        .await
+        .unwrap();
+        inbox_digest_repo::upsert(
+            state.storage.db(),
+            &InboxDigestInput {
+                account_id: account.clone(),
+                digest: "Three vendor threads active; one invoice overdue.".into(),
+                thread_count: 3,
+                unread_count: 2,
+                model: Some("gpt-4o".into()),
+            },
+        )
+        .await
+        .unwrap();
+
+        let built =
+            DraftPromptBuilder::build(&state, "trigger", &account, TriggerMode::E1Manual, None)
+                .await
+                .unwrap();
+
+        // The long-term memory message must be present, carrying both this
+        // thread's summary and the rolling inbox digest (analysis/55 §4).
+        let memory_message = built
+            .request
+            .messages
+            .iter()
+            .find(|m| m.content.starts_with(MEMORY_CONTEXT_PREFIX))
+            .expect("long-term memory must be injected into the prompt");
+        assert!(memory_message
+            .content
+            .contains("indemnity clause still open"));
+        assert!(memory_message.content.contains("one invoice overdue"));
     }
 
     #[tokio::test]

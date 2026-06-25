@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Core capabilities granted to the main SeekerMail window. Custom #[tauri::command] handlers are allowed by default; this grants the core webview APIs only.",
-  "windows": ["main"],
-  "permissions": ["core:default", "notification:default"]
+  "description": "Core capabilities for SeekerMail windows — the main window AND detached workbench-* windows. Grants the core webview APIs, notifications, and window start-dragging (needed by the custom parchment titlebar's data-tauri-drag-region). Custom #[tauri::command] handlers are allowed by default.",
+  "windows": ["main", "workbench-*"],
+  "permissions": ["core:default", "notification:default", "core:window:allow-start-dragging"]
 }

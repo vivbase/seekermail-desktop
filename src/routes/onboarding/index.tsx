@@ -105,7 +105,9 @@ export default function Onboarding() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-parchment px-4 py-10">
+    <main className="flex min-h-full flex-col items-center justify-center bg-parchment px-4 py-10">
+      {/* Draggable strip for the macOS transparent titlebar so the first-run window can move. */}
+      <div data-tauri-drag-region className="fixed inset-x-0 top-0 h-7" />
       {/* Embedded add-account overlay (Step 2 only). onClose fires for both
           cancel and success; account detection is handled by the useEffect
           above which watches the accounts query. */}

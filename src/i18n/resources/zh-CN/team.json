@@ -66,5 +66,10 @@
   "notification_query_title": "有问题需要您决策",
   "notification_query_body": "Agent 需要您的输入，请打开待处理列表查看。",
   "notification_risk_title": "风险警报",
-  "notification_risk_body": "待处理列表中有风险需要您审核。"
+  "notification_risk_body": "待处理列表中有风险需要您审核。",
+  "team_retrieval_title": "这条回答如何使用了你的邮件",
+  "team_retrieval_unavailable": "这次没能检索你的邮件",
+  "team_retrieval_partial": "已检索 {total} 封中的 {indexed} 封（已建索引）",
+  "team_retrieval_none": "没有匹配的邮件",
+  "team_retrieval_grounded": "{count, plural, other {引用了 # 封邮件}}"
 }

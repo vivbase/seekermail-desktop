@@ -66,5 +66,10 @@
   "notification_query_title": "Une question nécessite votre décision",
   "notification_query_body": "Un agent a besoin de votre avis. Ouvrez la liste En attente pour réviser.",
   "notification_risk_title": "Alerte de risque",
-  "notification_risk_body": "Un risque nécessite votre révision dans la liste En attente."
+  "notification_risk_body": "Un risque nécessite votre révision dans la liste En attente.",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

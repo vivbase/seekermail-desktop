@@ -13,6 +13,9 @@
 
 pub mod schema;
 
+#[cfg(feature = "hnsw")]
+mod hnsw;
+
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
@@ -75,6 +78,11 @@ struct Inner {
     snapshot_path: PathBuf,
     new_since_build: usize,
     last_rebuild_at: Option<i64>,
+    /// Lazily-built, mutation-invalidated ANN index (feature `hnsw`); `None` means
+    /// "rebuild from `rows` on the next query". The brute-force default build has
+    /// no such field.
+    #[cfg(feature = "hnsw")]
+    hnsw: Option<hnsw::HnswIndex>,
 }
 
 /// Embedded vector index. Cheap to share via `Arc`; all state behind one mutex.
@@ -101,6 +109,8 @@ impl VectorStore {
                 snapshot_path,
                 new_since_build: 0,
                 last_rebuild_at: snap.last_rebuild_at,
+                #[cfg(feature = "hnsw")]
+                hnsw: None,
             }),
         })
     }
@@ -131,6 +141,7 @@ impl VectorStore {
                     .starts_with(&format!("{}:", existing.mail_id)))
         });
         g.rows.extend(rows.iter().cloned());
+        g.invalidate_index();
         g.new_since_build += rows.len();
         let should_rebuild = g.should_rebuild();
         Self::persist(&g)?;
@@ -164,6 +175,7 @@ impl VectorStore {
         g.rows
             .retain(|existing| !existing.chunk_id.starts_with(&prefix));
         g.rows.extend(rows.iter().cloned());
+        g.invalidate_index();
         g.new_since_build += rows.len();
         Self::persist(&g)
     }
@@ -173,10 +185,15 @@ impl VectorStore {
         let prefix = format!("{attachment_id}:");
         let mut g = self.lock();
         g.rows.retain(|r| !r.chunk_id.starts_with(&prefix));
+        g.invalidate_index();
         Self::persist(&g)
     }
 
     /// k-nearest neighbours by cosine similarity, honouring the metadata filter.
+    ///
+    /// Default build: a deterministic brute-force scan. Under `--features hnsw` a
+    /// lazily-built, cached HNSW index (analysis/55 §5) does an approximate
+    /// sub-linear search instead — same `VectorStore` surface, same cosine score.
     pub fn ann(&self, query: &[f32], k: usize, filter: AnnFilter) -> AppResult<Vec<Hit>> {
         if query.len() != VECTOR_DIM {
             return Err(AppError::Validation(format!(
@@ -184,30 +201,50 @@ impl VectorStore {
                 query.len()
             )));
         }
-        let g = self.lock();
-        let mut hits: Vec<Hit> = g
-            .rows
-            .iter()
-            .filter(|r| filter.matches(r))
-            .map(|r| Hit {
-                chunk_id: r.chunk_id.clone(),
-                mail_id: r.mail_id.clone(),
-                score: cosine(query, &r.vector),
-            })
-            .collect();
-        hits.sort_by(|a, b| {
-            b.score
-                .partial_cmp(&a.score)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-        hits.truncate(k);
-        Ok(hits)
+
+        #[cfg(feature = "hnsw")]
+        {
+            let mut g = self.lock();
+            if g.hnsw.is_none() {
+                // Rebuild lazily from the authoritative rows; invalidated on every
+                // mutation, so this fires once after a batch of writes.
+                let index = hnsw::HnswIndex::build(&g.rows);
+                g.hnsw = Some(index);
+            }
+            Ok(g.hnsw
+                .as_ref()
+                .expect("index built above")
+                .search(query, k, &filter))
+        }
+
+        #[cfg(not(feature = "hnsw"))]
+        {
+            let g = self.lock();
+            let mut hits: Vec<Hit> = g
+                .rows
+                .iter()
+                .filter(|r| filter.matches(r))
+                .map(|r| Hit {
+                    chunk_id: r.chunk_id.clone(),
+                    mail_id: r.mail_id.clone(),
+                    score: cosine(query, &r.vector),
+                })
+                .collect();
+            hits.sort_by(|a, b| {
+                b.score
+                    .partial_cmp(&a.score)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+            hits.truncate(k);
+            Ok(hits)
+        }
     }
 
     /// Remove every vector belonging to an account (account deletion).
     pub fn delete_account(&self, account_id: &str) -> AppResult<()> {
         let mut g = self.lock();
         g.rows.retain(|r| r.account_id != account_id);
+        g.invalidate_index();
         Self::persist(&g)
     }
 
@@ -215,6 +252,7 @@ impl VectorStore {
     pub fn rebuild(&self, jobs: impl Iterator<Item = EmbeddingJob>) -> AppResult<VectorStats> {
         let mut g = self.lock();
         g.rows = jobs.collect();
+        g.invalidate_index();
         g.new_since_build = 0;
         g.last_rebuild_at = Some(now_unix());
         Self::persist(&g)?;
@@ -264,22 +302,42 @@ impl Inner {
         let total = self.rows.len();
         total > 0 && (self.new_since_build as f32 / total as f32) > schema::REBUILD_THRESHOLD
     }
+
+    /// Drop the cached ANN index so the next query rebuilds it from the current
+    /// rows. A no-op (and no field) without the `hnsw` feature.
+    #[cfg(feature = "hnsw")]
+    fn invalidate_index(&mut self) {
+        self.hnsw = None;
+    }
+
+    #[cfg(not(feature = "hnsw"))]
+    #[inline]
+    fn invalidate_index(&mut self) {}
 }
 
 impl AnnFilter {
+    /// The brute-force scan's per-row filter (default build only; the HNSW backend
+    /// filters via [`Self::matches_parts`] over stored metadata).
+    #[cfg(not(feature = "hnsw"))]
     fn matches(&self, r: &VectorRow) -> bool {
+        self.matches_parts(&r.account_id, r.date_sent)
+    }
+
+    /// The filter over only the fields it inspects — shared by the brute-force scan
+    /// (full rows) and the HNSW backend (stored chunk metadata).
+    fn matches_parts(&self, account_id: &str, date_sent: i64) -> bool {
         if let Some(acc) = &self.account_id {
-            if &r.account_id != acc {
+            if account_id != acc {
                 return false;
             }
         }
         if let Some(from) = self.date_from {
-            if r.date_sent < from {
+            if date_sent < from {
                 return false;
             }
         }
         if let Some(to) = self.date_to {
-            if r.date_sent > to {
+            if date_sent > to {
                 return false;
             }
         }

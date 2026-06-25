@@ -220,5 +220,10 @@
   "list_empty_processed": "尚未處理任何郵件。",
   "list_empty_all_mail": "所有帳戶中均無郵件。",
   "list_lbl_all_accounts": "所有帳戶",
-  "list_lbl_account_filter": "依帳戶篩選"
+  "list_lbl_account_filter": "依帳戶篩選",
+  "data_memory_title": "重建 Agent 記憶",
+  "data_memory_desc": "重新歸納郵件討論串並刷新 Agent 讀取的收件匯概覽。通常會在同步後自動執行。",
+  "data_memory_action": "重建",
+  "data_memory_running": "重建中…",
+  "data_memory_done": "{count, plural, =0 {已是最新} other {已產生 # 條摘要}}"
 }

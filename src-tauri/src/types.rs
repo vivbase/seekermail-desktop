@@ -1913,6 +1913,23 @@ pub struct RiskAlertPayload {
     pub account_id: String,
 }
 
+/// `risk:resolved` payload (WB-16) — a risk event was resolved/dismissed in one
+/// window; every other window clears it from its T4 banner. Identifier only.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RiskResolvedPayload {
+    pub risk_event_id: String,
+}
+
+/// `workbench:prefs_invalidated` payload (WB-13/14) — a global appearance pref
+/// changed in one window; other windows re-read their prefs at/after this
+/// monotonic revision (Model S: every window is a full app instance).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct PrefsInvalidatedPayload {
+    pub revision: u64,
+}
+
 // =============================================================================
 // Module I — Agent-IM / TEAM channel (T092, F_I2 §5)
 //

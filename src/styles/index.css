@@ -24,9 +24,16 @@
 
   /* UI scale (analysis 25): one multiplier zooms the whole app proportionally,
      so enlarging text from the Appearance page can never break the layout. The
-     value comes from --ui-scale (set on <html> by lib/fontScale.ts). */
+     value comes from --ui-scale (set on <html> by lib/fontScale.ts).
+     Sizing note (WKWebView): `zoom` already scales viewport units, so 100vw/100vh
+     map to exactly one window at any scale — use them directly. Do NOT divide by
+     the scale (that under-sizes #root, leaving a blank frame on the right/bottom
+     and lifting the sidebar footer off the corner); and do NOT use % (height:100%
+     would over-flow and clip the bottom). vw/vh is the one unit that fills exactly. */
   #root {
     zoom: var(--ui-scale, 1);
+    width: 100vw;
+    height: 100vh;
   }
 
   /* Section label style (root CLAUDE.md). */

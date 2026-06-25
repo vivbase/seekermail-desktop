@@ -50,7 +50,8 @@ use crate::types::{
 };
 use crate::util::{new_uuid, now_unix, truncate_chars};
 
-use super::context::{assemble_role_context, RoleContext, RoleContextParams};
+use super::context::RoleContextParams;
+use super::mce::{AssembledContext, ContextItemKind, MailboxContextEngine};
 use super::provider::AiProviderClient;
 use super::types::{Capability, ChatMessage, ChatRequest, ChatResponse, ChatRole};
 
@@ -188,7 +189,12 @@ impl<'a> SalesAnalysisPipeline<'a> {
             Capability::RiskReason,
         );
         ctx_params.thread_id = thread_id;
-        let ctx = assemble_role_context(self.state, &ctx_params).await?;
+        // Sales analysis goes through the shared engine (analysis/54 §4): the
+        // anchored adapter returns the unified AssembledContext.
+        let ctx = MailboxContextEngine::new(self.state)
+            .assemble_for_mail(&ctx_params)
+            .await?;
+        let target = ctx.target().ok_or(AppError::NotFound)?;
 
         // 6) Prompt assembly (dev/06 §5 order: role > safety > GTE context >
         // contact history > target mail).
@@ -197,7 +203,7 @@ impl<'a> SalesAnalysisPipeline<'a> {
             sales_system_prompt(&ctx.role_preamble, &stance_setting),
             ctx.safety_preamble
         );
-        let chunk_senders = self.chunk_senders(&ctx).await?;
+        let chunk_senders = self.chunk_senders(&ctx.knowledge_refs).await?;
         let mut user = build_grounding(
             &ctx,
             &chunk_senders,
@@ -216,7 +222,7 @@ impl<'a> SalesAnalysisPipeline<'a> {
         }
         user.push_str(&format!(
             "[Current Mail Subject: {}]\n{}",
-            ctx.target_mail.subject, ctx.target_mail.body
+            target.subject, target.content
         ));
 
         let request = ChatRequest {
@@ -371,14 +377,14 @@ impl<'a> SalesAnalysisPipeline<'a> {
     }
 
     /// `from_email` per grounding mail, for the `[Prior Mail: …]` lines.
-    async fn chunk_senders(&self, ctx: &RoleContext) -> AppResult<HashMap<String, String>> {
-        if ctx.knowledge_refs.is_empty() {
+    async fn chunk_senders(&self, knowledge_refs: &[String]) -> AppResult<HashMap<String, String>> {
+        if knowledge_refs.is_empty() {
             return Ok(HashMap::new());
         }
-        let placeholders = vec!["?"; ctx.knowledge_refs.len()].join(",");
+        let placeholders = vec!["?"; knowledge_refs.len()].join(",");
         let sql = format!("SELECT id, from_email FROM mails WHERE id IN ({placeholders})");
         let mut query = sqlx::query(&sql);
-        for mail_id in &ctx.knowledge_refs {
+        for mail_id in knowledge_refs {
             query = query.bind(mail_id);
         }
         let rows = query
@@ -581,32 +587,33 @@ fn is_marketing_mail(from_email: &str, spam_score: Option<f64>) -> bool {
 /// user turn: parties, thread, GTE context; contact history and the current
 /// mail body follow the block).
 fn build_grounding(
-    ctx: &RoleContext,
+    ctx: &AssembledContext,
     chunk_senders: &HashMap<String, String>,
     from_name: Option<&str>,
     recipient_domain: Option<&str>,
 ) -> String {
     let mut block = String::new();
+    let target_from = ctx.target().map(|t| t.from_email.as_str()).unwrap_or("");
     let from = match from_name {
         Some(name) if !name.trim().is_empty() => {
-            format!("{} <{}>", name.trim(), ctx.target_mail.from_email)
+            format!("{} <{}>", name.trim(), target_from)
         }
-        _ => format!("<{}>", ctx.target_mail.from_email),
+        _ => format!("<{target_from}>"),
     };
     block.push_str(&format!("[Parties: from {from}"));
     if let Some(domain) = recipient_domain {
         block.push_str(&format!("; recipient domain {domain}"));
     }
     block.push_str("]\n");
-    for mail in &ctx.thread_mails {
+    for mail in ctx.items_of(ContextItemKind::Thread) {
         block.push_str(&format!(
             "[Thread Mail: {} from {}: {}]\n",
             format_date(mail.date_sent),
             mail.from_email,
-            mail.body
+            mail.content
         ));
     }
-    for chunk in &ctx.chunks {
+    for chunk in ctx.items_of(ContextItemKind::Semantic) {
         let sender = chunk_senders
             .get(&chunk.mail_id)
             .map(String::as_str)
@@ -615,7 +622,7 @@ fn build_grounding(
             "[Prior Mail: {} from {}: {}]\n",
             format_date(chunk.date_sent),
             sender,
-            chunk.snippet
+            chunk.content
         ));
     }
     block

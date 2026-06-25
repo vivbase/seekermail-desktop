@@ -66,5 +66,10 @@
   "notification_query_title": "결정이 필요한 질문이 있습니다",
   "notification_query_body": "Agent가 사용자의 입력을 기다립니다. 대기 목록을 열어 검토하세요.",
   "notification_risk_title": "위험 경고",
-  "notification_risk_body": "대기 목록에 검토가 필요한 위험이 있습니다."
+  "notification_risk_body": "대기 목록에 검토가 필요한 위험이 있습니다.",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

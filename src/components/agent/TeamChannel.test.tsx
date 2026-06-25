@@ -106,6 +106,79 @@ describe("MessageBubble", () => {
     expect(screen.getByText("On it")).toBeInTheDocument();
     expect(screen.getByText("Work")).toBeInTheDocument();
   });
+
+  it("surfaces the retrieval-state chip for a grounded agent reply (P-3)", () => {
+    withProviders(
+      <MessageBubble
+        message={msg({
+          id: "g",
+          senderType: "agent",
+          senderId: "demo-1",
+          content: JSON.stringify({
+            text: "Here is your summary.",
+            retrieval: {
+              semanticAvailable: true,
+              semanticHits: 3,
+              temporalHits: 0,
+              aggregateFacts: 0,
+              indexedMails: 2,
+              totalMails: 5,
+            },
+          }),
+        })}
+        account={ACCOUNT}
+      />,
+    );
+    expect(screen.getByText("Here is your summary.")).toBeInTheDocument();
+    // A partial index reads as an honest "searched N of M", never a silent empty.
+    expect(screen.getByText(/Searched 2 of 5 indexed emails/)).toBeInTheDocument();
+  });
+
+  it("shows no retrieval chip for a plain agent note", () => {
+    withProviders(
+      <MessageBubble
+        message={msg({
+          id: "p",
+          senderType: "agent",
+          senderId: "demo-1",
+          content: JSON.stringify({ text: "No AI model is connected." }),
+        })}
+        account={ACCOUNT}
+      />,
+    );
+    expect(screen.queryByText(/indexed emails/)).toBeNull();
+    expect(screen.queryByText(/email used/)).toBeNull();
+  });
+
+  it("memory-grounded reply skips the coverage caution (P-4)", () => {
+    withProviders(
+      <MessageBubble
+        message={msg({
+          id: "mem",
+          senderType: "agent",
+          senderId: "demo-1",
+          content: JSON.stringify({
+            text: "Here is your inbox overview.",
+            retrieval: {
+              semanticAvailable: true,
+              semanticHits: 0,
+              temporalHits: 0,
+              aggregateFacts: 3,
+              memoryHits: 2,
+              indexedMails: 1,
+              totalMails: 5,
+            },
+          }),
+        })}
+        account={ACCOUNT}
+      />,
+    );
+    // Memory/aggregate answers read the full store, so the partial-index caution
+    // must not fire even though only 1 of 5 mails is embedded.
+    expect(screen.queryByText(/Searched 1 of 5/)).toBeNull();
+    // The two thread summaries count toward what the answer used.
+    expect(screen.getByText(/2 emails used/)).toBeInTheDocument();
+  });
 });
 
 describe("ChannelInput", () => {

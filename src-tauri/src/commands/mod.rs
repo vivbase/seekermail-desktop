@@ -18,6 +18,7 @@ pub mod gte;
 pub mod identity;
 pub mod im;
 pub mod mail;
+pub mod memory;
 pub mod queries;
 pub mod reindex;
 pub mod risk;
@@ -28,5 +29,7 @@ pub mod style;
 pub mod sync_range;
 pub mod system;
 pub mod wipe;
+// T2 (WB-12) window commands — verify with `cargo build` / `cargo test --lib` on the Mac (dev/22 §A).
+pub mod workbench;
 
 pub use system::ping;

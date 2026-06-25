@@ -11,8 +11,16 @@ import { useTeamUnreadCount } from "@/ipc/queries/im";
 import { accountColorClass, type AccountColorToken } from "@/lib/accountColor";
 import { cn } from "@/lib/cn";
 import { SIDEBAR_ITEMS } from "@/routes/config";
+import { openSpecAttr } from "@/lib/openSpec";
+import { pathToRoute } from "@/lib/workspaceRoute";
 
 import GetMailButton from "./GetMailButton";
+
+/** Right-click "open in new tab" spec for a sidebar route (WB-19). */
+function navOpenSpec(path: string): Record<string, string> {
+  const route = pathToRoute(path);
+  return route ? openSpecAttr({ route }) : {};
+}
 
 /** Active indicator: a red dot when active, an empty 7px spacer otherwise. */
 function NavDot({ active }: { active: boolean }) {
@@ -56,6 +64,7 @@ export default function Sidebar() {
             key={item.path}
             to={item.path}
             end={item.path === "/"}
+            {...navOpenSpec(item.path)}
             className="nav-item flex items-center gap-[7px] py-[5px] transition-opacity hover:opacity-70"
           >
             {({ isActive }) => (

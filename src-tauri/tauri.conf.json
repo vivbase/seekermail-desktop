@@ -23,7 +23,9 @@
         "resizable": true,
         "fullscreen": false,
         "center": true,
-        "theme": null
+        "theme": null,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
       }
     ],
     "security": {

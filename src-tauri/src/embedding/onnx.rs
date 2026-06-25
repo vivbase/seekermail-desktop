@@ -187,3 +187,39 @@ fn build_session(model_path: &Path) -> AppResult<Session> {
         .commit_from_file(model_path)
         .map_err(|e| AppError::Internal(anyhow::anyhow!("load onnx model: {e}")))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A `Paths` rooted at a fresh temp dir with no bundled model files.
+    fn modelless_paths() -> (tempfile::TempDir, Paths) {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().to_path_buf();
+        let paths = Paths {
+            db: root.join("seekermail.db"),
+            vectors: root.join("vectors"),
+            attachments: root.join("attachments"),
+            logs: root.join("logs"),
+            models: root.join("models"),
+            resources: root.join("models"),
+            root,
+        };
+        (tmp, paths)
+    }
+
+    /// With no `model.onnx` / `tokenizer.json` present, loading the real backend
+    /// returns a clean, recoverable error (never a panic) — which `Embedder::load`
+    /// turns into the offline fallback. This runs in the feature-build CI lane and
+    /// needs no 2.2 GB model.
+    #[test]
+    fn load_without_model_files_is_gte_corrupt() {
+        // `matches!` (not `unwrap_err`) so the test needs no `Debug` on the Ok
+        // backend, which wraps a non-Debug ORT `Session`.
+        let (_tmp, paths) = modelless_paths();
+        assert!(matches!(
+            OnnxBackend::load(&paths),
+            Err(AppError::GteCorrupt)
+        ));
+    }
+}

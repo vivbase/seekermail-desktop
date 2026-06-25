@@ -172,6 +172,13 @@ tokenizers = { version = "0.20", default-features = false, features = ["onig"], 
 # generator in `ai/providers/local_onnx.rs`.
 llama-cpp-2 = { version = "0.1", optional = true }
 
+# ─── Approximate nearest-neighbour index (analysis/55 §5) ────────────────────
+# A real HNSW ANN backend for the vector store, replacing the brute-force cosine
+# scan at scale. Pure Rust (no Arrow / native LanceDB stack), so — like the other
+# heavy runtimes — it lives behind an OFF-by-default feature; the default build
+# keeps the self-contained brute-force backend in `vector/mod.rs`.
+instant-distance = { version = "0.6", optional = true }
+
 # macOS Keychain backend (T006). Other targets use a stub that returns
 # AUTH_KEYCHAIN_DENIED so the crate still compiles cross-platform for CI/dev.
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -195,6 +202,10 @@ local-embed = ["dep:ort", "dep:tokenizers"]
 # Wires the real in-process GGUF generative runtime (T063). Requires a .gguf
 # model manually placed in `models/` (dev/06 §1; no auto-download in v0.5).
 local-llm = ["dep:llama-cpp-2"]
+# Swaps the brute-force cosine vector store for a pure-Rust HNSW ANN index
+# (analysis/55 §5). Off by default — the default build stays dependency-light and
+# keeps the deterministic brute-force backend in `vector/mod.rs`.
+hnsw = ["dep:instant-distance"]
 
 [dev-dependencies]
 # Local HTTP mock server for the BYO AI adapter contract tests (T059–T062).

@@ -66,5 +66,10 @@
   "notification_query_title": "एक प्रश्न को आपके निर्णय की आवश्यकता है",
   "notification_query_body": "एक Agent को आपके इनपुट की आवश्यकता है। समीक्षा के लिए लंबित सूची खोलें।",
   "notification_risk_title": "जोखिम चेतावनी",
-  "notification_risk_body": "लंबित सूची में एक जोखिम को आपकी समीक्षा की आवश्यकता है।"
+  "notification_risk_body": "लंबित सूची में एक जोखिम को आपकी समीक्षा की आवश्यकता है।",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

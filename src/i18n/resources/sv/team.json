@@ -66,5 +66,10 @@
   "notification_query_title": "En fråga kräver ditt beslut",
   "notification_query_body": "En agent behöver ditt svar. Öppna väntande-listan för att granska.",
   "notification_risk_title": "Riskvarning",
-  "notification_risk_body": "En risk kräver din granskning i väntande-listan."
+  "notification_risk_body": "En risk kräver din granskning i väntande-listan.",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

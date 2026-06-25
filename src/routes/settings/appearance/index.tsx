@@ -11,6 +11,8 @@ import {
   useSetReadingScale,
   useSetTheme,
   useThemeSetting,
+  useDoubleClickActionSetting,
+  useSetDoubleClickAction,
 } from "@/ipc/queries/settings";
 import { useUi, type Density } from "@/stores/ui";
 import { cn } from "@/lib/cn";
@@ -81,6 +83,10 @@ export default function AppearanceSettings() {
   const density = useUi((s) => s.density);
   const setDensity = useUi((s) => s.setDensity);
 
+  // Persisted double-click behavior (app_settings.ui.workbench_double_click); "tab" until set.
+  const { action: doubleClickAction } = useDoubleClickActionSetting();
+  const setDoubleClick = useSetDoubleClickAction();
+
   const currentLang = i18n.language;
 
   return (
@@ -140,6 +146,26 @@ export default function AppearanceSettings() {
               onClick={() => setDensity(opt.value)}
             />
           ))}
+        </div>
+      </SettingRow>
+
+      {/* Double-click action (WB-21) — open a surface in a new tab or a new window */}
+      <SettingRow label={t("appearance_double_click", "Double-click opens")}>
+        <div
+          className="flex gap-2"
+          role="group"
+          aria-label={t("appearance_double_click", "Double-click opens")}
+        >
+          <ToggleChip
+            active={doubleClickAction === "tab"}
+            label={t("appearance_double_click_tab", "New tab")}
+            onClick={() => setDoubleClick.mutate("tab")}
+          />
+          <ToggleChip
+            active={doubleClickAction === "window"}
+            label={t("appearance_double_click_window", "New window")}
+            onClick={() => setDoubleClick.mutate("window")}
+          />
         </div>
       </SettingRow>
 

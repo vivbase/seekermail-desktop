@@ -15,6 +15,8 @@ use crate::types::{KeywordSearchParams, PageResult, ScoreLabel, SearchResult};
 const MIN_QUERY_LEN: usize = 3;
 /// Hard cap on page size (02 §Pagination).
 const MAX_LIMIT: u32 = 200;
+/// Max terms kept from a free-text query when building the hybrid BM25 probe.
+const MAX_FUSE_TERMS: usize = 24;
 
 /// A bound value for the dynamically assembled filter clause.
 enum Bind {
@@ -229,6 +231,75 @@ fn collect_highlights(cols: &[Option<String>]) -> Vec<String> {
         }
     }
     out
+}
+
+/// Lower-level BM25 ranking for hybrid retrieval (analysis/55 §5): the best-
+/// matching `mail_id`s for a free-text query, best-first, scoped to one account
+/// and the active (non-archived, non-deleted) mailbox, optionally excluding one
+/// mail. Unlike [`search_keyword_fts5`] this takes raw text rather than the
+/// keyword DSL — it extracts terms and ORs them, so a question or a mail body
+/// becomes a recall-oriented keyword probe. Returns at most `limit` ids; empty
+/// when the query has no usable term or nothing matches. Deterministic on ties
+/// (`bm25 ASC, id ASC`).
+pub async fn bm25_ranked_ids(
+    db: &SqlitePool,
+    account_id: &str,
+    exclude_mail_id: Option<&str>,
+    query: &str,
+    limit: usize,
+) -> AppResult<Vec<String>> {
+    let Some(match_query) = or_match_query(query, MAX_FUSE_TERMS) else {
+        return Ok(Vec::new());
+    };
+
+    let mut sql = String::from(
+        "SELECT m.id AS id FROM mails_fts JOIN mails m ON m.rowid = mails_fts.rowid \
+         WHERE mails_fts MATCH ? AND m.account_id = ? AND m.is_archived = 0 AND m.is_deleted = 0",
+    );
+    if exclude_mail_id.is_some() {
+        sql.push_str(" AND m.id != ?");
+    }
+    sql.push_str(" ORDER BY bm25(mails_fts) ASC, m.id ASC LIMIT ?");
+
+    let mut q = sqlx::query(&sql).bind(&match_query).bind(account_id);
+    if let Some(ex) = exclude_mail_id {
+        q = q.bind(ex);
+    }
+    q = q.bind(limit.clamp(1, MAX_LIMIT as usize) as i64);
+    let rows = q.fetch_all(db).await.map_err(super::map_err)?;
+    Ok(rows.iter().map(|r| r.get::<String, _>("id")).collect())
+}
+
+/// Build an `OR`-of-terms FTS5 match string from free text. Keeps alphanumeric
+/// runs (Unicode-aware, so accented and CJK words survive) of ≥2 chars, lower-
+/// cases, de-dups, caps at `max_terms`, and double-quotes each term so no FTS5
+/// operator can leak in from arbitrary mail/body text. `None` when nothing usable
+/// remains (caller then skips the sparse leg).
+fn or_match_query(q: &str, max_terms: usize) -> Option<String> {
+    let mut terms: Vec<String> = Vec::new();
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for raw in q.split(|c: char| !c.is_alphanumeric()) {
+        if raw.chars().count() < 2 {
+            continue;
+        }
+        let term = raw.to_lowercase();
+        if seen.insert(term.clone()) {
+            terms.push(term);
+            if terms.len() >= max_terms {
+                break;
+            }
+        }
+    }
+    if terms.is_empty() {
+        return None;
+    }
+    Some(
+        terms
+            .iter()
+            .map(|t| format!("\"{t}\""))
+            .collect::<Vec<_>>()
+            .join(" OR "),
+    )
 }
 
 /// Rebuild the FTS5 index from the `mails` content table (H2 corruption recovery,
@@ -455,6 +526,33 @@ mod tests {
             .await
             .unwrap();
         assert!(res.total >= 2, "index still serves after rebuild");
+    }
+
+    #[tokio::test]
+    async fn bm25_ranked_ids_scopes_account_and_excludes_mail() {
+        let db = seed().await; // m1,m3 = budget (acct a); m4 = budget (acct b)
+        let ids = bm25_ranked_ids(db.pool(), "a", None, "budget report", 10)
+            .await
+            .unwrap();
+        assert!(ids.contains(&"m1".to_string()) && ids.contains(&"m3".to_string()));
+        assert!(!ids.contains(&"m4".to_string()), "account scope excludes b");
+
+        let excluded = bm25_ranked_ids(db.pool(), "a", Some("m1"), "budget report", 10)
+            .await
+            .unwrap();
+        assert!(
+            !excluded.contains(&"m1".to_string()),
+            "exclude_mail_id drops it"
+        );
+    }
+
+    #[test]
+    fn or_match_query_extracts_terms_and_handles_empty() {
+        assert!(or_match_query("…", 10).is_none(), "no usable terms → None");
+        assert!(or_match_query("a", 10).is_none(), "single chars dropped");
+        let q = or_match_query("Budget, report!! q4", 10).unwrap();
+        assert!(q.contains("\"budget\"") && q.contains("\"report\"") && q.contains("\"q4\""));
+        assert!(q.contains(" OR "), "terms are OR-ed for recall");
     }
 
     #[tokio::test]

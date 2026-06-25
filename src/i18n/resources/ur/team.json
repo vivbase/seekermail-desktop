@@ -66,5 +66,10 @@
   "notification_query_title": "ایک سوال کو آپ کے فیصلے کی ضرورت ہے",
   "notification_query_body": "ایک Agent کو آپ کی رائے درکار ہے۔ جائزے کے لیے زیر التوا فہرست کھولیں۔",
   "notification_risk_title": "خطرے کی تنبیہ",
-  "notification_risk_body": "ایک خطرے کو زیر التوا فہرست میں آپ کے جائزے کی ضرورت ہے۔"
+  "notification_risk_body": "ایک خطرے کو زیر التوا فہرست میں آپ کے جائزے کی ضرورت ہے۔",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

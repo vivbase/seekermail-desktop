@@ -18,6 +18,7 @@ pub mod imap;
 pub mod keychain;
 pub mod logging;
 pub mod net;
+pub mod recovery;
 pub mod sanitize;
 pub mod search;
 pub mod send;
@@ -60,6 +61,8 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         // Custom `seekermail://` scheme for OAuth deep-link callbacks (T015/T064).
         .plugin(tauri_plugin_deep_link::init())
+        // WB-22: a destroyed detached workbench window tells the survivors to refresh.
+        .on_window_event(commands::workbench::on_window_event)
         .setup(move |app| {
             use tauri::Manager;
 
@@ -80,10 +83,40 @@ pub fn run() {
                 }
             }
 
-            let emitter = events::Emitter::new(app.handle().clone());
-            let (state, mail_rx, embed_rx, pipeline_rx) =
-                tauri::async_runtime::block_on(AppState::bootstrap(paths.clone(), emitter))
-                    .map_err(|e| Box::<dyn std::error::Error>::from(e.to_string()))?;
+            // Bootstrap storage + shared state. A migration failure here would
+            // otherwise bubble out of `setup`, make Tauri `panic!`, and (release
+            // builds are `panic = "abort"`) crash the app on launch with no message
+            // — macOS shows only "Reopen", and reinstalling can't fix it because the
+            // database survives an uninstall. Forward-only migrations mean a normal
+            // upgrade never fails here; a downgrade, a DB written by a build whose
+            // migrations later changed, or on-disk damage can. In that one case let
+            // the user back up & reset the local database (moved aside, never
+            // deleted) and retry, or quit — never crash. (See `recovery`.)
+            let mut db_reset_done = false;
+            let (state, mail_rx, embed_rx, pipeline_rx) = loop {
+                let emitter = events::Emitter::new(app.handle().clone());
+                match tauri::async_runtime::block_on(AppState::bootstrap(paths.clone(), emitter)) {
+                    Ok(parts) => break parts,
+                    // Offer recovery once. If a freshly reset database still fails to
+                    // migrate, the migrations themselves are broken — fall through to
+                    // the generic error path rather than loop on the dialog forever.
+                    Err(error::AppError::DbMigration(detail)) if !db_reset_done => {
+                        tracing::error!(
+                            detail = %detail,
+                            "startup migration failed; offering database recovery"
+                        );
+                        if recovery::prompt_and_reset_database(&paths, &detail) {
+                            db_reset_done = true;
+                            continue;
+                        }
+                        // User chose to quit; exit cleanly without panicking.
+                        std::process::exit(0);
+                    }
+                    Err(e) => {
+                        return Err(Box::<dyn std::error::Error>::from(e.to_string()));
+                    }
+                }
+            };
 
             // Background workers run on the Tauri/Tokio runtime. Several of these
             // spawn fns call `tokio::spawn` directly, which panics ("there is no
@@ -279,6 +312,12 @@ pub fn run() {
             // generated `__cmd__*` helpers (a re-export like `commands::ping`
             // does not carry those helper items).
             commands::system::ping,
+            // ── Workbench windows (WB-12, Model S — 02 §3 Module W) ──────────
+            // T2 (WB-12): verify with `cargo build` on the Mac (dev/22 §A).
+            commands::workbench::workbench_open_window,
+            commands::workbench::workbench_close_window,
+            commands::workbench::workbench_focus_window,
+            commands::workbench::workbench_list_windows,
             // ── Accounts (T013) ──────────────────────────────────────────────
             commands::accounts::list_accounts,
             commands::accounts::get_account,
@@ -353,6 +392,7 @@ pub fn run() {
             commands::gte::get_gte_stats,
             commands::gte::get_topic_breakdown,
             commands::gte::list_knowledge_entries,
+            commands::memory::build_thread_summaries,
             // ── Compose / send (T043) ────────────────────────────────────────
             commands::mail::send_mail,
             commands::mail::cancel_send,
@@ -363,6 +403,7 @@ pub fn run() {
             // ── Settings (T050/T051) ─────────────────────────────────────────
             commands::settings::get_setting,
             commands::settings::set_setting,
+            commands::settings::set_global_pref,
             commands::settings::apply_privacy_policy,
             // ── Export (T052) ────────────────────────────────────────────────
             commands::export::start_export,

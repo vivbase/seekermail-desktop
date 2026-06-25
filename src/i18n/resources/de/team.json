@@ -66,5 +66,10 @@
   "notification_query_title": "Eine Frage erfordert Ihre Entscheidung",
   "notification_query_body": "Ein Agent benötigt Ihre Eingabe. Öffnen Sie die Ausstehend-Liste zur Prüfung.",
   "notification_risk_title": "Risikowarnung",
-  "notification_risk_body": "Ein Risiko in der Ausstehend-Liste erfordert Ihre Prüfung."
+  "notification_risk_body": "Ein Risiko in der Ausstehend-Liste erfordert Ihre Prüfung.",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

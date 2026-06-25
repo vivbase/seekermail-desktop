@@ -29,6 +29,7 @@ import { ReadingSizeControl } from "@/components/mail/ReadingSizeControl";
 import { RiskAlertBanner } from "@/components/mail/RiskAlertBanner";
 import { ThreadDrawer } from "@/components/mail/ThreadDrawer";
 import { AttachmentList } from "@/components/mail/AttachmentList";
+import OpenInNewWindowButton from "@/components/workbench/OpenInNewWindowButton";
 import { useL2Shortcuts } from "@/hooks/useL2Shortcuts";
 import { useUndoToast } from "@/components/ui/UndoToast";
 
@@ -214,6 +215,14 @@ export default function MailDetail() {
               <div className="ms-auto">
                 <ReadingSizeControl />
               </div>
+
+              {/* Detach this thread into its own window (WB-20) */}
+              {mailId && (
+                <OpenInNewWindowButton
+                  spec={{ route: { page: "thread", params: { mailId } } }}
+                  className="text-p8"
+                />
+              )}
 
               {/* Thread toggle */}
               <button

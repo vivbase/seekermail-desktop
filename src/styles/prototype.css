@@ -55,7 +55,10 @@ body {
 /* ── Shell ── */
 .app {
   display: flex;
-  height: 100vh;
+  /* Fill the (zoom-compensated) parent height, NOT the raw viewport: under
+     #root { zoom: >1 } a hard 100vh renders taller than the window and clips
+     the sidebar footer. 100% chains up to #root's one-viewport height. */
+  height: 100%;
   min-width: 960px;
   overflow: hidden;
 }

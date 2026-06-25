@@ -66,5 +66,10 @@
   "notification_query_title": "Có câu hỏi cần quyết định của bạn",
   "notification_query_body": "Một Agent cần ý kiến của bạn. Mở danh sách Đang chờ để xem xét.",
   "notification_risk_title": "Cảnh báo rủi ro",
-  "notification_risk_body": "Cần xem xét một rủi ro trong danh sách Đang chờ."
+  "notification_risk_body": "Cần xem xét một rủi ro trong danh sách Đang chờ.",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

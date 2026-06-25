@@ -20,6 +20,8 @@ pub mod draft;
 pub mod fallback;
 pub mod legal;
 pub mod matrix;
+pub mod mce;
+pub mod memory;
 pub mod pipeline;
 pub mod provider;
 pub mod providers;

@@ -29,6 +29,7 @@ pub mod facade;
 pub mod folder_sync_state_repo;
 pub mod identity_repo;
 pub mod im_repo;
+pub mod inbox_digest_repo;
 pub mod mail_repo;
 pub mod mail_writer;
 pub mod outbound_op_repo;
@@ -36,6 +37,7 @@ pub mod query_repo;
 pub mod risk_event_repo;
 pub mod settings_repo;
 pub mod sync_state_repo;
+pub mod thread_summary_repo;
 
 pub use account_repo::AccountRepo;
 pub use attachment_repo::AttachmentRepo;
@@ -271,6 +273,87 @@ pub(crate) fn map_sqlx_err(err: sqlx::Error) -> AppError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Shipped migrations must be **immutable**. sqlx records a checksum for every
+    /// applied migration; if a migration's bytes later change, it refuses to run
+    /// against a database that applied the old version ("migration N was previously
+    /// applied but has been modified") — which crashes existing installs on launch
+    /// (the setup hook turns that error into a panic). So a released `NNN_*.sql` may
+    /// never be edited or renumbered; new schema is always a new, higher-numbered
+    /// file.
+    ///
+    /// This test freezes each shipped migration's `(version, sha384)`. If it fails
+    /// for an existing version, you changed a shipped migration — revert it and add
+    /// the change as a NEW migration instead. When you intentionally ADD a migration,
+    /// append its `(version, checksum)` below (the failure message prints the value).
+    #[test]
+    fn shipped_migrations_are_immutable() {
+        // (version, lowercase sha384 hex). sqlx checksums the migration file bytes.
+        let frozen: &[(i64, &str)] = &[
+            (1, "f4cf5f575276410b1fcf3e367b327bfe401fa23d1534a0dabf773b4a40328833693664636fee76014d245eb91a5617c2"),
+            (2, "409ef81338bf9f7798734e3c41afeeb91377b8105c4fd68615a133996167adb978f8cdbf5d5ecf68f42d49dd5226309e"),
+            (3, "b79a439189e43eaa552c45392a8836bca0d302be0e096615de0547e057d3d2e103d4768675a6f39f178fcbdbb435a928"),
+            (4, "002315e0b33ee6f5ce3bdde5f42c80faf8b5554c03e29d0c051916f10ba1c0503f906857177ebfca54395bec6e70bf83"),
+            (5, "dc48d4490ee60fa923a33b0a148a022410a5f9b505cca0497d574d66bd0f067720e1cde4571f036e60f9c98fd5b257d5"),
+            (6, "47c4c414656e91d32ee740482e4bbadbfbe0e861923472260448a15dc885f03a22abeacf4145a089d181ba4ffa9b324b"),
+            (7, "3f275cfa0bb71cfbf5d0384c874140c27ccb7b28b112dad57ce0662067d00ad8bd3741de86f2651e469619c2d56f9395"),
+            (8, "bb0b0d2501e217f140382b604afcb28c6ffa3ba2514bd5592c692ad3862316b096f1332bcd20a0f8fc5cc90f2f7dbb09"),
+            (9, "fbbc5394cb9486061a91483f6a3363a73a08c9307300355a7ed6d78db21caee22e3da8f7645a670928fcc60090012f8a"),
+            (10, "5cc0aeaeaaf5f2a810ebc3bfee268c5d54eefa2a12e4b1361e1671f6059b0335cbbc22e0c340088114f84005e7d253db"),
+            (11, "ffe12c7397705aa8d41d3c554e20441db29e2563197c10b3ba6608c8370d4a36cbbfe9e19ca75f7fc295b251ecdc44b3"),
+            (12, "353d22f87d2d7e77bf233df2d4c9d352c76733b67062885bbd9117455f2c4b2e59976f4b621b0e2bb82614bb147e6213"),
+            (13, "3362b9203c22b225ff303cb921ed4304e72f59d6b48878cd004db2730b3ea853135e3c925ed1420d2a7181f16fd8641e"),
+            (14, "56f52ee347182b6fe759c70b6bcf8958ab49acc326f77b7910cd6af82747aa4631e73b633b63459d79044c847b820540"),
+            (15, "a259ad5c263aacd467d43731b5a52b5f56d3e17779d8103e008efdde78c920856ad12cda83c73ed34c0054ab95aeada1"),
+            (16, "096e2fddb163601da72fa0d860d8aa66a78fb66fc3eae4297cb3b181abb0f4451a139ee82b9ca2d48b9c6cb9405bf77a"),
+            (17, "062c6dd56ff838bf6b3bf1dfe6cb7ccc097ee31e5071100ad2596bb70bd2885062d379794f3efb65125e5bb5113107dd"),
+            (18, "f0a80edf4f1de99cae64c2a40d6157c467ff810d00a73ba96f9fcbf86ee2908bfcbfced570820af5a65dde05656172b2"),
+            (19, "2cd7cae23813cc967f019a55b2750c8b47100706503c9d33e93483e83ec1fb3403abacaaefb8f9c7a6339e8405befa9f"),
+            (20, "f0284b536277cca8a522d79afa2309e0919ae74203e7ef4b2165666eb6fee6b958660a3d7c58ecbb42dc2dc53a1e0080"),
+            (21, "c1febb6e5d5805f8ef4249c3b4697ab281a859afcfe27d735620a5e4f8a1d2b5e915a6182b03635cc7067c7059784502"),
+            (22, "9e0c98971a68a1388dd968e0e0af3c4f49d530e2eb6bf54ae9ae9c3c0a5f75ac83d3737862ccd7dc37710a7afa7f7d9d"),
+        ];
+
+        let actual: std::collections::BTreeMap<i64, String> = MIGRATOR
+            .iter()
+            .filter(|m| !m.migration_type.is_down_migration())
+            .map(|m| (m.version, hex_lower(m.checksum.as_ref())))
+            .collect();
+
+        // Every frozen migration must still be present with the same checksum.
+        for (version, sum) in frozen {
+            match actual.get(version) {
+                Some(found) => assert_eq!(
+                    found, sum,
+                    "migration {version} changed — shipped migrations are immutable; \
+                     revert it and add a NEW migration instead"
+                ),
+                None => panic!("frozen migration {version} is missing from the embedded set"),
+            }
+        }
+
+        // No NEW migration may ship without being frozen here (forces a deliberate
+        // append, so a future edit to it is caught too).
+        let frozen_versions: std::collections::BTreeSet<i64> =
+            frozen.iter().map(|(v, _)| *v).collect();
+        for (version, sum) in &actual {
+            assert!(
+                frozen_versions.contains(version),
+                "migration {version} is not frozen — append ({version}, \"{sum}\") to the \
+                 frozen list in this test"
+            );
+        }
+    }
+
+    /// Lowercase hex of a byte slice (sqlx stores migration checksums as bytes).
+    fn hex_lower(bytes: &[u8]) -> String {
+        use std::fmt::Write as _;
+        let mut s = String::with_capacity(bytes.len() * 2);
+        for b in bytes {
+            let _ = write!(s, "{b:02x}");
+        }
+        s
+    }
 
     async fn migrated_db() -> Db {
         let db = Db::connect_in_memory().await.expect("connect");

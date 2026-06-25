@@ -66,5 +66,10 @@
   "notification_query_title": "একটি প্রশ্নের জন্য আপনার সিদ্ধান্ত প্রয়োজন",
   "notification_query_body": "একজন Agent-এর আপনার ইনপুট প্রয়োজন। পর্যালোচনা করতে অপেক্ষমাণ তালিকা খুলুন।",
   "notification_risk_title": "ঝুঁকি সতর্কতা",
-  "notification_risk_body": "অপেক্ষমাণ তালিকায় একটি ঝুঁকির জন্য আপনার পর্যালোচনা প্রয়োজন।"
+  "notification_risk_body": "অপেক্ষমাণ তালিকায় একটি ঝুঁকির জন্য আপনার পর্যালোচনা প্রয়োজন।",
+  "team_retrieval_title": "How this answer used your mail",
+  "team_retrieval_unavailable": "Couldn't search your mail this time",
+  "team_retrieval_partial": "Searched {indexed} of {total} indexed emails",
+  "team_retrieval_none": "No matching emails",
+  "team_retrieval_grounded": "{count, plural, one {# email used} other {# emails used}}"
 }

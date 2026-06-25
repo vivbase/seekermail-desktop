@@ -66,5 +66,10 @@
   "notification_query_title": "有一個問題需要您決策",
   "notification_query_body": "Agent 需要您的輸入。請開啟待處理清單進行審核。",
   "notification_risk_title": "風險警示",
-  "notification_risk_body": "待處理清單中有一個風險需要您審查。"
+  "notification_risk_body": "待處理清單中有一個風險需要您審查。",
+  "team_retrieval_title": "這則回覆如何運用了你的郵件",
+  "team_retrieval_unavailable": "這次未能檢索你的郵件",
+  "team_retrieval_partial": "已檢索 {total} 封中的 {indexed} 封（已建立索引）",
+  "team_retrieval_none": "沒有相符的郵件",
+  "team_retrieval_grounded": "{count, plural, other {引用了 # 封郵件}}"
 }
