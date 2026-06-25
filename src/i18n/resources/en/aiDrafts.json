@@ -96,5 +96,11 @@
   "e1_card_discard": "Discard",
   "e1_card_minimize": "Minimize",
   "e1_chip_in_progress": "Draft in progress",
-  "e1_chip_resume": "Resume"
+  "e1_chip_resume": "Resume",
+  "e1_card_error_badge": "Failed",
+  "e1_card_error_title": "Couldn't draft a reply",
+  "e1_card_error_hint": "Your AI provider didn't respond. Check the model name and API key in AI settings, then retry.",
+  "e1_card_retry": "Retry",
+  "e1_card_ai_settings": "AI settings",
+  "e1_card_write_manually": "Write manually"
 }

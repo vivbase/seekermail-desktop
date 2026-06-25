@@ -96,5 +96,11 @@
   "e1_card_discard": "בטל",
   "e1_card_minimize": "מזער",
   "e1_chip_in_progress": "טיוטה בתהליך",
-  "e1_chip_resume": "המשך"
+  "e1_chip_resume": "המשך",
+  "e1_card_error_badge": "נכשל",
+  "e1_card_error_title": "לא ניתן לנסח תשובה",
+  "e1_card_error_hint": "ספק ה-AI לא הגיב. בדוק את שם המודל ומפתח ה-API בהגדרות ה-AI ונסה שוב.",
+  "e1_card_retry": "נסה שוב",
+  "e1_card_ai_settings": "הגדרות AI",
+  "e1_card_write_manually": "כתיבה ידנית"
 }

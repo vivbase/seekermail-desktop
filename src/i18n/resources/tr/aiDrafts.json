@@ -96,5 +96,11 @@
   "e1_card_discard": "At",
   "e1_card_minimize": "Küçült",
   "e1_chip_in_progress": "Taslak sürüyor",
-  "e1_chip_resume": "Devam et"
+  "e1_chip_resume": "Devam et",
+  "e1_card_error_badge": "Başarısız",
+  "e1_card_error_title": "Yanıt taslağı oluşturulamadı",
+  "e1_card_error_hint": "Yapay zekâ sağlayıcınız yanıt vermedi. Yapay Zekâ Ayarları'nda model adını ve API anahtarını kontrol edip tekrar deneyin.",
+  "e1_card_retry": "Tekrar dene",
+  "e1_card_ai_settings": "Yapay Zekâ Ayarları",
+  "e1_card_write_manually": "Elle yaz"
 }

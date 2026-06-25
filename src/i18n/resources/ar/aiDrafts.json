@@ -96,5 +96,11 @@
   "e1_card_discard": "تجاهل",
   "e1_card_minimize": "تصغير",
   "e1_chip_in_progress": "مسودة قيد التنفيذ",
-  "e1_chip_resume": "استئناف"
+  "e1_chip_resume": "استئناف",
+  "e1_card_error_badge": "فشل",
+  "e1_card_error_title": "تعذّر صياغة الرد",
+  "e1_card_error_hint": "لم يستجب مزوّد الذكاء الاصطناعي. تحقق من اسم النموذج ومفتاح API في إعدادات الذكاء الاصطناعي ثم أعد المحاولة.",
+  "e1_card_retry": "إعادة المحاولة",
+  "e1_card_ai_settings": "إعدادات الذكاء الاصطناعي",
+  "e1_card_write_manually": "الكتابة يدويًا"
 }

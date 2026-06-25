@@ -96,5 +96,11 @@
   "e1_card_discard": "破棄",
   "e1_card_minimize": "最小化",
   "e1_chip_in_progress": "下書き作成中",
-  "e1_chip_resume": "再開"
+  "e1_chip_resume": "再開",
+  "e1_card_error_badge": "失敗",
+  "e1_card_error_title": "返信を作成できませんでした",
+  "e1_card_error_hint": "AI プロバイダーが応答しませんでした。AI 設定でモデル名と API キーを確認して再試行してください。",
+  "e1_card_retry": "再試行",
+  "e1_card_ai_settings": "AI 設定",
+  "e1_card_write_manually": "手動で作成"
 }

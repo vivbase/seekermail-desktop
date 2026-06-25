@@ -8,6 +8,12 @@
 // with an instruction) / regenerates / sends (approve_draft) / discards, or
 // escapes to the full /compose editor. It reuses the SAME draft object the
 // Pending review surface shows — one draft, not two.
+//
+// On a generation failure the card STAYS PUT and shows an inline error with
+// Retry / AI settings / Write manually — it never silently bounces to a blank
+// /compose. The provider's reason is generic by privacy design (the backend
+// returns AI_PROVIDER_UNREACHABLE without the raw body), so we surface that
+// message plus a hint to check the model + API key.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -27,7 +33,7 @@ import { showToast } from "@/components/ui/Toast";
 import { markdownToPlainText } from "@/lib/markdown";
 import { cn } from "@/lib/cn";
 
-type Phase = "generating" | "ready";
+type Phase = "generating" | "ready" | "error";
 type Tone = "default" | "concise" | "warmer" | "formal";
 
 /** Pill labels shown while the one-shot request runs. */
@@ -78,6 +84,8 @@ export function AiReplyDraftCard() {
   const approve = useApproveDraft();
   const updateBody = useUpdateDraftBody();
   const discard = useDiscardDraft();
+  /** React Query's mutate is referentially stable — safe to depend on. */
+  const generateMutate = generate.mutate;
 
   const [draft, setDraft] = useState<AiDraft | null>(null);
   const [phase, setPhase] = useState<Phase>("generating");
@@ -85,6 +93,7 @@ export function AiReplyDraftCard() {
   const [edited, setEdited] = useState(false);
   const [tone, setTone] = useState<Tone>("default");
   const [stageIdx, setStageIdx] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const typeTimer = useRef<number | null>(null);
   const stageTimer = useRef<number | null>(null);
@@ -113,62 +122,53 @@ export function AiReplyDraftCard() {
     step();
   }, []);
 
-  // Generate a draft when the card opens for a mail (once per mail id).
+  // Kick off (or retry) generation for a mail. Reused by the open-effect and the
+  // error-state Retry button. A failure lands in the "error" phase in place.
+  const runGeneration = useCallback(
+    (mailId: string) => {
+      clearTimers();
+      setErrorMsg(null);
+      setDraft(null);
+      setBody("");
+      setEdited(false);
+      setTone("default");
+      setStageIdx(0);
+      setPhase("generating");
+
+      const cycle = (idx: number) => {
+        setStageIdx(idx);
+        if (idx < STAGE_KEYS.length - 1) {
+          stageTimer.current = window.setTimeout(() => cycle(idx + 1), STAGE_STEP_MS);
+        }
+      };
+      cycle(0);
+
+      generateMutate(
+        { mailId },
+        {
+          onSuccess: (d) => {
+            clearTimers();
+            setDraft(d);
+            setPhase("ready");
+            typeIn(markdownToPlainText(d.bodyCurrent));
+          },
+          onError: (err) => {
+            clearTimers();
+            setErrorMsg(err.message);
+            setPhase("error");
+          },
+        },
+      );
+    },
+    [generateMutate, clearTimers, typeIn],
+  );
+
+  // Generate when the card opens for a mail (once per mail id; Retry re-runs it).
   useEffect(() => {
     if (!open || !mail) return;
     if (startedFor.current === mail.id) return;
     startedFor.current = mail.id;
-
-    clearTimers();
-    setPhase("generating");
-    setDraft(null);
-    setBody("");
-    setEdited(false);
-    setTone("default");
-
-    const cycle = (idx: number) => {
-      setStageIdx(idx);
-      if (idx < STAGE_KEYS.length - 1) {
-        stageTimer.current = window.setTimeout(() => cycle(idx + 1), STAGE_STEP_MS);
-      }
-    };
-    cycle(0);
-
-    generate.mutate(
-      { mailId: mail.id },
-      {
-        onSuccess: (d) => {
-          clearTimers();
-          setDraft(d);
-          setPhase("ready");
-          typeIn(markdownToPlainText(d.bodyCurrent));
-        },
-        onError: (err) => {
-          clearTimers();
-          startedFor.current = null;
-          // F_E1 §4.4: an AI reply failure must never block the user. A missing
-          // provider routes to AI settings; any other error falls back to a
-          // blank reply in the full compose editor — which is exactly what the
-          // toast promises ("opened a blank draft instead").
-          const notConfigured =
-            err.code === "AI_PROVIDER_UNREACHABLE" && (err.detail ?? "").includes("not_configured");
-          const failedMail = mail;
-          close();
-          if (notConfigured) {
-            showToast(t("toast_ai_provider_not_configured"));
-            void navigate("/settings/ai");
-            return;
-          }
-          showToast(t("toast_ai_draft_failed"));
-          if (failedMail) {
-            void navigate("/compose", {
-              state: { mode: scope, mail: failedMail, ownEmail },
-            });
-          }
-        },
-      },
-    );
-    // generate/close/t/typeIn/clearTimers are stable for the lifetime of an open card.
+    runGeneration(mail.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mail?.id]);
 
@@ -181,6 +181,7 @@ export function AiReplyDraftCard() {
     setBody("");
     setPhase("generating");
     setEdited(false);
+    setErrorMsg(null);
   }, [open, clearTimers]);
 
   // Tear down timers on unmount.
@@ -207,8 +208,9 @@ export function AiReplyDraftCard() {
         },
         // A failed regeneration must not strand the card in the "generating"
         // skeleton — restore the existing draft so the user can retry or edit.
-        onError: () => {
+        onError: (err) => {
           setPhase("ready");
+          showToast(err.message);
         },
       },
     );
@@ -243,6 +245,25 @@ export function AiReplyDraftCard() {
     void navigate("/compose", { state: { mode: scope, aiSeed: seed } });
   };
 
+  // ── Error-state actions ──────────────────────────────────────────────────
+
+  const handleRetry = () => {
+    startedFor.current = mail.id;
+    runGeneration(mail.id);
+  };
+
+  const handleOpenAiSettings = () => {
+    close();
+    void navigate("/settings/ai");
+  };
+
+  /** Explicit, user-chosen escape to the full editor with a blank reply. */
+  const handleWriteManually = () => {
+    const failedMail = mail;
+    close();
+    void navigate("/compose", { state: { mode: scope, mail: failedMail, ownEmail } });
+  };
+
   // ── Minimized chip ─────────────────────────────────────────────────────────
 
   if (minimized) {
@@ -266,18 +287,28 @@ export function AiReplyDraftCard() {
   // ── Full card ──────────────────────────────────────────────────────────────
 
   const isGenerating = phase === "generating";
-  const stageLabel = isGenerating
-    ? t(STAGE_KEYS[stageIdx] ?? "e1_stage_drafting")
-    : edited
-      ? t("e1_stage_editing")
-      : t("e1_stage_ready");
+  const isError = phase === "error";
+  const isReady = phase === "ready";
+  const pillLabel = isError
+    ? t("e1_card_error_badge")
+    : isGenerating
+      ? t(STAGE_KEYS[stageIdx] ?? "e1_stage_drafting")
+      : edited
+        ? t("e1_stage_editing")
+        : t("e1_stage_ready");
+  const pillClass = isError
+    ? "bg-red/10 text-red"
+    : isGenerating || edited
+      ? "bg-terra/10 text-terra"
+      : "bg-green/12 text-green";
   const busy = generate.isPending || regenerate.isPending;
+  const maxHeight = isGenerating ? 188 : isError ? 248 : 460;
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-24 z-40 flex justify-center px-4">
       <div
         className="pointer-events-auto flex w-full max-w-[560px] flex-col overflow-hidden rounded-card border border-divider bg-surface shadow-card transition-[max-height] duration-500 ease-out"
-        style={{ maxHeight: isGenerating ? 188 : 460 }}
+        style={{ maxHeight }}
         role="dialog"
         aria-label={t("e1_card_title")}
       >
@@ -293,12 +324,12 @@ export function AiReplyDraftCard() {
           <span
             className={cn(
               "ms-auto rounded-full px-2.5 py-1 font-ui text-[10.5px] font-semibold tracking-wide transition-colors",
-              isGenerating || edited ? "bg-terra/10 text-terra" : "bg-green/12 text-green",
+              pillClass,
             )}
           >
-            {stageLabel}
+            {pillLabel}
           </span>
-          {!isGenerating && (
+          {isReady && (
             <button
               type="button"
               onClick={minimize}
@@ -319,8 +350,8 @@ export function AiReplyDraftCard() {
           )}
         </div>
 
-        {/* Recipient / subject */}
-        {!isGenerating && draft && (
+        {/* Recipient / subject (ready only) */}
+        {isReady && draft && (
           <div className="px-4">
             <div className="flex items-baseline gap-2 border-t border-divider py-1.5">
               <span className="w-16 shrink-0 font-ui text-[9.5px] font-semibold uppercase tracking-wider text-p7">
@@ -346,6 +377,38 @@ export function AiReplyDraftCard() {
               <div className="h-2.5 w-[84%] animate-pulse rounded bg-p4" />
               <div className="h-2.5 w-[46%] animate-pulse rounded bg-p4" />
             </div>
+          ) : isError ? (
+            <div className="space-y-2">
+              <div className="font-ui text-[13px] font-semibold text-p10">
+                {t("e1_card_error_title")}
+              </div>
+              <p className="font-body text-xs leading-relaxed text-p8">{t("e1_card_error_hint")}</p>
+              {errorMsg && <p className="font-mono text-[10px] text-p7">{errorMsg}</p>}
+              <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  disabled={busy}
+                  className="rounded-chip bg-terra px-4 py-1.5 font-ui text-xs font-medium uppercase tracking-wider text-white transition-colors hover:bg-p10 focus:outline-none focus-visible:ring-2 focus-visible:ring-p9 disabled:opacity-60"
+                >
+                  {t("e1_card_retry")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenAiSettings}
+                  className="rounded-chip border border-divider px-3 py-1.5 font-ui text-xs font-medium uppercase tracking-wider text-p9 transition-colors hover:bg-p4 focus:outline-none focus-visible:ring-2 focus-visible:ring-p9"
+                >
+                  {t("e1_card_ai_settings")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleWriteManually}
+                  className="ms-auto font-ui text-[11px] text-p8 underline-offset-2 transition-colors hover:text-p10 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-p9"
+                >
+                  {t("e1_card_write_manually")}
+                </button>
+              </div>
+            </div>
           ) : (
             <textarea
               value={body}
@@ -359,8 +422,8 @@ export function AiReplyDraftCard() {
           )}
         </div>
 
-        {/* Footer */}
-        {!isGenerating && (
+        {/* Footer (ready only) */}
+        {isReady && (
           <div className="flex flex-wrap items-center gap-2 border-t border-divider px-4 py-2.5">
             <button
               type="button"

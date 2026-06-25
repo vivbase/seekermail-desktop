@@ -96,5 +96,11 @@
   "e1_card_discard": "Odrzuć",
   "e1_card_minimize": "Zminimalizuj",
   "e1_chip_in_progress": "Szkic w toku",
-  "e1_chip_resume": "Wznów"
+  "e1_chip_resume": "Wznów",
+  "e1_card_error_badge": "Niepowodzenie",
+  "e1_card_error_title": "Nie udało się utworzyć odpowiedzi",
+  "e1_card_error_hint": "Twój dostawca AI nie odpowiedział. Sprawdź nazwę modelu i klucz API w Ustawieniach AI, a następnie spróbuj ponownie.",
+  "e1_card_retry": "Ponów",
+  "e1_card_ai_settings": "Ustawienia AI",
+  "e1_card_write_manually": "Napisz ręcznie"
 }

@@ -96,5 +96,11 @@
   "e1_card_discard": "رد کریں",
   "e1_card_minimize": "چھوٹا کریں",
   "e1_chip_in_progress": "مسودہ جاری ہے",
-  "e1_chip_resume": "دوبارہ شروع کریں"
+  "e1_chip_resume": "دوبارہ شروع کریں",
+  "e1_card_error_badge": "ناکام",
+  "e1_card_error_title": "جواب کا مسودہ نہیں بن سکا",
+  "e1_card_error_hint": "آپ کے AI فراہم کنندہ نے جواب نہیں دیا۔ AI ترتیبات میں ماڈل کا نام اور API کلید جانچیں، پھر دوبارہ کوشش کریں۔",
+  "e1_card_retry": "دوبارہ کوشش",
+  "e1_card_ai_settings": "AI ترتیبات",
+  "e1_card_write_manually": "خود لکھیں"
 }

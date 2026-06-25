@@ -96,5 +96,11 @@
   "e1_card_discard": "Kasta",
   "e1_card_minimize": "Minimera",
   "e1_chip_in_progress": "Utkast pågår",
-  "e1_chip_resume": "Återuppta"
+  "e1_chip_resume": "Återuppta",
+  "e1_card_error_badge": "Misslyckades",
+  "e1_card_error_title": "Kunde inte skriva ett svar",
+  "e1_card_error_hint": "Din AI-leverantör svarade inte. Kontrollera modellnamnet och API-nyckeln i AI-inställningarna och försök igen.",
+  "e1_card_retry": "Försök igen",
+  "e1_card_ai_settings": "AI-inställningar",
+  "e1_card_write_manually": "Skriv manuellt"
 }

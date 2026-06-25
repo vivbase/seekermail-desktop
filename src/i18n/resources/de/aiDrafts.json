@@ -96,5 +96,11 @@
   "e1_card_discard": "Verwerfen",
   "e1_card_minimize": "Minimieren",
   "e1_chip_in_progress": "Entwurf in Arbeit",
-  "e1_chip_resume": "Fortsetzen"
+  "e1_chip_resume": "Fortsetzen",
+  "e1_card_error_badge": "Fehlgeschlagen",
+  "e1_card_error_title": "Antwort konnte nicht erstellt werden",
+  "e1_card_error_hint": "Ihr KI-Anbieter hat nicht geantwortet. Prüfen Sie Modellname und API-Schlüssel in den KI-Einstellungen und versuchen Sie es erneut.",
+  "e1_card_retry": "Erneut versuchen",
+  "e1_card_ai_settings": "KI-Einstellungen",
+  "e1_card_write_manually": "Manuell schreiben"
 }

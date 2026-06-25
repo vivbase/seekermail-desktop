@@ -96,5 +96,11 @@
   "e1_card_discard": "Negeren",
   "e1_card_minimize": "Minimaliseren",
   "e1_chip_in_progress": "Concept in uitvoering",
-  "e1_chip_resume": "Hervatten"
+  "e1_chip_resume": "Hervatten",
+  "e1_card_error_badge": "Mislukt",
+  "e1_card_error_title": "Kon geen antwoord opstellen",
+  "e1_card_error_hint": "Je AI-provider reageerde niet. Controleer de modelnaam en API-sleutel in AI-instellingen en probeer opnieuw.",
+  "e1_card_retry": "Opnieuw",
+  "e1_card_ai_settings": "AI-instellingen",
+  "e1_card_write_manually": "Handmatig schrijven"
 }

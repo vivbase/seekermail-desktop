@@ -96,5 +96,11 @@
   "e1_card_discard": "Descartar",
   "e1_card_minimize": "Minimizar",
   "e1_chip_in_progress": "Borrador en curso",
-  "e1_chip_resume": "Reanudar"
+  "e1_chip_resume": "Reanudar",
+  "e1_card_error_badge": "Error",
+  "e1_card_error_title": "No se pudo redactar la respuesta",
+  "e1_card_error_hint": "Tu proveedor de IA no respondió. Revisa el nombre del modelo y la clave API en Ajustes de IA y reinténtalo.",
+  "e1_card_retry": "Reintentar",
+  "e1_card_ai_settings": "Ajustes de IA",
+  "e1_card_write_manually": "Escribir manualmente"
 }

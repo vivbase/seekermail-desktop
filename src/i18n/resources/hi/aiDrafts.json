@@ -96,5 +96,11 @@
   "e1_card_discard": "छोड़ें",
   "e1_card_minimize": "छोटा करें",
   "e1_chip_in_progress": "मसौदा प्रगति पर",
-  "e1_chip_resume": "पुनः आरंभ करें"
+  "e1_chip_resume": "पुनः आरंभ करें",
+  "e1_card_error_badge": "विफल",
+  "e1_card_error_title": "उत्तर का मसौदा नहीं बना सका",
+  "e1_card_error_hint": "आपके AI प्रदाता ने जवाब नहीं दिया। AI सेटिंग में मॉडल नाम और API कुंजी जाँचें, फिर पुनः प्रयास करें।",
+  "e1_card_retry": "पुनः प्रयास",
+  "e1_card_ai_settings": "AI सेटिंग",
+  "e1_card_write_manually": "स्वयं लिखें"
 }

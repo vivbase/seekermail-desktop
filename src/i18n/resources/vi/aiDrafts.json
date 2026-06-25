@@ -96,5 +96,11 @@
   "e1_card_discard": "Hủy",
   "e1_card_minimize": "Thu nhỏ",
   "e1_chip_in_progress": "Bản nháp đang xử lý",
-  "e1_chip_resume": "Tiếp tục"
+  "e1_chip_resume": "Tiếp tục",
+  "e1_card_error_badge": "Thất bại",
+  "e1_card_error_title": "Không thể soạn trả lời",
+  "e1_card_error_hint": "Nhà cung cấp AI không phản hồi. Hãy kiểm tra tên mô hình và khóa API trong Cài đặt AI, rồi thử lại.",
+  "e1_card_retry": "Thử lại",
+  "e1_card_ai_settings": "Cài đặt AI",
+  "e1_card_write_manually": "Tự viết"
 }

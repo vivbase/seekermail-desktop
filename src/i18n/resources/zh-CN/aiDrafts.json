@@ -96,5 +96,11 @@
   "e1_card_discard": "丢弃",
   "e1_card_minimize": "最小化",
   "e1_chip_in_progress": "草稿进行中",
-  "e1_chip_resume": "继续"
+  "e1_chip_resume": "继续",
+  "e1_card_error_badge": "失败",
+  "e1_card_error_title": "无法生成回复",
+  "e1_card_error_hint": "AI 提供方没有响应。请到 AI 设置检查模型名称和 API 密钥,然后重试。",
+  "e1_card_retry": "重试",
+  "e1_card_ai_settings": "AI 设置",
+  "e1_card_write_manually": "手动撰写"
 }

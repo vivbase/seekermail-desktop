@@ -96,5 +96,11 @@
   "e1_card_discard": "Scarta",
   "e1_card_minimize": "Riduci",
   "e1_chip_in_progress": "Bozza in corso",
-  "e1_chip_resume": "Riprendi"
+  "e1_chip_resume": "Riprendi",
+  "e1_card_error_badge": "Non riuscito",
+  "e1_card_error_title": "Impossibile redigere la risposta",
+  "e1_card_error_hint": "Il tuo provider IA non ha risposto. Controlla il nome del modello e la chiave API nelle Impostazioni IA, poi riprova.",
+  "e1_card_retry": "Riprova",
+  "e1_card_ai_settings": "Impostazioni IA",
+  "e1_card_write_manually": "Scrivi manualmente"
 }

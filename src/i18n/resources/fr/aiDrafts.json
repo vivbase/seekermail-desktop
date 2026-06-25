@@ -96,5 +96,11 @@
   "e1_card_discard": "Abandonner",
   "e1_card_minimize": "Réduire",
   "e1_chip_in_progress": "Brouillon en cours",
-  "e1_chip_resume": "Reprendre"
+  "e1_chip_resume": "Reprendre",
+  "e1_card_error_badge": "Échec",
+  "e1_card_error_title": "Impossible de rédiger la réponse",
+  "e1_card_error_hint": "Votre fournisseur d'IA n'a pas répondu. Vérifiez le nom du modèle et la clé API dans les Paramètres IA, puis réessayez.",
+  "e1_card_retry": "Réessayer",
+  "e1_card_ai_settings": "Paramètres IA",
+  "e1_card_write_manually": "Écrire manuellement"
 }

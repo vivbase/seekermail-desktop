@@ -96,5 +96,11 @@
   "e1_card_discard": "삭제",
   "e1_card_minimize": "최소화",
   "e1_chip_in_progress": "초안 작성 중",
-  "e1_chip_resume": "계속"
+  "e1_chip_resume": "계속",
+  "e1_card_error_badge": "실패",
+  "e1_card_error_title": "답장을 작성하지 못했습니다",
+  "e1_card_error_hint": "AI 공급자가 응답하지 않았습니다. AI 설정에서 모델 이름과 API 키를 확인한 후 다시 시도하세요.",
+  "e1_card_retry": "다시 시도",
+  "e1_card_ai_settings": "AI 설정",
+  "e1_card_write_manually": "직접 작성"
 }

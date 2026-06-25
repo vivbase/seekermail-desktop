@@ -96,5 +96,11 @@
   "e1_card_discard": "Отклонить",
   "e1_card_minimize": "Свернуть",
   "e1_chip_in_progress": "Черновик в процессе",
-  "e1_chip_resume": "Возобновить"
+  "e1_chip_resume": "Возобновить",
+  "e1_card_error_badge": "Сбой",
+  "e1_card_error_title": "Не удалось составить ответ",
+  "e1_card_error_hint": "Поставщик ИИ не ответил. Проверьте название модели и ключ API в настройках ИИ и повторите попытку.",
+  "e1_card_retry": "Повторить",
+  "e1_card_ai_settings": "Настройки ИИ",
+  "e1_card_write_manually": "Написать вручную"
 }
