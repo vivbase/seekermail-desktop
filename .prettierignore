@@ -12,3 +12,6 @@ src-tauri/**/*.rs
 # Human-authored project context — keep as written
 CLAUDE.md
 README.md
+# cargo-about license template — Handlebars; Prettier's glimmer parser mangles the
+# Markdown/whitespace and corrupts the generated NOTICE. Keep as authored.
+about.hbs

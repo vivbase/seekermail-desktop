@@ -4,7 +4,7 @@ pre-commit:
   parallel: true
   commands:
     prettier:
-      glob: "*.{ts,tsx,js,jsx,json,css,md,yml,yaml}"
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs,json,css,md,yml,yaml}"
       exclude: "packages/shared/src/bindings.ts"
       run: pnpm exec prettier --write {staged_files}
       stage_fixed: true

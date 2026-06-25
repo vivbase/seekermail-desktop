@@ -52,16 +52,22 @@ pub async fn workbench_open_window(
     let url = WebviewUrl::App(format!("index.html?boot={boot}").into());
     let mut builder = WebviewWindowBuilder::new(&app, label.clone(), url)
         .title("SeekerMail")
-        // Match the main window's parchment top strip (the shell renders the drag region).
-        // Overlay = the title bar floats over our content, so the parchment drag strip shows
-        // through behind the traffic lights (Transparent would show the white window bg instead).
-        .title_bar_style(tauri::TitleBarStyle::Overlay)
-        .hidden_title(true)
         // Open at the same comfortable size as the main window so the detached view shows in
         // full. A small default window cramps the shell (it needs ~960px CSS width, and the
         // UI-scale `zoom` inflates that further), clipping the sidebar. Match main: 1280x832.
         .inner_size(1280.0, 832.0)
         .min_inner_size(960.0, 600.0);
+    // The Overlay title bar floats over our content so the parchment drag strip shows through
+    // behind the traffic lights (Transparent would show the white window bg instead), matching
+    // the main window's top strip. `title_bar_style`/`hidden_title` are macOS-only builder
+    // methods — they don't exist on the Windows/Linux builders — so gate them by target_os to
+    // keep the cross-platform build compiling (the Windows CI leg fails E0599 otherwise).
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true);
+    }
     if let Some(p) = at {
         builder = builder.position(p.x, p.y);
     } else {
